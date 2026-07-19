@@ -1,12 +1,12 @@
 {
   "functions": {
     "api/export-pdf.js": {
-      "memory": 1536,
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "assets/bg/**"
     },
     "api/export-pptx.js": {
-      "memory": 1024,
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "assets/bg/**"
     },
     "api/generate-lesson.js": {
       "maxDuration": 30
