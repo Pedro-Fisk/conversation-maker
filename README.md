@@ -1,27 +1,45 @@
 # Conversation Maker
 
-Static tool (GitHub Pages, no backend) linked from the [fisk-hub](https://github.com/Pedro-Fisk/fisk-hub)
+Tool linked from the [fisk-hub](https://github.com/Pedro-Fisk/fisk-hub)
 resource hub. Teachers pick a language, topic, optional grammar point and
-level, and get a preview of the generated lesson structure.
+level, and get the generated lesson content and slide plan.
 
-**Current status: preview / mock mode.** `logic.js` is a JavaScript port of
-the Python prototype in `fisk-hub/conversation_maker/` (same level rules,
-subtopic grouping, scaffolding by level, shared objectives/vocabulary
-across levels). It stands in for a real Claude API call — a static GitHub
-Pages site can't call the Anthropic API directly without exposing the API
-key, so real generation will need a small backend/proxy function later.
-Swapping `generateMock()` for a real API call is the only change needed;
-the form, pagination and rendering stay the same.
+**Hosted on Vercel** (not GitHub Pages) because content generation needs a
+server-side function to call the Anthropic API without exposing the API
+key to the browser. The static frontend and the `/api/generate-lesson`
+function are deployed together from this same repo, so they share an
+origin and no CORS setup is needed.
+
+## Required setup (Vercel project settings, not in this repo)
+
+Two environment variables must be set in the Vercel dashboard
+(Project → Settings → Environment Variables) — never committed here:
+
+- `ANTHROPIC_API_KEY` — from console.anthropic.com.
+- `ACCESS_CODE` — shared password teachers enter in the form, to keep
+  random visitors from burning API credits. Checked server-side in
+  `api/generate-lesson.js`.
 
 ## Files
 
-- `index.html` — the form + results page.
+- `index.html` — the form (access code, language, topic, grammar point,
+  level) + results page.
 - `style.css` — FISK brand tokens (red/black/white), shared visual
   language with fisk-hub.
-- `logic.js` — content generation + slide pagination (mock for now).
-- `app.js` — DOM wiring: reads the form, calls `ConversationMaker.runRequest`,
-  renders the slide-by-slide preview.
+- `logic.js` — level rules and slide pagination (`buildSlidePlan`), used
+  client-side on whatever lesson content the API returns. Also still
+  contains `generateMock()`/`runRequest()` from the earlier preview-only
+  version, unused by `app.js` now but handy for offline testing.
+- `app.js` — DOM wiring: reads the form, calls `POST /api/generate-lesson`,
+  shows loading/error state, then paginates and renders the result.
+- `api/generate-lesson.js` — Vercel serverless function. Checks the access
+  code, calls the Anthropic Messages API once per requested level (1, or 3
+  for "all levels"), reuses objectives/vocabulary across levels the same
+  way the Python prototype does, and returns lesson JSON.
 
-## Try it
+## Local testing without spending API credits
 
-Open `index.html` directly in a browser (no build step, no server needed).
+Open `index.html` directly — the access-code field will just fail (no
+`/api` route without Vercel running), but `window.ConversationMaker.runRequest(...)`
+from `logic.js` still works from the browser console if you want to sanity
+check pagination against mock content.

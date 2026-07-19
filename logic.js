@@ -232,4 +232,4 @@ function runRequest({ language, topic, levelChoice, grammarPoint }) {
   return outputs;
 }
 
-window.ConversationMaker = { runRequest, LEVEL_CONFIGS };
+window.ConversationMaker = { runRequest, buildSlidePlan, LEVEL_CONFIGS };

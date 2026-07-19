@@ -16,13 +16,13 @@
 
   <main class="wrap">
 
-    <div class="mock-badge">
-      ⚠️ Versão de prévia: o conteúdo abaixo é gerado localmente como exemplo
-      (texto [MOCK]), sem IA ainda. Quando a API do Claude for conectada, o
-      mesmo formulário vai gerar o conteúdo real da aula.
-    </div>
-
     <form id="form">
+      <div class="panel">
+        <h2>Código de acesso</h2>
+        <label class="fld" for="accessCode">Código compartilhado com os professores FISK</label>
+        <input type="password" id="accessCode" placeholder="código de acesso" autocomplete="current-password" required>
+      </div>
+
       <div class="panel">
         <h2>Idioma</h2>
         <div class="choice-row" id="languageChoices" data-field="language">
@@ -58,6 +58,7 @@
 
       <div class="actions">
         <button type="submit" class="btn btn-primary" id="generateBtn">Gerar roteiro →</button>
+        <span id="status" class="status-text"></span>
       </div>
     </form>
 

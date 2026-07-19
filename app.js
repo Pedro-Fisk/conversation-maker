@@ -7,6 +7,26 @@
   const levelChoices = document.getElementById("levelChoices");
   const levelField = document.getElementById("levelField");
   const results = document.getElementById("results");
+  const generateBtn = document.getElementById("generateBtn");
+  const statusEl = document.getElementById("status");
+
+  function setStatus(text, isError) {
+    statusEl.textContent = text || "";
+    statusEl.classList.toggle("is-error", Boolean(isError));
+  }
+
+  async function fetchLessons({ accessCode, language, topic, levelChoice, grammarPoint }) {
+    const response = await fetch("/api/generate-lesson", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ accessCode, language, topic, levelChoice, grammarPoint }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || `Erro ${response.status} ao gerar a aula.`);
+    }
+    return data.lessons;
+  }
 
   function selectedValue(container) {
     const active = container.querySelector(".choice.is-active");
@@ -128,26 +148,37 @@
     return deck;
   }
 
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    const accessCode = document.getElementById("accessCode").value;
     const language = selectedValue(languageChoices);
     const topic = document.getElementById("topic").value.trim();
     const grammarPoint = document.getElementById("grammarPoint").value.trim() || null;
     const levelChoice = language === "english" ? selectedValue(levelChoices) : null;
 
-    if (!topic) return;
+    if (!topic || !accessCode) return;
 
-    const outputs = window.ConversationMaker.runRequest({
-      language,
-      topic,
-      levelChoice,
-      grammarPoint,
-    });
+    generateBtn.disabled = true;
+    setStatus("Gerando com a IA... isso pode levar alguns segundos.");
+    results.classList.remove("is-visible");
 
-    results.innerHTML = "";
-    outputs.forEach((output) => results.appendChild(renderDeck(output)));
-    results.classList.add("is-visible");
-    results.scrollIntoView({ behavior: "smooth", block: "start" });
+    try {
+      const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, grammarPoint });
+      const outputs = lessons.map((lesson) => ({
+        lesson,
+        slidePlan: window.ConversationMaker.buildSlidePlan(lesson),
+      }));
+
+      results.innerHTML = "";
+      outputs.forEach((output) => results.appendChild(renderDeck(output)));
+      results.classList.add("is-visible");
+      results.scrollIntoView({ behavior: "smooth", block: "start" });
+      setStatus("");
+    } catch (err) {
+      setStatus(err.message || "Não foi possível gerar a aula.", true);
+    } finally {
+      generateBtn.disabled = false;
+    }
   });
 })();
