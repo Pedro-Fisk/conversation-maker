@@ -1,10 +1,11 @@
 /*
  * Vercel serverless function: POST /api/export-pptx
  *
- * Body: { lesson, slidePlan }  — exactly what the browser already has after
- * calling /api/generate-lesson and running window.ConversationMaker.buildSlidePlan.
- * No AI call happens here, so this never spends API credits — it just turns
- * already-generated content into a real .pptx file, using pptx-builder.js.
+ * Body: { lesson } — the same canonical lesson object /api/export-pdf takes
+ * (see contract documented at the top of render-slides-html.js). No AI call
+ * happens here — it just turns already-generated content into a real .pptx
+ * file using pptx-builder.js, which draws on the real Canva template
+ * background PNGs and the exact coordinate map shared with the PDF export.
  *
  * Returns the binary .pptx as the response body with the right headers for
  * a browser download.
@@ -18,15 +19,15 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { lesson, slidePlan } = req.body || {};
+  const { lesson } = req.body || {};
 
-  if (!lesson || !slidePlan || !Array.isArray(slidePlan)) {
-    res.status(400).json({ error: "Faltam 'lesson' e 'slidePlan' no corpo da requisição." });
+  if (!lesson) {
+    res.status(400).json({ error: "Falta 'lesson' no corpo da requisição." });
     return;
   }
 
   try {
-    const buffer = await buildPptxBuffer(lesson, slidePlan);
+    const buffer = await buildPptxBuffer(lesson);
     const safeName = (lesson.coverTitle || "conversation-maker")
       .toLowerCase()
       .normalize("NFD")

@@ -1,8 +1,8 @@
 /*
  * Vercel serverless function: POST /api/generate-lesson
  *
- * Body: { accessCode, language, topic, levelChoice, grammarPoint }
- * Returns: { lessons: [ ...LessonContent ] }  (1 lesson, or 3 for "all_levels")
+ * Body: { accessCode, language, topic, levelChoice }
+ * Returns: { lessons: [ ...Lesson ] }  (1 lesson, or several for "all_levels")
  *
  * Requires two environment variables set in the Vercel project dashboard
  * (Settings -> Environment Variables) — never committed to the repo:
@@ -14,89 +14,79 @@
  * endpoint, which lives on the same Vercel deployment (same origin, so
  * no CORS setup needed).
  *
- * LEVEL_CONFIGS below is a duplicate of the one in ../logic.js (which
- * runs in the browser and can't easily share a module with this Node
- * function without a bundler). Keep the two in sync if the level rules
- * change.
+ * Every generated lesson follows ONE fixed shape (the "canonical lesson"
+ * documented at the top of ../render-slides-html.js) because it is rendered
+ * onto the SAME 18-page Canva template for every level and both languages
+ * — Pedro's call: rather than a different slide structure per level, all
+ * levels/languages reuse the one template, and only the *content*
+ * (question depth, vocabulary difficulty, register) scales with level.
+ * That means every lesson always has exactly: 3 objectives, 8 vocabulary
+ * words, 1 intro paragraph, 9 conversation Q&As (3 groups of 3), 6
+ * language game Q&As (2 groups of 3), 2 evaluation Q&As — regardless of
+ * level or language.
  */
 
-const LEVEL_CONFIGS = {
+const LEVEL_GUIDANCE = {
   basic: {
-    minQuestions: 6,
-    maxQuestions: 8,
-    includeScaffold: true,
-    includeLanguageGame: true,
-    description: "Scaffolded questions (sentence starters / answer options).",
+    label: "Basic",
+    prompt:
+      "Basic level: simple present/past tense, short common-word vocabulary, short direct conversation questions, scaffolded model answers (short, simple sentences a beginner could produce).",
   },
   intermediate: {
-    minQuestions: 6,
-    maxQuestions: 9,
-    includeScaffold: true,
-    includeLanguageGame: true,
-    description: "Same scaffolding style as Basic, slightly more questions.",
+    label: "Intermediate",
+    prompt:
+      "Intermediate level: a wider range of tenses and everyday vocabulary, conversation questions that invite a short opinion or explanation, model answers one notch more elaborate than Basic but still natural spoken English.",
   },
   advanced: {
-    minQuestions: 10,
-    maxQuestions: 12,
-    includeScaffold: false,
-    includeLanguageGame: false,
-    description: "Fully open questions, no scaffolding, no language game.",
+    label: "Advanced",
+    prompt:
+      "Advanced level: nuanced/less common vocabulary, questions that invite critical thinking, comparison or hypothetical reasoning, model answers that are fluent and idiomatic, using varied sentence structure.",
   },
   spanish_b1: {
-    minQuestions: 6,
-    maxQuestions: 8,
-    includeScaffold: true,
-    includeLanguageGame: true,
-    description: "Single communicative version, Basic/Intermediate style.",
+    label: "Spanish B1",
+    prompt:
+      "Spanish B1 level. Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). B1 = intermediate: everyday vocabulary, common tenses (presente, pretérito, futuro próximo), natural conversational Spanish a B1 student could both understand and answer.",
   },
 };
 
 const ENGLISH_LEVELS = ["basic", "intermediate", "advanced"];
-const DEFAULT_DURATION_MINUTES = 20;
 const MODEL = "claude-sonnet-5";
 
-const SYSTEM_PROMPT = `You are the content engine behind Conversation Maker, an authoring tool for language teachers at FISK. You generate ONLY slide content as structured JSON — you never design or lay out slides, that is handled by a fixed template downstream.
+const SYSTEM_PROMPT = `You are the content engine behind Conversation Maker, an authoring tool for language teachers at FISK. You generate ONLY lesson content as structured JSON — a fixed, already-designed 18-page slide template (built in Canva) handles all layout and visuals downstream. Your only job is to fill in the text.
 
-Structure to fill, in this fixed order: Cover, Material Needed, Objectives (exactly 3, describing the lesson regardless of level), Vocabulary (word list, with Portuguese translations for Basic/Intermediate, without translations for Advanced), an OPTIONAL Grammar Point block (INCLUDE IT ONLY IF the teacher explicitly supplied a grammar point in the request — never invent one yourself), Introduction (title + short paragraph), Conversation (questions grouped by subtopic, e.g. FOOD, SHOPPING, TRAVEL), an OPTIONAL Language Game (multiple-choice quiz, only for Basic/Intermediate), and Evaluation (1-3 reflection questions).
+The template has a FIXED structure that never changes, so your output must always contain exactly:
+- 3 objectives
+- 8 vocabulary words (each with a Portuguese translation, since the students are Brazilian)
+- 1 introductory paragraph (a single flowing paragraph, not a list, not multiple paragraphs)
+- 9 conversation questions, organized as 3 natural subtopics of 3 questions each (do not label the subtopics in the output, just order the 9 questions so subtopics of 3 flow naturally back to back)
+- 6 language game items (short language-focused challenges: fill-in-the-blank, choose the correct word/tense, etc. — testing the vocabulary/grammar just covered)
+- 2 evaluation/reflection questions
 
-Level behavior:
-- Basic and Intermediate: every conversation question includes a short answerScaffold (a sentence starter or 2-3 answer options), and a Language Game section is included.
-- Advanced: conversation questions are fully open, no answerScaffold, no Language Game, and roughly 10-12 questions with more depth/critical thinking than Basic/Intermediate's 6-9.
+Every conversation, language game, and evaluation question needs exactly 2 short "modelAnswers" — natural example answers a teacher could read aloud or a student could aim for. These are illustrative models, not a rigid script.
 
-Respond with a single JSON object only, no prose, no markdown code fences, matching exactly the schema described in the user message (camelCase keys).`;
+Respond with a single JSON object only, no prose, no markdown code fences, matching exactly the schema described in the user message (camelCase keys). Never add or remove array items — always exactly the counts specified above.`;
 
-function buildUserPrompt({ language, topic, level, grammarPoint }) {
-  const cfg = LEVEL_CONFIGS[level];
-  const grammarLine = grammarPoint
-    ? `The teacher wants a Grammar Point block on: ${grammarPoint}.`
-    : "Do NOT include a Grammar Point block (return grammarAside: null).";
+function buildUserPrompt({ language, topic, level }) {
+  const guidance = LEVEL_GUIDANCE[level];
 
-  return `Language: ${language}
-Topic: ${topic}
-Level: ${level} (${cfg.description})
-${grammarLine}
-
-Generate ${cfg.minQuestions}-${cfg.maxQuestions} conversation questions, grouped by subtopic. ${
-    cfg.includeScaffold
-      ? "Include answerScaffold for every question."
-      : "No answerScaffold — open questions only (use null)."
-  }
-${cfg.includeLanguageGame ? "Include a languageGame (3-5 multiple-choice questions, 3 options each)." : "No languageGame for this level (return []) ."}
+  return `Topic: ${topic}
+Level: ${guidance.label}
+${guidance.prompt}
 
 Return a single JSON object with exactly these keys:
 {
-  "coverTitle": string,
-  "coverSubtitle": string,
-  "material": { "activity": string, "durationMinutes": number },
+  "coverTitle": string,        // short, catchy lesson title built from the topic (e.g. "Discovering Japan")
+  "coverLevel": "${guidance.label}",
+  "topic": string,             // short topic phrase, e.g. "Japan"
   "objectives": [string, string, string],
-  "vocabulary": [{ "word": string, "translation": string|null, "contrastWith": string|null }],
-  "grammarAside": { "teacherInstruction": string, "explanation": string, "example": string|null } | null,
-  "introTitle": string,
-  "introText": string,
-  "videoTitle": null,
-  "conversationGroups": [{ "subtopic": string, "questions": [{ "number": number, "question": string, "answerScaffold": string|null }] }],
-  "languageGame": [{ "prompt": string, "options": [string, string, string], "correctAnswer": string }],
-  "evaluation": [string]
+  "vocabulary": [ { "word": string, "translation": string } ]  // exactly 8 items
+  ,
+  "introText": string,         // exactly one paragraph, no line breaks
+  "conversation": [ { "question": string, "modelAnswers": [string, string] } ]  // exactly 9 items
+  ,
+  "languageGame": [ { "question": string, "modelAnswers": [string, string] } ]  // exactly 6 items
+  ,
+  "evaluation": [ { "question": string, "modelAnswers": [string, string] } ]  // exactly 2 items
 }`;
 }
 
@@ -121,7 +111,13 @@ function extractJson(text, debugInfo) {
   }
 }
 
-async function callClaude({ language, topic, level, grammarPoint }) {
+function clampArray(arr, n) {
+  const a = Array.isArray(arr) ? arr.slice(0, n) : [];
+  while (a.length < n) a.push(a[a.length - 1] || {});
+  return a;
+}
+
+async function callClaude({ language, topic, level }) {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -133,7 +129,7 @@ async function callClaude({ language, topic, level, grammarPoint }) {
       model: MODEL,
       max_tokens: 8000,
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildUserPrompt({ language, topic, level, grammarPoint }) }],
+      messages: [{ role: "user", content: buildUserPrompt({ language, topic, level }) }],
     }),
   });
 
@@ -150,19 +146,19 @@ async function callClaude({ language, topic, level, grammarPoint }) {
   }.`;
   const parsed = extractJson(text, debugInfo);
 
-  // Force known fields instead of trusting the model's echo, and enforce
-  // the "never invent a grammar point" rule at the code level too.
-  parsed.language = language;
-  parsed.topic = topic;
-  parsed.level = level;
-  parsed.grammarAside = grammarPoint ? parsed.grammarAside || null : null;
-  parsed.material = parsed.material || { activity: "Powerpoint Activity", durationMinutes: DEFAULT_DURATION_MINUTES };
-  parsed.vocabulary = parsed.vocabulary || [];
-  parsed.conversationGroups = parsed.conversationGroups || [];
-  parsed.languageGame = LEVEL_CONFIGS[level].includeLanguageGame ? parsed.languageGame || [] : [];
-  parsed.evaluation = parsed.evaluation || [];
-
-  return parsed;
+  // Force known fields and enforce the fixed counts the template needs,
+  // instead of trusting the model to always get the array lengths right.
+  return {
+    coverTitle: parsed.coverTitle || topic,
+    coverLevel: LEVEL_GUIDANCE[level].label,
+    topic: parsed.topic || topic,
+    objectives: clampArray(parsed.objectives, 3),
+    vocabulary: clampArray(parsed.vocabulary, 8),
+    introText: parsed.introText || "",
+    conversation: clampArray(parsed.conversation, 9),
+    languageGame: clampArray(parsed.languageGame, 6),
+    evaluation: clampArray(parsed.evaluation, 2),
+  };
 }
 
 module.exports = async function handler(req, res) {
@@ -171,7 +167,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { accessCode, language, topic, levelChoice, grammarPoint } = req.body || {};
+  const { accessCode, language, topic, levelChoice } = req.body || {};
 
   if (!process.env.ACCESS_CODE || accessCode !== process.env.ACCESS_CODE) {
     res.status(401).json({ error: "Código de acesso inválido." });
@@ -200,18 +196,17 @@ module.exports = async function handler(req, res) {
     let sharedVocabulary = null;
 
     for (const level of levels) {
-      const lesson = await callClaude({ language, topic, level, grammarPoint: grammarPoint || null });
+      const lesson = await callClaude({ language, topic, level });
 
+      // Keep objectives + vocabulary consistent across the whole "todos os
+      // níveis" batch for one topic, so the three decks describe the same
+      // lesson at different depths rather than drifting apart.
       if (sharedObjectives === null) {
         sharedObjectives = lesson.objectives;
         sharedVocabulary = lesson.vocabulary;
       } else {
-        const cfg = LEVEL_CONFIGS[level];
-        lesson.objectives = sharedObjectives.slice();
-        lesson.vocabulary = sharedVocabulary.map((v) => ({
-          ...v,
-          translation: cfg.includeScaffold ? v.translation : null,
-        }));
+        lesson.objectives = sharedObjectives;
+        lesson.vocabulary = sharedVocabulary;
       }
 
       lessons.push(lesson);
