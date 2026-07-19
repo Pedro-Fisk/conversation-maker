@@ -1,5 +1,10 @@
-/* DOM wiring for the Conversation Maker form. Content generation logic
- * lives in logic.js (window.ConversationMaker). */
+/* DOM wiring for the Conversation Maker form.
+ *
+ * /api/generate-lesson already returns the canonical `lesson` shape (see
+ * the contract at the top of render-slides-html.js) — no client-side
+ * pagination/slide-plan step needed anymore. Each lesson downloads as a
+ * real PDF (/api/export-pdf) and/or PPTX (/api/export-pptx), rendered
+ * server-side onto the real Canva template backgrounds. */
 
 (function () {
   const form = document.getElementById("form");
@@ -15,11 +20,11 @@
     statusEl.classList.toggle("is-error", Boolean(isError));
   }
 
-  async function fetchLessons({ accessCode, language, topic, levelChoice, grammarPoint }) {
+  async function fetchLessons({ accessCode, language, topic, levelChoice }) {
     const response = await fetch("/api/generate-lesson", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ accessCode, language, topic, levelChoice, grammarPoint }),
+      body: JSON.stringify({ accessCode, language, topic, levelChoice }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -51,91 +56,89 @@
   wireChoiceRow(levelChoices, () => {});
   updateLevelVisibility(selectedValue(languageChoices));
 
-  const LAYOUT_LABELS = {
-    Cover: "Capa",
-    "Material Needed": "Material necessário",
-    Objectives: "Objetivos",
-    Vocabulary: "Vocabulário",
-    "Grammar Point": "Ponto gramatical",
-    "Introduction Title": "Introdução (título)",
-    "Introduction Text": "Introdução (texto)",
-    Video: "Vídeo",
-    Conversation: "Conversação",
-    "Language Game": "Language Game",
-    Evaluation: "Avaliação",
-    Closing: "Encerramento",
-  };
-
   function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
   }
 
-  function renderSlideBody(slide) {
-    const c = slide.content;
-    switch (slide.layout) {
-      case "Cover":
-        return `<p><strong>${escapeHtml(c.title)}</strong></p><p>${escapeHtml(c.subtitle)}</p>`;
-      case "Material Needed":
-        return `<p>${escapeHtml(c.activity)} — ${c.durationMinutes} minutos</p>`;
-      case "Objectives":
-        return c.objectives.map((o) => `<p>• ${escapeHtml(o)}</p>`).join("");
-      case "Vocabulary":
-        return c.words
-          .map((w) => `<p>${escapeHtml(w.word)}${w.translation ? " — " + escapeHtml(w.translation) : ""}</p>`)
-          .join("");
-      case "Grammar Point":
-        return `<p><em>${escapeHtml(c.teacherInstruction)}</em></p><p>${escapeHtml(c.explanation)}</p>${c.example ? `<p>${escapeHtml(c.example)}</p>` : ""}`;
-      case "Introduction Title":
-        return `<p><strong>${escapeHtml(c.title)}</strong></p>`;
-      case "Introduction Text":
-        return `<p>${escapeHtml(c.text)}</p>`;
-      case "Video":
-        return `<p>${escapeHtml(c.title)}</p>`;
-      case "Conversation":
-        return (
-          (c.subtopic ? `<p><strong>${escapeHtml(c.subtopic)}</strong></p>` : "") +
-          c.questions
-            .map(
-              (q) =>
-                `<div class="q">${q.number}. ${escapeHtml(q.question)}${
-                  q.answerScaffold ? `<br><span class="scaffold">${escapeHtml(q.answerScaffold)}</span>` : ""
-                }</div>`
-            )
-            .join("")
-        );
-      case "Language Game":
-        return c.questions
-          .map(
-            (q) =>
-              `<p>${escapeHtml(q.prompt)}<br>` +
-              q.options.map((o, i) => `${"abc"[i]}. ${escapeHtml(o)}`).join(" &nbsp; ") +
-              `</p>`
-          )
-          .join("");
-      case "Evaluation":
-        return c.questions.map((q) => `<p>${escapeHtml(q)}</p>`).join("");
-      case "Closing":
-        return `<p>${escapeHtml(c.title)}</p>`;
-      default:
-        return "";
+  // Compact read-out of the lesson content (not a slide-by-slide preview —
+  // the real layout only exists in the generated PDF/PPTX, which reuses the
+  // actual Canva template).
+  function renderLessonPreview(lesson) {
+    const sections = document.createElement("div");
+    sections.className = "slide-list";
+
+    function addSection(label, bodyHtml) {
+      const el = document.createElement("div");
+      el.className = "slide";
+      el.innerHTML = `<span class="slide-layout">${escapeHtml(label)}</span><div class="slide-body">${bodyHtml}</div>`;
+      sections.appendChild(el);
     }
+
+    addSection("Objetivos", lesson.objectives.map((o) => `<p>• ${escapeHtml(o)}</p>`).join(""));
+
+    addSection(
+      "Vocabulário",
+      lesson.vocabulary
+        .map((w) => `<p>${escapeHtml(w.word)}${w.translation ? " — " + escapeHtml(w.translation) : ""}</p>`)
+        .join("")
+    );
+
+    addSection("Introdução", `<p>${escapeHtml(lesson.introText)}</p>`);
+
+    addSection(
+      "Conversação",
+      lesson.conversation
+        .map(
+          (q, i) =>
+            `<div class="q">${i + 1}. ${escapeHtml(q.question)}<br><span class="scaffold">${(q.modelAnswers || [])
+              .map(escapeHtml)
+              .join(" / ")}</span></div>`
+        )
+        .join("")
+    );
+
+    addSection(
+      "Language Game",
+      lesson.languageGame
+        .map(
+          (q, i) =>
+            `<div class="q">${i + 1}. ${escapeHtml(q.question)}<br><span class="scaffold">${(q.modelAnswers || [])
+              .map(escapeHtml)
+              .join(" / ")}</span></div>`
+        )
+        .join("")
+    );
+
+    addSection(
+      "Avaliação",
+      lesson.evaluation
+        .map(
+          (q, i) =>
+            `<div class="q">${i + 1}. ${escapeHtml(q.question)}<br><span class="scaffold">${(q.modelAnswers || [])
+              .map(escapeHtml)
+              .join(" / ")}</span></div>`
+        )
+        .join("")
+    );
+
+    return sections;
   }
 
-  async function downloadPptx(output, btn) {
+  async function downloadFile({ endpoint, lesson, extension, btn, busyLabel }) {
     const originalLabel = btn.textContent;
     btn.disabled = true;
-    btn.textContent = "Gerando .pptx...";
+    btn.textContent = busyLabel;
     try {
-      const response = await fetch("/api/export-pptx", {
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ lesson: output.lesson, slidePlan: output.slidePlan }),
+        body: JSON.stringify({ lesson }),
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || `Erro ${response.status} ao gerar o .pptx.`);
+        throw new Error(data.error || `Erro ${response.status} ao gerar o .${extension}.`);
       }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -143,46 +146,53 @@
       a.href = url;
       const disposition = response.headers.get("content-disposition") || "";
       const match = disposition.match(/filename="(.+?)"/);
-      a.download = match ? match[1] : "roteiro.pptx";
+      a.download = match ? match[1] : `roteiro.${extension}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert(err.message || "Não foi possível gerar o .pptx.");
+      alert(err.message || `Não foi possível gerar o .${extension}.`);
     } finally {
       btn.disabled = false;
       btn.textContent = originalLabel;
     }
   }
 
-  function renderDeck(output) {
+  function renderDeck(lesson) {
     const deck = document.createElement("div");
     deck.className = "deck";
 
     const head = document.createElement("div");
     head.className = "deck-head";
-    head.innerHTML = `<h3>${escapeHtml(output.lesson.coverTitle)}</h3><span>${escapeHtml(
-      output.lesson.coverSubtitle
-    )} · ${output.slidePlan.length} slides</span>`;
-    const downloadBtn = document.createElement("button");
-    downloadBtn.type = "button";
-    downloadBtn.className = "btn btn-download";
-    downloadBtn.textContent = "Baixar .pptx";
-    downloadBtn.addEventListener("click", () => downloadPptx(output, downloadBtn));
-    head.appendChild(downloadBtn);
-    deck.appendChild(head);
+    head.innerHTML = `<h3>${escapeHtml(lesson.coverTitle)}</h3><span>${escapeHtml(lesson.coverLevel)}</span>`;
 
-    const list = document.createElement("div");
-    list.className = "slide-list";
-    output.slidePlan.forEach((slide) => {
-      const el = document.createElement("div");
-      el.className = "slide";
-      el.innerHTML = `<span class="slide-layout">${LAYOUT_LABELS[slide.layout] || slide.layout}</span>
-        <div class="slide-body">${renderSlideBody(slide)}</div>`;
-      list.appendChild(el);
-    });
-    deck.appendChild(list);
+    const pdfBtn = document.createElement("button");
+    pdfBtn.type = "button";
+    pdfBtn.className = "btn btn-download";
+    pdfBtn.textContent = "Baixar PDF";
+    pdfBtn.addEventListener("click", () =>
+      downloadFile({ endpoint: "/api/export-pdf", lesson, extension: "pdf", btn: pdfBtn, busyLabel: "Gerando PDF..." })
+    );
+
+    const pptxBtn = document.createElement("button");
+    pptxBtn.type = "button";
+    pptxBtn.className = "btn btn-download";
+    pptxBtn.textContent = "Baixar .pptx";
+    pptxBtn.addEventListener("click", () =>
+      downloadFile({
+        endpoint: "/api/export-pptx",
+        lesson,
+        extension: "pptx",
+        btn: pptxBtn,
+        busyLabel: "Gerando .pptx...",
+      })
+    );
+
+    head.appendChild(pdfBtn);
+    head.appendChild(pptxBtn);
+    deck.appendChild(head);
+    deck.appendChild(renderLessonPreview(lesson));
 
     return deck;
   }
@@ -193,7 +203,6 @@
     const accessCode = document.getElementById("accessCode").value;
     const language = selectedValue(languageChoices);
     const topic = document.getElementById("topic").value.trim();
-    const grammarPoint = document.getElementById("grammarPoint").value.trim() || null;
     const levelChoice = language === "english" ? selectedValue(levelChoices) : null;
 
     if (!topic || !accessCode) return;
@@ -203,14 +212,10 @@
     results.classList.remove("is-visible");
 
     try {
-      const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, grammarPoint });
-      const outputs = lessons.map((lesson) => ({
-        lesson,
-        slidePlan: window.ConversationMaker.buildSlidePlan(lesson),
-      }));
+      const lessons = await fetchLessons({ accessCode, language, topic, levelChoice });
 
       results.innerHTML = "";
-      outputs.forEach((output) => results.appendChild(renderDeck(output)));
+      lessons.forEach((lesson) => results.appendChild(renderDeck(lesson)));
       results.classList.add("is-visible");
       results.scrollIntoView({ behavior: "smooth", block: "start" });
       setStatus("");

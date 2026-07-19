@@ -1,18 +1,15 @@
 /*
- * Conversation Maker — content generation logic (browser port).
+ * DEPRECATED — no longer loaded by index.html.
  *
- * This is a JavaScript port of the Python prototype in fisk-hub's
- * conversation_maker/ package (models.py, level_rules.py, pagination.py,
- * generator.py, workflow.py), calibrated against 15 real production decks
- * (not the original abstract spec). See that package's README for the
- * full reasoning.
- *
- * generateMock() stands in for the real Claude API call, which isn't wired
- * up yet. When the API is ready, only generateMock() needs to be replaced
- * with a real fetch() to a backend endpoint — everything else (level
- * rules, pagination, the shared-objectives/vocabulary logic) stays the
- * same, because a static GitHub Pages site cannot safely call the
- * Anthropic API directly (that would expose the API key).
+ * This was the original free-form slide-pagination engine (variable
+ * question counts, per-level slide layouts like "Grammar Point"/"Video",
+ * a different lesson shape per level). It's been superseded by the
+ * fixed 18-page Canva-template pipeline: every level/language now shares
+ * ONE lesson shape (see the contract at the top of render-slides-html.js)
+ * and ONE slide layout (slide-layouts.js), rendered via render-slides-html.js
+ * (PDF) and pptx-builder.js (PPTX). api/generate-lesson.js now builds that
+ * canonical shape directly — this file's generateMock/buildSlidePlan/
+ * runRequest are unused. Left in place only for reference; safe to delete.
  */
 
 const LEVEL_CONFIGS = {

@@ -1,288 +1,256 @@
 /*
- * Conversation Maker — .pptx builder.
+ * pptx-builder.js
  *
- * Turns a { lesson, slidePlan } pair (the same shape rendered on-screen by
- * app.js's renderDeck/renderSlideBody) into a real .pptx file, using
- * pptxgenjs. One call = one deck (one level). "Todos os níveis" means the
- * frontend calls this three times, once per level, and downloads three
- * files (never merged), matching the site-wide rule that levels are never
- * combined into a single deck.
+ * Builds a real .pptx using the same real Canva template background PNGs
+ * (assets/bg/*.png) and the same exact coordinate map (slide-layouts.js)
+ * that drives the HTML/PDF renderer (render-slides-html.js) — so the two
+ * exports stay visually consistent and both stay faithful to the original
+ * Canva template. This replaces the old generic-shapes pptxgenjs approach
+ * (banner bars, plain ellipses) that didn't match the real template.
  *
- * Visual language: FISK brand tokens (see ../style.css) — red/black/white —
- * applied consistently across every generated topic, rather than trying to
- * replicate the bespoke per-unit photography and color palettes used in the
- * hand-made curriculum decks (those vary unit to unit and rely on curated
- * stock photos we don't have for an arbitrary AI-generated topic). The
- * *structure* (banner bars top/bottom, big title panels, accent color for
- * key vocabulary/scaffolds, fixed section order) mirrors the real decks.
+ * Coordinate system: slide-layouts.js expresses every box as a % of the
+ * 1920x1080 canvas. The pptx slide is set to the same 16:9 aspect ratio at
+ * 13.333in x 7.5in (a standard PowerPoint widescreen size), so:
+ *   inches = (percent / 100) * slideDimensionInInches
+ * Since 1920px maps to 13.333in, 1px == 1/144in, so a font declared as
+ * `Npx` in slide-layouts.js becomes `N * 0.5` points (px/144in * 72pt/in).
  */
 
+const path = require("path");
 const pptxgen = require("pptxgenjs");
+const { LAYOUTS, FONT_MARKER } = require("./slide-layouts");
+const { getQaItems, buildDynamicValue } = require("./lesson-data");
 
-const RED = "D81F26";
-const RED_DARK = "A5151A";
-const BLACK = "161414";
-const WHITE = "FFFFFF";
-const GRAY = "6F6A6A";
-const GRAY_LIGHT = "ECECEC";
+const SLIDE_W_IN = 13.333;
+const SLIDE_H_IN = 7.5;
+const PT_PER_PX = 0.5; // see header comment
 
-const W = 13.333;
-const H = 7.5;
-const BAR = 0.28;
+const xIn = (pct) => (pct / 100) * SLIDE_W_IN;
+const yIn = (pct) => (pct / 100) * SLIDE_H_IN;
+const wIn = (pct) => (pct / 100) * SLIDE_W_IN;
+const hIn = (pct) => (pct / 100) * SLIDE_H_IN;
+const pt = (px) => Math.round(px * PT_PER_PX * 10) / 10;
+const hex = (c) => String(c || "").replace("#", "");
+const faceFor = (cssFont) => (cssFont === FONT_MARKER ? "Permanent Marker" : "Poppins");
 
-function baseSlide(pres, { bg = BLACK, bars = true, barColor = RED } = {}) {
-  const slide = pres.addSlide();
-  slide.background = { color: bg };
-  if (bars) {
-    slide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: W, h: BAR, fill: { color: barColor }, line: { type: "none" } });
-    slide.addShape(pres.ShapeType.rect, { x: 0, y: H - BAR, w: W, h: BAR, fill: { color: barColor }, line: { type: "none" } });
-  }
-  return slide;
+function addStatic(slide, field) {
+  slide.addText(field.value, {
+    x: xIn(field.left),
+    y: yIn(field.top),
+    w: wIn(field.width),
+    h: hIn(field.height),
+    fontFace: faceFor(field.font),
+    fontSize: pt(field.fontSize),
+    bold: field.fontWeight >= 600,
+    color: hex(field.color),
+    align: field.align || "left",
+    valign: "middle",
+    lineSpacingMultiple: field.lineHeight || 1.3,
+    wrap: true,
+  });
 }
 
-function addFooter(slide, label) {
-  slide.addText(label.toUpperCase(), {
-    x: 0, y: H - 0.55, w: W, h: 0.35,
-    align: "center", fontSize: 10, color: GRAY, fontFace: "Arial", charSpacing: 2,
+function addBadge(slide, field, pptx) {
+  slide.addText(field.value, {
+    shape: pptx.ShapeType.roundRect,
+    rectRadius: hIn(field.height) / 2,
+    fill: { color: hex(field.background) },
+    line: { type: "none" },
+    x: xIn(field.left),
+    y: yIn(field.top),
+    w: wIn(field.width),
+    h: hIn(field.height),
+    fontFace: faceFor(field.font),
+    fontSize: pt(field.fontSize),
+    bold: field.fontWeight >= 600,
+    color: hex(field.color),
+    align: "center",
+    valign: "middle",
+    charSpacing: field.letterSpacing || 0,
   });
 }
 
-function slideCover(pres, content) {
-  const c = content || {};
-  const slide = baseSlide(pres, { bg: BLACK });
-  slide.addShape(pres.ShapeType.ellipse, {
-    x: W / 2 - 2.6, y: H / 2 - 2.6, w: 5.2, h: 5.2,
-    fill: { color: RED, transparency: 88 }, line: { type: "none" },
+function addSimpleDynamic(slide, field, value) {
+  slide.addText(String(value || ""), {
+    x: xIn(field.left),
+    y: yIn(field.top),
+    w: wIn(field.width),
+    h: hIn(field.height),
+    fontFace: faceFor(field.font),
+    fontSize: pt(field.fontSize),
+    bold: field.fontWeight >= 600,
+    color: hex(field.color),
+    align: field.align || "left",
+    valign: "middle",
+    lineSpacingMultiple: field.lineHeight || 1.3,
+    wrap: true,
   });
-  slide.addText(c.title || "", {
-    x: 0.8, y: H / 2 - 1.35, w: W - 1.6, h: 1.5,
-    align: "center", valign: "bottom", fontSize: 40, bold: true, color: WHITE, fontFace: "Arial",
-  });
-  slide.addText(c.subtitle || "", {
-    x: 0.8, y: H / 2 + 0.2, w: W - 1.6, h: 0.7,
-    align: "center", valign: "top", fontSize: 18, color: RED, fontFace: "Arial", bold: true,
-  });
-  slide.addText("FISK", {
-    x: W - 2.2, y: H - 0.9, w: 1.8, h: 0.5,
-    align: "right", fontSize: 12, bold: true, color: GRAY, fontFace: "Arial", charSpacing: 3,
-  });
-  return slide;
 }
 
-function slideMaterial(pres, content) {
-  const slide = baseSlide(pres);
-  slide.addShape(pres.ShapeType.rect, {
-    x: W / 2 - 3.5, y: 1.6, w: 7, h: 1.1,
-    fill: { color: RED }, line: { type: "none" },
+function addBulletList(slide, field, items) {
+  const runs = (items || []).map((text, i) => ({
+    text,
+    options: {
+      bullet: { code: "2022" },
+      breakLine: i < items.length - 1,
+      fontFace: faceFor(field.font),
+      fontSize: pt(field.fontSize),
+      bold: field.fontWeight >= 600,
+      color: hex(field.color),
+      paraSpaceAfter: pt(field.fontSize) * 0.5,
+    },
+  }));
+  slide.addText(runs, {
+    x: xIn(field.left),
+    y: yIn(field.top),
+    w: wIn(field.width),
+    h: hIn(field.height),
+    valign: "top",
+    align: field.align || "left",
+    lineSpacingMultiple: field.lineHeight || 1.3,
+    wrap: true,
   });
-  slide.addText("MATERIAL NEEDED", {
-    x: W / 2 - 3.5, y: 1.6, w: 7, h: 1.1,
-    align: "center", valign: "middle", fontSize: 26, bold: true, color: WHITE, fontFace: "Arial",
-  });
-  const minutes = content && content.durationMinutes;
-  const activity = (content && content.activity) || "";
-  slide.addText(
-    [
-      { text: activity, options: { color: WHITE, fontSize: 22 } },
-      { text: minutes ? `\nDuração: ${minutes} minutos` : "", options: { color: RED, fontSize: 16, bold: true, breakLine: true } },
-    ],
-    { x: 1, y: 3.1, w: W - 2, h: 1.8, align: "center", fontFace: "Arial" }
-  );
-  return slide;
 }
 
-function slideObjectives(pres, content) {
-  const slide = baseSlide(pres);
-  slide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: 0.35, h: H, fill: { color: RED }, line: { type: "none" } });
-  slide.addText("OBJECTIVES", {
-    x: 1, y: 0.85, w: W - 2, h: 0.9, fontSize: 30, bold: true, color: RED, fontFace: "Arial",
-  });
-  const items = (content && content.objectives) || [];
-  slide.addText(
-    items.map((o) => ({ text: o, options: { bullet: { code: "2022", indent: 20 }, breakLine: true, paraSpaceAfter: 14 } })),
-    { x: 1.1, y: 2.0, w: W - 2.4, h: H - 3, fontSize: 20, color: WHITE, fontFace: "Arial", valign: "top" }
-  );
-  return slide;
+// Vocabulary grid: CSS grid-template-columns:1fr 1fr fills row-major
+// (item0→col0row0, item1→col1row0, item2→col0row1, ...), so even indices
+// go in the left text box and odd indices in the right one, in order.
+function addVocabGrid(slide, field, items) {
+  const colGapIn = 0.28;
+  const colWIn = (wIn(field.width) - colGapIn) / 2;
+  const left = (items || []).filter((_, i) => i % 2 === 0);
+  const right = (items || []).filter((_, i) => i % 2 === 1);
+  const toRuns = (col) =>
+    col.map((it, i) => ({
+      text: `${it.word}${it.translation ? " – " + it.translation : ""}`,
+      options: {
+        breakLine: i < col.length - 1,
+        fontFace: faceFor(field.font),
+        fontSize: pt(field.fontSize),
+        bold: field.fontWeight >= 600,
+        color: hex(field.color),
+        paraSpaceAfter: pt(field.fontSize) * 0.4,
+      },
+    }));
+  const baseOpts = {
+    y: yIn(field.top),
+    w: colWIn,
+    h: hIn(field.height),
+    valign: "top",
+    align: "left",
+    lineSpacingMultiple: field.lineHeight || 1.3,
+    wrap: true,
+  };
+  slide.addText(toRuns(left), { ...baseOpts, x: xIn(field.left) });
+  slide.addText(toRuns(right), { ...baseOpts, x: xIn(field.left) + colWIn + colGapIn });
 }
 
-function slideVocabulary(pres, content) {
-  const slide = baseSlide(pres, { bg: WHITE, barColor: RED });
-  slide.addText("VOCABULARY", {
-    x: 0.8, y: 0.55, w: W - 1.6, h: 0.7, fontSize: 22, bold: true, color: RED, fontFace: "Arial",
+function addIntroText(slide, field, value) {
+  const paragraphs = String(value || "").split(/\n{2,}/);
+  const runs = paragraphs.map((p, i) => ({
+    text: p,
+    options: {
+      breakLine: true,
+      fontFace: faceFor(field.font),
+      fontSize: pt(field.fontSize),
+      bold: field.fontWeight >= 600,
+      color: hex(field.color),
+      paraSpaceAfter: i < paragraphs.length - 1 ? pt(field.fontSize) * 0.6 : 0,
+    },
+  }));
+  slide.addText(runs, {
+    x: xIn(field.left),
+    y: yIn(field.top),
+    w: wIn(field.width),
+    h: hIn(field.height),
+    valign: "top",
+    align: field.align || "left",
+    lineSpacingMultiple: field.lineHeight || 1.3,
+    wrap: true,
   });
-  const words = (content && content.words) || [];
-  const cols = 2;
-  const rows = Math.ceil(words.length / cols);
-  const colW = (W - 1.8) / cols;
-  const rowH = 0.85;
-  const contentTop = 1.65;
-  const available = H - BAR - 0.3 - contentTop;
-  const totalH = rowH * rows;
-  const startY = contentTop + Math.max(0, (available - totalH) / 2);
-  words.forEach((w, i) => {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const x = 0.9 + col * colW;
-    const y = startY + row * rowH;
-    const parts = [{ text: w.word || "", options: { bold: true, italic: true, color: RED } }];
-    if (w.translation) parts.push({ text: `  —  ${w.translation}`, options: { color: BLACK } });
-    slide.addText(parts, { x, y, w: colW - 0.3, h: rowH - 0.1, fontSize: 16, fontFace: "Arial", valign: "middle" });
-  });
-  return slide;
 }
 
-function slideGrammar(pres, content) {
-  const slide = baseSlide(pres);
-  slide.addShape(pres.ShapeType.rect, {
-    x: 0, y: 0.85, w: W, h: 1.0, fill: { color: RED }, line: { type: "none" },
-  });
-  slide.addText("GRAMMAR POINT", {
-    x: 0, y: 0.85, w: W, h: 1.0, align: "center", valign: "middle", fontSize: 26, bold: true, color: WHITE, fontFace: "Arial",
-  });
-  const c = content || {};
-  const blocks = [];
-  if (c.teacherInstruction) blocks.push({ text: c.teacherInstruction, options: { italic: true, color: RED, breakLine: true, paraSpaceAfter: 12 } });
-  if (c.explanation) blocks.push({ text: c.explanation, options: { color: WHITE, breakLine: true, paraSpaceAfter: 12 } });
-  if (c.example) blocks.push({ text: c.example, options: { color: GRAY_LIGHT, italic: true } });
-  slide.addText(blocks, { x: 1.1, y: 2.3, w: W - 2.2, h: H - 3.2, fontSize: 18, fontFace: "Arial", valign: "top" });
-  return slide;
-}
-
-function slideIntroTitle(pres, content) {
-  const slide = baseSlide(pres);
-  slide.addText((content && content.title) || "", {
-    x: 1, y: H / 2 - 0.9, w: W - 2, h: 1.8,
-    align: "center", valign: "middle", fontSize: 34, bold: true, color: WHITE, fontFace: "Arial",
-  });
-  return slide;
-}
-
-function slideIntroText(pres, content) {
-  const slide = baseSlide(pres);
-  slide.addText((content && content.text) || "", {
-    x: 1.3, y: H / 2 - 1.2, w: W - 2.6, h: 2.4,
-    align: "center", valign: "middle", fontSize: 20, color: WHITE, fontFace: "Arial",
-  });
-  return slide;
-}
-
-function slideVideo(pres, content) {
-  const slide = baseSlide(pres);
-  slide.addShape(pres.ShapeType.ellipse, {
-    x: W / 2 - 0.55, y: H / 2 - 1.15, w: 1.1, h: 1.1, fill: { color: RED }, line: { type: "none" },
-  });
-  slide.addText("▶", { x: W / 2 - 0.55, y: H / 2 - 1.15, w: 1.1, h: 1.1, align: "center", valign: "middle", fontSize: 28, color: WHITE, fontFace: "Arial" });
-  slide.addText((content && content.title) || "Vídeo", {
-    x: 1, y: H / 2 + 0.1, w: W - 2, h: 0.8, align: "center", fontSize: 20, bold: true, color: WHITE, fontFace: "Arial",
-  });
-  return slide;
-}
-
-function slideConversation(pres, content) {
-  const slide = baseSlide(pres);
-  const c = content || {};
-  if (c.subtopic) {
-    slide.addShape(pres.ShapeType.roundRect, {
-      x: W / 2 - 1.8, y: 0.55, w: 3.6, h: 0.55, rectRadius: 0.27, fill: { color: RED }, line: { type: "none" },
+function addQaBlock(slide, field, lesson) {
+  const items = getQaItems(lesson, field.group, field.startIndex, field.count);
+  const runs = [];
+  items.forEach((item, i) => {
+    runs.push({
+      text: `${field.startIndex + i + 1}. ${item.question}`,
+      options: {
+        breakLine: true,
+        bold: field.questionWeight >= 600,
+        fontFace: faceFor(field.questionFont),
+        fontSize: pt(field.questionFontSize),
+        color: hex(field.color),
+      },
     });
-    slide.addText(c.subtopic.toUpperCase(), {
-      x: W / 2 - 1.8, y: 0.55, w: 3.6, h: 0.55, align: "center", valign: "middle", fontSize: 13, bold: true, color: WHITE, fontFace: "Arial",
+    (item.modelAnswers || []).forEach((ans, j) => {
+      const isLast = j === item.modelAnswers.length - 1;
+      runs.push({
+        text: ans,
+        options: {
+          breakLine: true,
+          italic: true,
+          fontFace: faceFor(field.answerFont),
+          fontSize: pt(field.answerFontSize),
+          color: hex(field.answerColor),
+          paraSpaceAfter: isLast ? pt(field.questionFontSize) * 0.8 : 0,
+        },
+      });
     });
-  }
-  const questions = c.questions || [];
-  const contentTop = c.subtopic ? 1.7 : 1.0;
-  const rowH = Math.min(1.4, (H - BAR - 0.3 - contentTop) / Math.max(questions.length, 1));
-  const totalH = rowH * questions.length;
-  const available = H - BAR - 0.3 - contentTop;
-  const startY = contentTop + Math.max(0, (available - totalH) / 2);
-  questions.forEach((q, i) => {
-    const y = startY + i * rowH;
-    const parts = [{ text: `${q.number}. ${q.question}`, options: { color: WHITE, breakLine: !!q.answerScaffold, paraSpaceAfter: 4 } }];
-    if (q.answerScaffold) parts.push({ text: q.answerScaffold, options: { color: RED, italic: true, fontSize: 15 } });
-    slide.addText(parts, { x: 1, y, w: W - 2, h: rowH, fontSize: 19, fontFace: "Arial", valign: "middle" });
   });
-  return slide;
+  if (runs.length) runs[runs.length - 1].options.breakLine = false;
+
+  slide.addText(runs, {
+    x: xIn(field.left),
+    y: yIn(field.top),
+    w: wIn(field.width),
+    h: hIn(field.height),
+    valign: "top",
+    align: field.align || "left",
+    lineSpacingMultiple: field.lineHeight || 1.3,
+    wrap: true,
+  });
 }
 
-function slideLanguageGame(pres, content) {
-  const slide = baseSlide(pres, { barColor: RED_DARK });
-  const questions = (content && content.questions) || [];
-  const rowH = (H - 1.6) / Math.max(questions.length, 1);
-  questions.forEach((q, i) => {
-    const y = 0.8 + i * rowH;
-    const optionsText = (q.options || []).map((o, oi) => `${"abc"[oi]}. ${o}`).join("    ");
-    slide.addText(
-      [
-        { text: q.prompt || "", options: { color: WHITE, bold: true, breakLine: true, paraSpaceAfter: 4 } },
-        { text: optionsText, options: { color: RED, fontSize: 15 } },
-      ],
-      { x: 1, y, w: W - 2, h: rowH, fontSize: 18, fontFace: "Arial", valign: "middle" }
-    );
-  });
-  return slide;
+function renderField(slide, field, lesson, pptx) {
+  if (field.kind === "badge") return addBadge(slide, field, pptx);
+  if (field.kind === "static") return addStatic(slide, field);
+  if (field.kind === "qaBlock") return addQaBlock(slide, field, lesson);
+
+  // dynamic
+  const value = buildDynamicValue(lesson, field.key);
+  if (field.key === "introText") return addIntroText(slide, field, value);
+  if (field.list && field.grid) return addVocabGrid(slide, field, value);
+  if (field.list) return addBulletList(slide, field, value);
+  return addSimpleDynamic(slide, field, value);
 }
 
-function slideEvaluation(pres, content) {
-  const slide = baseSlide(pres);
-  slide.addText("EVALUATION", {
-    x: 1, y: 0.85, w: W - 2, h: 0.9, fontSize: 28, bold: true, color: RED, fontFace: "Arial",
-  });
-  const questions = (content && content.questions) || [];
-  slide.addText(
-    questions.map((q) => ({ text: q, options: { bullet: { code: "2022", indent: 20 }, breakLine: true, paraSpaceAfter: 14 } })),
-    { x: 1.1, y: 2.0, w: W - 2.4, h: H - 3, fontSize: 19, color: WHITE, fontFace: "Arial", valign: "top" }
-  );
-  return slide;
-}
+function buildPptx(lesson) {
+  const pptx = new pptxgen();
+  pptx.defineLayout({ name: "FISK_16x9", width: SLIDE_W_IN, height: SLIDE_H_IN });
+  pptx.layout = "FISK_16x9";
+  pptx.author = "FISK — Conversation Maker";
+  pptx.title = lesson.coverTitle || "Conversation Maker";
 
-function slideClosing(pres, content) {
-  const slide = baseSlide(pres);
-  slide.addShape(pres.ShapeType.ellipse, {
-    x: W / 2 - 2.6, y: H / 2 - 2.6, w: 5.2, h: 5.2, fill: { color: RED, transparency: 88 }, line: { type: "none" },
+  LAYOUTS.forEach((layout) => {
+    const slide = pptx.addSlide();
+    const bgPath = path.join(__dirname, layout.bg);
+    slide.addImage({ path: bgPath, x: 0, y: 0, w: SLIDE_W_IN, h: SLIDE_H_IN });
+    layout.fields.forEach((field) => renderField(slide, field, lesson, pptx));
   });
-  slide.addText("Thank you!", {
-    x: 0.8, y: H / 2 - 1.1, w: W - 1.6, h: 1.1, align: "center", fontSize: 32, bold: true, color: WHITE, fontFace: "Arial",
-  });
-  slide.addText((content && content.title) || "", {
-    x: 0.8, y: H / 2 + 0.15, w: W - 1.6, h: 0.6, align: "center", fontSize: 16, color: RED, fontFace: "Arial",
-  });
-  return slide;
-}
 
-const BUILDERS = {
-  Cover: slideCover,
-  "Material Needed": slideMaterial,
-  Objectives: slideObjectives,
-  Vocabulary: slideVocabulary,
-  "Grammar Point": slideGrammar,
-  "Introduction Title": slideIntroTitle,
-  "Introduction Text": slideIntroText,
-  Video: slideVideo,
-  Conversation: slideConversation,
-  "Language Game": slideLanguageGame,
-  Evaluation: slideEvaluation,
-  Closing: slideClosing,
-};
+  return pptx;
+}
 
 /**
- * Build a .pptx for a single lesson/slidePlan pair and return it as a
- * Buffer (Node) ready to be sent as an HTTP response body.
+ * Build a .pptx for a single lesson and return it as a Buffer (Node) ready
+ * to be sent as an HTTP response body. slidePlan is no longer needed — the
+ * fixed 18-page layout (slide-layouts.js) and the lesson object are enough.
  */
-async function buildPptxBuffer(lesson, slidePlan) {
-  const pres = new pptxgen();
-  pres.defineLayout({ name: "FISK_16x9", width: W, height: H });
-  pres.layout = "FISK_16x9";
-  pres.author = "FISK — Conversation Maker";
-  pres.title = lesson.coverTitle || "Conversation Maker";
-
-  slidePlan.forEach((slide) => {
-    const builder = BUILDERS[slide.layout];
-    if (!builder) return;
-    builder(pres, slide.content);
-  });
-
-  const buffer = await pres.write({ outputType: "nodebuffer" });
-  return buffer;
+async function buildPptxBuffer(lesson) {
+  const pptx = buildPptx(lesson);
+  return pptx.write({ outputType: "nodebuffer" });
 }
 
-module.exports = { buildPptxBuffer };
+module.exports = { buildPptx, buildPptxBuffer };
