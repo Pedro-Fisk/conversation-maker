@@ -1,0 +1,9 @@
+{
+  "name": "conversation-maker-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Conversation Maker — FISK. Static frontend + Vercel serverless functions (generate-lesson, export-pptx).",
+  "dependencies": {
+    "pptxgenjs": "^4.0.1"
+  }
+}

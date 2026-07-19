@@ -170,6 +170,14 @@ input[type="text"]:focus, select:focus, textarea:focus{
   margin-top: 0.5rem;
 }
 
+.status-text{
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gray);
+}
+
+.status-text.is-error{ color: var(--red-dark); }
+
 .mock-badge{
   display: inline-block;
   background: #fff3cd;
@@ -197,13 +205,25 @@ input[type="text"]:focus, select:focus, textarea:focus{
   color: var(--white);
   padding: 1rem 1.5rem;
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem 1rem;
 }
 
-.deck-head h3{ margin: 0; font-size: 1.1rem; }
+.deck-head h3{ margin: 0; font-size: 1.1rem; flex: 1 1 auto; }
 .deck-head span{ font-size: 0.85rem; color: #d8d5d5; }
+
+.btn-download{
+  background: var(--white);
+  color: var(--black);
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  box-shadow: none;
+  flex: 0 0 auto;
+}
+.btn-download:hover{ background: var(--red); color: var(--white); transform: none; }
+.btn-download:disabled{ opacity: 0.6; cursor: not-allowed; }
 
 .slide-list{ padding: 0.75rem; }
 

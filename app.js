@@ -123,6 +123,39 @@
     }
   }
 
+  async function downloadPptx(output, btn) {
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Gerando .pptx...";
+    try {
+      const response = await fetch("/api/export-pptx", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ lesson: output.lesson, slidePlan: output.slidePlan }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || `Erro ${response.status} ao gerar o .pptx.`);
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const disposition = response.headers.get("content-disposition") || "";
+      const match = disposition.match(/filename="(.+?)"/);
+      a.download = match ? match[1] : "roteiro.pptx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message || "Não foi possível gerar o .pptx.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    }
+  }
+
   function renderDeck(output) {
     const deck = document.createElement("div");
     deck.className = "deck";
@@ -132,6 +165,12 @@
     head.innerHTML = `<h3>${escapeHtml(output.lesson.coverTitle)}</h3><span>${escapeHtml(
       output.lesson.coverSubtitle
     )} · ${output.slidePlan.length} slides</span>`;
+    const downloadBtn = document.createElement("button");
+    downloadBtn.type = "button";
+    downloadBtn.className = "btn btn-download";
+    downloadBtn.textContent = "Baixar .pptx";
+    downloadBtn.addEventListener("click", () => downloadPptx(output, downloadBtn));
+    head.appendChild(downloadBtn);
     deck.appendChild(head);
 
     const list = document.createElement("div");
