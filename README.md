@@ -20,6 +20,11 @@ Two environment variables must be set in the Vercel dashboard
   random visitors from burning API credits. Checked server-side in
   `api/generate-lesson.js`.
 
+Note: changing an environment variable in the Vercel dashboard does not
+update deployments that already exist — it only applies starting from the
+next deployment. Push a new commit (or use "Redeploy" in the dashboard)
+after adding/editing env vars for the change to take effect.
+
 ## Files
 
 - `index.html` — the form (access code, language, topic, grammar point,
