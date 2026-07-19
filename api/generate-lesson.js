@@ -100,13 +100,25 @@ Return a single JSON object with exactly these keys:
 }`;
 }
 
-function extractJson(text) {
+function extractJson(text, debugInfo) {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
   if (start === -1 || end === -1 || end < start) {
-    throw new Error("A resposta da IA não continha um JSON válido.");
+    throw new Error(
+      `A resposta da IA não continha um JSON válido. ${debugInfo} Trecho recebido: ${JSON.stringify(
+        text.slice(0, 400)
+      )}`
+    );
   }
-  return JSON.parse(text.slice(start, end + 1));
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch (parseErr) {
+    throw new Error(
+      `Falha ao interpretar o JSON da IA (${parseErr.message}). ${debugInfo} Trecho: ${JSON.stringify(
+        text.slice(0, 400)
+      )}`
+    );
+  }
 }
 
 async function callClaude({ language, topic, level, grammarPoint }) {
@@ -119,7 +131,7 @@ async function callClaude({ language, topic, level, grammarPoint }) {
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 4096,
+      max_tokens: 8000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: buildUserPrompt({ language, topic, level, grammarPoint }) }],
     }),
@@ -127,12 +139,16 @@ async function callClaude({ language, topic, level, grammarPoint }) {
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`Anthropic API respondeu ${response.status}: ${errText.slice(0, 300)}`);
+    throw new Error(`Anthropic API respondeu ${response.status}: ${errText.slice(0, 500)}`);
   }
 
   const data = await response.json();
-  const text = (data.content && data.content[0] && data.content[0].text) || "";
-  const parsed = extractJson(text);
+  const textBlock = (data.content || []).find((b) => b.type === "text");
+  const text = (textBlock && textBlock.text) || "";
+  const debugInfo = `model=${data.model} stop_reason=${data.stop_reason} blocks=${
+    (data.content || []).map((b) => b.type).join(",")
+  }.`;
+  const parsed = extractJson(text, debugInfo);
 
   // Force known fields instead of trusting the model's echo, and enforce
   // the "never invent a grammar point" rule at the code level too.
