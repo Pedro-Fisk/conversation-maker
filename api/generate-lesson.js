@@ -42,10 +42,15 @@ const LEVEL_GUIDANCE = {
     prompt:
       "Advanced level: nuanced/less common vocabulary, questions that invite critical thinking, comparison or hypothetical reasoning, model answers that are fluent and idiomatic, using varied sentence structure.",
   },
-  spanish_b1: {
+  spanish_basic: {
     label: "Spanish B1",
     prompt:
-      "Spanish B1 level. Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). B1 = intermediate: everyday vocabulary, common tenses (presente, pretérito, futuro próximo), natural conversational Spanish a B1 student could both understand and answer.",
+      "Spanish B1 level (CEFR — Common European Framework of Reference for Languages). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). B1 = intermediate: everyday vocabulary, common tenses (presente, pretérito, futuro próximo), natural conversational Spanish a B1 student could both understand and answer.",
+  },
+  spanish_advanced: {
+    label: "Spanish C1",
+    prompt:
+      "Spanish C1 level (CEFR — Common European Framework of Reference for Languages). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). C1 = advanced/proficient: sophisticated and less frequent vocabulary, idiomatic expressions, complex grammatical structures (subjuntivo across multiple tenses, conditional, passive voice, elaborate subordinate clauses), questions that invite nuanced argumentation, critical analysis and hypothetical/counterfactual reasoning, model answers that are fluent, idiomatic and stylistically varied — close to a proficient near-native register.",
   },
 };
 
@@ -65,6 +70,7 @@ const { recordTeacherActivity } = require("../canva-lib");
 const { appendActivityLog } = require("../activity-log");
 
 const ENGLISH_LEVELS = ["basic", "intermediate", "advanced"];
+const SPANISH_LEVELS = ["spanish_basic", "spanish_advanced"];
 const MODEL = "claude-sonnet-5";
 
 // Teto de buscas na web POR GERAÇÃO quando o professor marca o checkbox
@@ -224,7 +230,13 @@ module.exports = async function handler(req, res) {
 
   let levels;
   if (language === "spanish") {
-    levels = ["spanish_b1"];
+    // Espanhol agora também tem dois níveis (QECR): Básico B1 e Avançado
+    // C1 — antes era uma única versão fixa em B1.
+    if (!levelChoice) {
+      res.status(400).json({ error: "Nível é obrigatório para espanhol." });
+      return;
+    }
+    levels = levelChoice === "all_levels" ? SPANISH_LEVELS.slice() : [levelChoice];
   } else {
     if (!levelChoice) {
       res.status(400).json({ error: "Nível é obrigatório para inglês." });
