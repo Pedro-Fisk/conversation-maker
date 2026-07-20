@@ -60,6 +60,9 @@ const AGE_GUIDANCE = {
 };
 const DEFAULT_AGE_GROUP = "adults";
 
+const { waitUntil } = require("@vercel/functions");
+const { recordTeacherActivity } = require("../canva-lib");
+
 const ENGLISH_LEVELS = ["basic", "intermediate", "advanced"];
 const MODEL = "claude-sonnet-5";
 
@@ -204,7 +207,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch } = req.body || {};
+  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName } = req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
 
@@ -248,6 +251,14 @@ module.exports = async function handler(req, res) {
     }
 
     res.status(200).json({ lessons });
+
+    // Contabiliza a atividade por professor (apenas estatística interna;
+    // o nome não entra na aula nem no arquivo). Roda após a resposta.
+    waitUntil(
+      recordTeacherActivity(teacherName, lessons.length).catch((err) =>
+        console.error("[stats] falha ao registrar:", err.message)
+      )
+    );
   } catch (err) {
     console.error(err);
     res.status(502).json({ error: "Falha ao gerar a aula. Tente novamente em instantes." });

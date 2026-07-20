@@ -11,7 +11,9 @@
  * a browser download.
  */
 
+const { waitUntil } = require("@vercel/functions");
 const { buildPptxBuffer } = require("../pptx-builder");
+const { uploadPptxToCanva } = require("../canva-lib");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
@@ -47,6 +49,15 @@ module.exports = async function handler(req, res) {
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.status(200).send(buffer);
+
+    // Cópia automática para o Canva (pasta "Uploads - Conversation Maker"),
+    // DEPOIS de responder: waitUntil mantém a função viva sem atrasar o
+    // download do professor. Falhas aqui só vão para o log, nunca para o
+    // usuário.
+    const designTitle = `AC - ${cleanPart(lesson.coverTitle) || "Atividade"} - ${cleanPart(lesson.coverLevel) || "Nivel"}`;
+    waitUntil(
+      uploadPptxToCanva(buffer, designTitle).catch((err) => console.error("[canva] upload falhou:", err.message))
+    );
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Falha ao gerar o arquivo .pptx." });
