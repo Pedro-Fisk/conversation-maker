@@ -343,13 +343,41 @@
       })
     );
 
-    head.appendChild(pdfBtn);
-    head.appendChild(pptxBtn);
+    // Botões de download ficam no rodapé do deck: o professor revisa o
+    // conteúdo primeiro e encontra os botões no fim, depois de editar.
+    const foot = document.createElement("div");
+    foot.className = "deck-foot";
+    const footLabel = document.createElement("span");
+    footLabel.className = "deck-foot-label";
+    footLabel.textContent = "Tudo revisado? Baixe a versão final:";
+    foot.appendChild(footLabel);
+    foot.appendChild(pdfBtn);
+    foot.appendChild(pptxBtn);
+
     deck.appendChild(head);
     deck.appendChild(renderLessonPreview(lesson));
+    deck.appendChild(foot);
 
     return deck;
   }
+
+  // ---- Modo escuro ----
+  (function setupTheme() {
+    const toggle = document.getElementById("themeToggle");
+    if (!toggle) return;
+    const apply = (dark) => {
+      document.body.classList.toggle("theme-dark", dark);
+      toggle.textContent = dark ? "☀️" : "🌙";
+    };
+    let saved = null;
+    try { saved = localStorage.getItem("cm-theme"); } catch (e) {}
+    apply(saved === "dark");
+    toggle.addEventListener("click", () => {
+      const dark = !document.body.classList.contains("theme-dark");
+      apply(dark);
+      try { localStorage.setItem("cm-theme", dark ? "dark" : "light"); } catch (e) {}
+    });
+  })();
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();

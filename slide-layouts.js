@@ -29,9 +29,12 @@
  *   black      #161414
  *   gray       #6F6A6A
  *
- * Fonts: brush-marker headings approximate Canva's handwritten font with
- * "Permanent Marker" (Google Fonts). Body copy uses "Poppins" to match the
- * clean sans-serif used for the real content in the template.
+ * Fonts: section headings use "Aptos" bold (ships with modern Microsoft
+ * Office, so the .pptx renders correctly on teachers' machines), falling
+ * back to "Poppins" ExtraBold in the HTML/PDF renderer (visually very
+ * close). Body copy uses "Poppins" to match the clean sans-serif used for
+ * the real content in the template. ("Permanent Marker" was dropped: most
+ * machines don't have it and PowerPoint silently fell back to Calibri.)
  */
 
 const CANVAS_W = 1920;
@@ -50,7 +53,7 @@ function box(top, left, width, height) {
   };
 }
 
-const FONT_MARKER = "'Permanent Marker', cursive";
+const FONT_MARKER = "'Aptos', 'Poppins', sans-serif";
 const FONT_BODY = "'Poppins', sans-serif";
 
 const RED = "#D81F26";
@@ -148,8 +151,8 @@ const LAYOUTS = [
         ...box(746.5, 154, 1526, 210),
         value: "STRUCTURE OF THE ACTIVITY",
         font: FONT_MARKER,
-        fontSize: 74,
-        fontWeight: 400,
+        fontSize: 96,
+        fontWeight: 800,
         color: BLACK,
         align: "center",
       },
@@ -161,12 +164,12 @@ const LAYOUTS = [
     bg: "assets/bg/03-divider-objetivo.png",
     fields: [
       {
-        kind: "static",
+        kind: "dynamic",
+        key: "objectivesDividerTitle",
         ...box(341, 167, 1526, 299),
-        value: "OBJETIVO",
         font: FONT_MARKER,
-        fontSize: 94,
-        fontWeight: 400,
+        fontSize: 150,
+        fontWeight: 800,
         color: BLACK,
         align: "center",
       },
@@ -178,9 +181,9 @@ const LAYOUTS = [
     bg: "assets/bg/04-objectives.png",
     fields: [
       {
-        kind: "static",
+        kind: "dynamic",
+        key: "objectivesTitle",
         ...box(87.8, 273.6, 1568.4, 100),
-        value: "OBJETIVO DA ATIVIDADE",
         font: FONT_BODY,
         fontSize: 52,
         fontWeight: 700,
@@ -213,8 +216,8 @@ const LAYOUTS = [
         ...box(357.8, 68.1, 1724.7, 272.7),
         value: "VOCABULARY",
         font: FONT_MARKER,
-        fontSize: 90,
-        fontWeight: 400,
+        fontSize: 150,
+        fontWeight: 800,
         color: BLACK,
         align: "center",
       },
@@ -250,8 +253,8 @@ const LAYOUTS = [
         key: "introTitle",
         ...box(341, 167, 1526, 299),
         font: FONT_MARKER,
-        fontSize: 86,
-        fontWeight: 400,
+        fontSize: 140,
+        fontWeight: 800,
         color: BLACK,
         align: "center",
       },
@@ -285,8 +288,8 @@ const LAYOUTS = [
         ...box(595, 170.6, 1526, 299),
         value: "CONVERSATION",
         font: FONT_MARKER,
-        fontSize: 88,
-        fontWeight: 400,
+        fontSize: 150,
+        fontWeight: 800,
         color: BLACK,
         align: "center",
       },
@@ -320,8 +323,8 @@ const LAYOUTS = [
         ...box(595, 170.6, 1526, 299),
         value: "LANGUAGE GAME",
         font: FONT_MARKER,
-        fontSize: 74,
-        fontWeight: 400,
+        fontSize: 130,
+        fontWeight: 800,
         color: BLACK,
         align: "center",
       },
@@ -349,8 +352,8 @@ const LAYOUTS = [
         ...box(595, 170.6, 1526, 299),
         value: "EVALUATION",
         font: FONT_MARKER,
-        fontSize: 88,
-        fontWeight: 400,
+        fontSize: 150,
+        fontWeight: 800,
         color: BLACK,
         align: "center",
       },

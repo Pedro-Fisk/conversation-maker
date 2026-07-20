@@ -31,7 +31,7 @@ const wIn = (pct) => (pct / 100) * SLIDE_W_IN;
 const hIn = (pct) => (pct / 100) * SLIDE_H_IN;
 const pt = (px) => Math.round(px * PT_PER_PX * 10) / 10;
 const hex = (c) => String(c || "").replace("#", "");
-const faceFor = (cssFont) => (cssFont === FONT_MARKER ? "Permanent Marker" : "Poppins");
+const faceFor = (cssFont) => (cssFont === FONT_MARKER ? "Aptos" : "Poppins");
 
 function addStatic(slide, field) {
   slide.addText(field.value, {

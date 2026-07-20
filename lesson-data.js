@@ -22,6 +22,10 @@ function buildDynamicValue(lesson, key) {
       return `Conversation about ${lesson.topic || lesson.coverTitle || ""}`;
     case "introTitle":
       return lesson.language === "spanish" ? "INTRODUCCIÓN" : "INTRODUCTION";
+    case "objectivesDividerTitle":
+      return lesson.language === "spanish" ? "OBJETIVOS" : "GOALS";
+    case "objectivesTitle":
+      return lesson.language === "spanish" ? "OBJETIVOS DE LA ACTIVIDAD" : "GOALS OF THE ACTIVITY";
     case "objectives":
       return lesson.objectives || [];
     case "vocabulary":

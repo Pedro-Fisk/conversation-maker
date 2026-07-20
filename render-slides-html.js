@@ -102,19 +102,12 @@ function buildFontFaceCss() {
     })
     .join("\n");
 
-  const markerB64 = fontFaceBase64(
-    "@fontsource/permanent-marker/files/permanent-marker-latin-400-normal.woff2"
-  );
-  const markerFace = `
-  @font-face {
-    font-family: 'Permanent Marker';
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url(data:font/woff2;base64,${markerB64}) format('woff2');
-  }`;
-
-  return poppinsFaces + "\n" + markerFace;
+  // Section headings use "Aptos" with a Poppins ExtraBold fallback. Aptos
+  // is a Microsoft font (not freely embeddable), so the headless-Chromium
+  // PDF path simply falls back to the embedded Poppins 800 — visually very
+  // close to Aptos bold. The .pptx keeps the real "Aptos" fontFace, which
+  // modern Office installs ship with.
+  return poppinsFaces;
 }
 
 function fieldStyle(field) {
