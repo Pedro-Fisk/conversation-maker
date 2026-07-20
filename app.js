@@ -343,7 +343,7 @@
 
     const pdfBtn = document.createElement("button");
     pdfBtn.type = "button";
-    pdfBtn.className = "btn btn-download";
+    pdfBtn.className = "btn btn-download btn-pdf";
     pdfBtn.textContent = "Baixar PDF";
     pdfBtn.addEventListener("click", () =>
       downloadFile({ endpoint: "/api/export-pdf", lesson, extension: "pdf", btn: pdfBtn, busyLabel: "Gerando PDF..." })
@@ -351,7 +351,7 @@
 
     const pptxBtn = document.createElement("button");
     pptxBtn.type = "button";
-    pptxBtn.className = "btn btn-download";
+    pptxBtn.className = "btn btn-download btn-pptx";
     pptxBtn.textContent = "Baixar .pptx";
     pptxBtn.addEventListener("click", () =>
       downloadFile({
@@ -426,6 +426,8 @@
 
       results.innerHTML = "";
       lessons.forEach((lesson) => results.appendChild(renderDeck(lesson)));
+      // Mais de um nível: decks lado a lado (desktop) / carrossel (mobile).
+      results.classList.toggle("multi", lessons.length > 1);
       results.classList.add("is-visible");
       results.scrollIntoView({ behavior: "smooth", block: "start" });
       setStatus("");

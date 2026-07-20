@@ -286,6 +286,36 @@ input[type="text"]:focus, input[type="password"]:focus, select:focus, textarea:f
 #results{ display: none; }
 #results.is-visible{ display: block; margin-top: 3rem; }
 
+/* "Todos os níveis": três decks lado a lado no desktop, ocupando mais
+ * largura que o formulário (o bloco escapa do .wrap e centraliza na
+ * viewport). No mobile, vira um carrossel horizontal com swipe. */
+#results.is-visible.multi{
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+@media (min-width: 1100px){
+  #results.is-visible.multi{
+    width: min(94vw, 1500px);
+    margin-left: calc(50% - min(47vw, 750px));
+  }
+  #results.multi .deck{ flex: 1 1 0; min-width: 0; }
+}
+
+@media (max-width: 1099px){
+  #results.is-visible.multi{
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.75rem;
+  }
+  #results.multi .deck{
+    flex: 0 0 90%;
+    scroll-snap-align: center;
+  }
+}
+
 .deck{
   border: 2px solid var(--black);
   border-radius: 18px;
@@ -308,15 +338,19 @@ input[type="text"]:focus, input[type="password"]:focus, select:focus, textarea:f
 .deck-head span{ font-size: 0.85rem; color: #d8d5d5; }
 
 .btn-download{
-  background: var(--black);
-  color: var(--white);
+  color: #ffffff;
   padding: 0.6rem 1.2rem;
   font-size: 0.9rem;
   box-shadow: none;
   flex: 0 0 auto;
 }
-.btn-download:hover{ background: var(--red); color: #ffffff; transform: none; }
 .btn-download:disabled{ opacity: 0.6; cursor: not-allowed; }
+
+.btn-pdf{ background: var(--green); }
+.btn-pdf:hover{ background: #2b9377; transform: none; }
+
+.btn-pptx{ background: var(--green-dark); }
+.btn-pptx:hover{ background: #1f6f5b; transform: none; }
 
 .deck-foot{
   display: flex;
@@ -485,12 +519,6 @@ body.theme-dark .edit-note{
   border-color: #7a5c00;
   color: #f1d67a;
 }
-
-body.theme-dark .btn-download{
-  background: #f2efef;
-  color: #171414;
-}
-body.theme-dark .btn-download:hover{ background: var(--red); color: #ffffff; }
 
 body.theme-dark .btn-primary:disabled{
   background: var(--gray-light);
