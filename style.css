@@ -136,6 +136,24 @@ input[type="text"]:focus, select:focus, textarea:focus{
 
 .hint-lead{ margin: 0 0 0.75rem; line-height: 1.45; }
 
+.checkbox-row{
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 1rem 0 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.checkbox-row input[type="checkbox"]{
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--green);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
 /* Tópico + botão de microfone */
 .topic-wrap{ position: relative; }
 .topic-wrap textarea{

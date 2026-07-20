@@ -31,11 +31,11 @@
     statusEl.classList.toggle("is-error", Boolean(isError));
   }
 
-  async function fetchLessons({ accessCode, language, topic, levelChoice, ageGroup }) {
+  async function fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch }) {
     const response = await fetch("/api/generate-lesson", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ accessCode, language, topic, levelChoice, ageGroup }),
+      body: JSON.stringify({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -394,6 +394,8 @@
     const topic = topicEl.value.trim();
     const levelChoice = language === "english" ? selectedValue(levelChoices) : null;
     const ageGroup = selectedValue(ageChoices);
+    const webSearchEl = document.getElementById("webSearch");
+    const useWebSearch = Boolean(webSearchEl && webSearchEl.checked);
 
     if (!topic || !accessCode) return;
 
@@ -403,7 +405,7 @@
     results.classList.remove("is-visible");
 
     try {
-      const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, ageGroup });
+      const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch });
 
       results.innerHTML = "";
       lessons.forEach((lesson) => results.appendChild(renderDeck(lesson)));
