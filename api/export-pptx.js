@@ -28,15 +28,24 @@ module.exports = async function handler(req, res) {
 
   try {
     const buffer = await buildPptxBuffer(lesson);
-    const safeName = (lesson.coverTitle || "conversation-maker")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
+
+    // Nome do arquivo no padrão "AC - [Título] - [Nível].pptx". Mantém o
+    // título legível (espaços e maiúsculas), removendo apenas acentos (o
+    // header HTTP não aceita caracteres fora de latin1 com segurança) e
+    // caracteres proibidos em nomes de arquivo.
+    const cleanPart = (s) =>
+      String(s || "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[\\/:*?"<>|]+/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    const fileName = `AC - ${cleanPart(lesson.coverTitle) || "Atividade"} - ${
+      cleanPart(lesson.coverLevel) || "Nivel"
+    }.pptx`;
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
-    res.setHeader("Content-Disposition", `attachment; filename="${safeName || "roteiro"}.pptx"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.status(200).send(buffer);
   } catch (err) {
     console.error(err);
