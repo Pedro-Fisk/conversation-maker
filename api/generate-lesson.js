@@ -207,25 +207,19 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const lessons = [];
-    let sharedObjectives = null;
-    let sharedVocabulary = null;
+    // As chamadas rodam em PARALELO (antes eram sequenciais): com três
+    // níveis, o tempo total caía fora do maxDuration e o Vercel devolvia
+    // 504. Em paralelo, o tempo total é o da chamada mais lenta.
+    const lessons = await Promise.all(
+      levels.map((level) => callClaude({ language, topic, level, ageGroup: resolvedAgeGroup }))
+    );
 
-    for (const level of levels) {
-      const lesson = await callClaude({ language, topic, level, ageGroup: resolvedAgeGroup });
-
-      // Keep objectives + vocabulary consistent across the whole "todos os
-      // níveis" batch for one topic, so the three decks describe the same
-      // lesson at different depths rather than drifting apart.
-      if (sharedObjectives === null) {
-        sharedObjectives = lesson.objectives;
-        sharedVocabulary = lesson.vocabulary;
-      } else {
-        lesson.objectives = sharedObjectives;
-        lesson.vocabulary = sharedVocabulary;
-      }
-
-      lessons.push(lesson);
+    // Keep objectives + vocabulary consistent across the whole "todos os
+    // níveis" batch for one topic, so the three decks describe the same
+    // lesson at different depths rather than drifting apart.
+    for (let i = 1; i < lessons.length; i++) {
+      lessons[i].objectives = lessons[0].objectives;
+      lessons[i].vocabulary = lessons[0].vocabulary;
     }
 
     res.status(200).json({ lessons });
