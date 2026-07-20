@@ -62,6 +62,7 @@ const DEFAULT_AGE_GROUP = "adults";
 
 const { waitUntil } = require("@vercel/functions");
 const { recordTeacherActivity } = require("../canva-lib");
+const { appendActivityLog } = require("../activity-log");
 
 const ENGLISH_LEVELS = ["basic", "intermediate", "advanced"];
 const MODEL = "claude-sonnet-5";
@@ -258,6 +259,16 @@ module.exports = async function handler(req, res) {
       recordTeacherActivity(teacherName, lessons.length).catch((err) =>
         console.error("[stats] falha ao registrar:", err.message)
       )
+    );
+
+    // Log persistente (GitHub): quem gerou o quê e quando.
+    waitUntil(
+      appendActivityLog({
+        teacherName,
+        language: language === "spanish" ? "espanhol" : "inglês",
+        levels: levels.map((lv) => LEVEL_GUIDANCE[lv].label),
+        topic,
+      }).catch((err) => console.error("[log] falha ao gravar:", err.message))
     );
   } catch (err) {
     console.error(err);
