@@ -18,6 +18,13 @@
   const topicEl = document.getElementById("topic");
   const micBtn = document.getElementById("micBtn");
   const micHint = document.getElementById("micHint");
+  const spinnerEl = document.getElementById("spinner");
+  const genNoteEl = document.getElementById("genNote");
+
+  function setGenerating(on) {
+    if (spinnerEl) spinnerEl.classList.toggle("is-hidden", !on);
+    if (genNoteEl) genNoteEl.classList.toggle("is-hidden", !on);
+  }
 
   function setStatus(text, isError) {
     statusEl.textContent = text || "";
@@ -391,7 +398,8 @@
     if (!topic || !accessCode) return;
 
     generateBtn.disabled = true;
-    setStatus("Gerando com a IA... isso pode levar até um ou dois minutos.");
+    setStatus("Gerando com a IA...");
+    setGenerating(true);
     results.classList.remove("is-visible");
 
     try {
@@ -406,6 +414,7 @@
       setStatus(err.message || "Não foi possível gerar a aula.", true);
     } finally {
       generateBtn.disabled = false;
+      setGenerating(false);
     }
   });
 })();
