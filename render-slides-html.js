@@ -21,9 +21,13 @@
  *     vocabulary: { word: string, translation: string }[8],
  *     introText: string,                 // 1 short paragraph (Basic) or 2 paragraphs
  *                                         // joined with a blank line (Intermediate/Advanced)
- *     conversation: { question: string, modelAnswers: [string, string] }[9],
- *     languageGame: { question: string, modelAnswers: [string, string] }[6],
- *     evaluation: { question: string, modelAnswers: [string, string] }[2],
+ *     conversation: { question: string, modelAnswers: string[0-2] }[9],
+ *     languageGame: { question: string, options: string[3], correctIndex: 0|1|2 }[6],
+ *                                         // multiple choice, not modelAnswers — see LANGUAGE
+ *                                         // GAME guidance in api/generate-lesson.js
+ *     evaluation: { question: string, modelAnswers: string[0-2] }[2],
+ *                                         // modelAnswers length/style varies by level — see the
+ *                                         // MODEL ANSWERS guidance in api/generate-lesson.js
  *   }
  *
  * Every AI-generated string is treated as untrusted text and HTML-escaped
@@ -226,12 +230,58 @@ function renderQaBlock(field, items) {
   return `<div style="${style}"><div style="width:100%;">${blocks}</div></div>`;
 }
 
+// Language game vira múltipla escolha (3 opções, 1 certa) em vez de
+// modelAnswers abertas — mesma caixa/posição do template, só o conteúdo
+// interno muda. A opção certa ganha uma bolinha verde na frente, dando
+// já uma pista visual de qual é a resposta (uma versão estática do que a
+// futura animação clique-a-clique vai revelar aos poucos).
+const CORRECT_OPTION_COLOR = "#1F9D55";
+
+function renderMultipleChoiceBlock(field, items) {
+  const style = fieldStyle(field);
+  const letters = ["A", "B", "C"];
+  const blocks = items
+    .map((item, i) => {
+      const qStyle = [
+        `font-family:${field.questionFont}`,
+        `font-size:${field.questionFontSize}px`,
+        `font-weight:${field.questionWeight}`,
+        `color:${field.color}`,
+        `line-height:${field.lineHeight || 1.3}`,
+      ].join(";");
+      const options = (item.options || [])
+        .map((opt, oi) => {
+          const isCorrect = oi === item.correctIndex;
+          const aStyle = [
+            `font-family:${field.answerFont}`,
+            `font-size:${field.answerFontSize}px`,
+            `font-weight:${isCorrect ? 700 : field.answerWeight}`,
+            `color:${isCorrect ? CORRECT_OPTION_COLOR : field.answerColor}`,
+            `line-height:${field.lineHeight || 1.3}`,
+            isCorrect ? "" : "font-style:italic",
+          ].join(";");
+          const marker = isCorrect ? "&#9679; " : "";
+          return `<div style="${aStyle}">${marker}${letters[oi] || oi + 1}) ${escapeHtml(opt)}</div>`;
+        })
+        .join("");
+      return `<div style="margin-bottom:${field.blockSpacing || "1.1em"};">
+        <div style="${qStyle}">${field.startIndex + i + 1}. ${escapeHtml(item.question)}</div>
+        ${options}
+      </div>`;
+    })
+    .join("");
+  return `<div style="${style}"><div style="width:100%;">${blocks}</div></div>`;
+}
+
 function renderField(field, lesson) {
   if (field.kind === "static" || field.kind === "badge") {
     return renderTextField(field);
   }
   if (field.kind === "qaBlock") {
     const items = getQaItems(lesson, field.group, field.startIndex, field.count);
+    if (field.group === "languageGame") {
+      return renderMultipleChoiceBlock(field, items);
+    }
     return renderQaBlock(field, items);
   }
   // dynamic

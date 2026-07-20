@@ -283,7 +283,57 @@ editField(lesson.introText, (v) => { lesson.introText = v; }, { multiline: true,
 );
 });
 
-// Blocos de perguntas com 2 respostas-modelo cada
+// Blocos de perguntas com 0-2 respostas-modelo cada (o número e o estilo
+// variam por nível — ver a orientação MODEL ANSWERS em
+// api/generate-lesson.js: nem toda pergunta ganha modelo, e quando ganha
+// costuma ser só um começo de frase, não uma resposta pronta). O professor
+// pode adicionar ou remover modelos livremente aqui.
+const MAX_MODEL_ANSWERS = 2;
+
+function renderAnswers(container, list, i) {
+container.innerHTML = "";
+const item = list[i];
+const answers = Array.isArray(item.modelAnswers) ? item.modelAnswers : (item.modelAnswers = []);
+
+if (answers.length === 0) {
+const hint = document.createElement("span");
+hint.className = "edit-answer-hint";
+hint.textContent = "Pergunta aberta — sem resposta-modelo.";
+container.appendChild(hint);
+}
+
+answers.forEach((ans, a) => {
+const row = document.createElement("div");
+row.className = "edit-answer-row";
+row.appendChild(
+editField(ans, (v) => { answers[a] = v; }, { multiline: true, rows: 1, placeholder: "resposta-modelo (ex.: \"I think that...\")" })
+);
+const removeBtn = document.createElement("button");
+removeBtn.type = "button";
+removeBtn.className = "edit-answer-remove";
+removeBtn.textContent = "×";
+removeBtn.setAttribute("aria-label", "Remover esta resposta-modelo");
+removeBtn.addEventListener("click", () => {
+answers.splice(a, 1);
+renderAnswers(container, list, i);
+});
+row.appendChild(removeBtn);
+container.appendChild(row);
+});
+
+if (answers.length < MAX_MODEL_ANSWERS) {
+const addBtn = document.createElement("button");
+addBtn.type = "button";
+addBtn.className = "edit-answer-add";
+addBtn.textContent = "+ Adicionar resposta-modelo";
+addBtn.addEventListener("click", () => {
+answers.push("");
+renderAnswers(container, list, i);
+});
+container.appendChild(addBtn);
+}
+}
+
 function addQASection(label, list) {
 addSection(label, (body) => {
 list.forEach((q, i) => {
@@ -304,23 +354,77 @@ ansLabel.className = "edit-label";
 ansLabel.textContent = "Respostas-modelo";
 card.appendChild(ansLabel);
 
-const answers = q.modelAnswers || (q.modelAnswers = ["", ""]);
-const grid = document.createElement("div");
-grid.className = "edit-answers-grid";
-for (let a = 0; a < 2; a++) {
-if (answers[a] == null) answers[a] = "";
-grid.appendChild(
-editField(answers[a], (v) => { list[i].modelAnswers[a] = v; }, { multiline: true, rows: 1 })
-);
+const answersContainer = document.createElement("div");
+answersContainer.className = "edit-answers-list";
+card.appendChild(answersContainer);
+renderAnswers(answersContainer, list, i);
+
+body.appendChild(card);
+});
+});
 }
-card.appendChild(grid);
+
+// Language game é múltipla escolha (pergunta + 3 opções, uma marcada como
+// certa) em vez de perguntas abertas com respostas-modelo — editor
+// separado do addQASection acima.
+function addLanguageGameSection(list) {
+addSection("Language Game", (body) => {
+list.forEach((q, i) => {
+const card = document.createElement("div");
+card.className = "edit-qa";
+
+const num = document.createElement("span");
+num.className = "edit-qa-num";
+num.textContent = "Pergunta " + (i + 1);
+card.appendChild(num);
+
+card.appendChild(
+editField(q.question, (v) => { list[i].question = v; }, { multiline: true, rows: 1 })
+);
+
+const optLabel = document.createElement("span");
+optLabel.className = "edit-label";
+optLabel.textContent = "Opções (marque a correta)";
+card.appendChild(optLabel);
+
+const options = Array.isArray(q.options) ? q.options : (q.options = ["", "", ""]);
+while (options.length < 3) options.push("");
+if (list[i].correctIndex == null) list[i].correctIndex = 0;
+const radioName = "lg-correct-" + i + "-" + Math.random().toString(36).slice(2, 8);
+
+const optionsContainer = document.createElement("div");
+optionsContainer.className = "edit-mc-list";
+options.slice(0, 3).forEach((opt, oi) => {
+const row = document.createElement("label");
+row.className = "edit-mc-row";
+
+const radio = document.createElement("input");
+radio.type = "radio";
+radio.name = radioName;
+radio.checked = list[i].correctIndex === oi;
+radio.setAttribute("aria-label", "Marcar como resposta correta");
+radio.addEventListener("change", () => { list[i].correctIndex = oi; });
+row.appendChild(radio);
+
+row.appendChild(
+editField(opt, (v) => { list[i].options[oi] = v; }, {
+multiline: true,
+rows: 1,
+placeholder: "opção " + String.fromCharCode(65 + oi),
+})
+);
+
+optionsContainer.appendChild(row);
+});
+card.appendChild(optionsContainer);
+
 body.appendChild(card);
 });
 });
 }
 
 addQASection("Conversação", lesson.conversation);
-addQASection("Language Game", lesson.languageGame);
+addLanguageGameSection(lesson.languageGame);
 addQASection("Avaliação", lesson.evaluation);
 
 return sections;

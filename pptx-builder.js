@@ -213,9 +213,66 @@ function addQaBlock(slide, field, lesson) {
   });
 }
 
+// Language game é múltipla escolha (3 opções, 1 certa) em vez de
+// modelAnswers abertas — mesma caixa/posição do template. A opção certa
+// ganha uma bolinha verde na frente (pista visual estática; uma futura
+// versão animada pode revelar isso clique a clique).
+const CORRECT_OPTION_COLOR = "1F9D55";
+const OPTION_LETTERS = ["A", "B", "C"];
+
+function addMultipleChoiceBlock(slide, field, lesson) {
+  const items = getQaItems(lesson, field.group, field.startIndex, field.count);
+  const runs = [];
+  items.forEach((item, i) => {
+    runs.push({
+      text: `${field.startIndex + i + 1}. ${item.question}`,
+      options: {
+        breakLine: true,
+        bold: field.questionWeight >= 600,
+        fontFace: faceFor(field.questionFont),
+        fontSize: pt(field.questionFontSize),
+        color: hex(field.color),
+      },
+    });
+    const options = item.options || [];
+    options.forEach((opt, oi) => {
+      const isCorrect = oi === item.correctIndex;
+      const isLast = oi === options.length - 1;
+      const marker = isCorrect ? "● " : "";
+      runs.push({
+        text: `${marker}${OPTION_LETTERS[oi] || oi + 1}) ${opt}`,
+        options: {
+          breakLine: true,
+          italic: !isCorrect,
+          bold: isCorrect,
+          fontFace: faceFor(field.answerFont),
+          fontSize: pt(field.answerFontSize),
+          color: isCorrect ? CORRECT_OPTION_COLOR : hex(field.answerColor),
+          paraSpaceAfter: isLast ? pt(field.questionFontSize) * 0.8 : 0,
+        },
+      });
+    });
+  });
+  if (runs.length) runs[runs.length - 1].options.breakLine = false;
+
+  slide.addText(runs, {
+    x: xIn(field.left),
+    y: yIn(field.top),
+    w: wIn(field.width),
+    h: hIn(field.height),
+    valign: "top",
+    align: field.align || "left",
+    lineSpacingMultiple: field.lineHeight || 1.3,
+    wrap: true,
+  });
+}
+
 function renderField(slide, field, lesson, pptx) {
   if (field.kind === "badge") return addBadge(slide, field, pptx);
   if (field.kind === "static") return addStatic(slide, field);
+  if (field.kind === "qaBlock" && field.group === "languageGame") {
+    return addMultipleChoiceBlock(slide, field, lesson);
+  }
   if (field.kind === "qaBlock") return addQaBlock(slide, field, lesson);
 
   // dynamic

@@ -90,7 +90,7 @@ const LAYOUTS = [
         key: "coverTitle",
         ...box(285.7, 85.4, 858.7, 232.8),
         font: FONT_BODY,
-        fontSize: 108,
+        fontSize: 90,
         fontWeight: 800,
         color: BLACK,
         align: "left",
@@ -270,7 +270,7 @@ const LAYOUTS = [
         key: "introText",
         ...box(108, 108, 1144.2, 793.5),
         font: FONT_BODY,
-        fontSize: 62,
+        fontSize: 46,
         fontWeight: 400,
         color: BLACK,
         align: "left",
@@ -405,8 +405,13 @@ const LAYOUTS = [
 ];
 
 // Shared box for the two-slide Q&A layouts (conversation + language game),
-// which all reuse the same text frame position in the template.
+// which all reuse the same text frame position in the template. Language
+// game blocks pack a lot more text per question now (question + 3 full
+// options, vs. conversation's question + 0-2 short answers), so they use
+// smaller type and tighter spacing to fit the same 3-per-slide box without
+// overflowing.
 function qaBlockField(group, startIndex, count) {
+  const isLanguageGame = group === "languageGame";
   return {
     kind: "qaBlock",
     group,
@@ -414,16 +419,16 @@ function qaBlockField(group, startIndex, count) {
     count,
     ...box(64.8, 95.4, 1423.9, 894.5),
     questionFont: FONT_BODY,
-    questionFontSize: 60,
+    questionFontSize: isLanguageGame ? 46 : 60,
     questionWeight: 700,
     answerFont: FONT_BODY,
-    answerFontSize: 46,
+    answerFontSize: isLanguageGame ? 36 : 46,
     answerWeight: 400,
     color: BLACK,
     answerColor: GRAY,
     align: "left",
-    lineHeight: 1.35,
-    blockSpacing: "1.5em",
+    lineHeight: isLanguageGame ? 1.2 : 1.35,
+    blockSpacing: isLanguageGame ? "0.6em" : "1.5em",
   };
 }
 
