@@ -9,115 +9,121 @@
 </head>
 <body>
 
-  <div id="confirmClear" class="modal-overlay">
-    <div class="modal-card">
-      <div class="modal-title">Limpar formulário?</div>
-      <p class="modal-text">Isso apaga o tópico e as opções escolhidas para começar uma nova aula. Seu código de acesso e nome continuam salvos. Deseja continuar?</p>
-      <div class="modal-actions">
-        <button type="button" class="btn btn-ghost btn-sm" id="cancelClear">Cancelar</button>
-        <button type="button" class="btn btn-gold btn-sm" id="confirmClearBtn">Sim, limpar</button>
-      </div>
-    </div>
-  </div>
+<div id="confirmClear" class="modal-overlay">
+<div class="modal-card">
+<div class="modal-title">Limpar formulário?</div>
+<p class="modal-text">Isso apaga o tópico e as opções escolhidas para começar uma nova aula. Seu código de acesso e nome continuam salvos. Deseja continuar?</p>
+<div class="modal-actions">
+<button type="button" class="btn btn-ghost btn-sm" id="cancelClear">Cancelar</button>
+<button type="button" class="btn btn-gold btn-sm" id="confirmClearBtn">Sim, limpar</button>
+</div>
+</div>
+</div>
 
-  <header class="hero">
-    <a class="back-link" href="https://pedro-fisk.github.io/fisk-hub/">&larr; Voltar aos recursos</a>
-    <button type="button" class="theme-toggle" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar modo escuro">🌙</button>
-    <img class="hero-logo" src="assets/fisk-logo.png" alt="FISK Taubaté · Caçapava">
-    <h1>Conversation Maker</h1>
-    <p>Crie roteiros de conversação para praticar com os alunos</p>
-  </header>
+<header class="hero">
+<a class="back-link" href="https://pedro-fisk.github.io/fisk-hub/">&larr; Voltar aos recursos</a>
+<button type="button" class="theme-toggle" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar modo escuro">🌙</button>
+<img class="hero-logo" src="assets/fisk-logo.png" alt="FISK Taubaté · Caçapava">
+<h1>Conversation Maker</h1>
+<p>Crie roteiros de conversação para praticar com os alunos</p>
+</header>
 
-  <main class="wrap">
+<main class="wrap">
 
-    <div class="row-inline" style="justify-content:flex-end;margin-bottom:14px">
-      <button type="button" class="btn btn-ghost btn-sm" id="clearBtn">🧹 Limpar formulário</button>
-    </div>
+<div class="row-inline" style="justify-content:flex-end;margin-bottom:14px">
+<button type="button" class="btn btn-ghost btn-sm" id="clearBtn">🧹 Limpar formulário</button>
+</div>
 
-    <form id="form">
-      <div class="panel">
-        <h2>🔑 Código de acesso</h2>
-        <label class="fld" for="accessCode">Código compartilhado com os professores FISK Caçapava e Taubaté</label>
-        <input type="password" id="accessCode" placeholder="código de acesso" autocomplete="current-password" required>
-      </div>
+<form id="form">
+<div class="panel">
+<h2>🔑 Código de acesso</h2>
+<label class="fld" for="accessCode">Código compartilhado com os professores FISK Caçapava e Taubaté</label>
+<input type="password" id="accessCode" placeholder="código de acesso" autocomplete="current-password" required>
+</div>
 
-      <div class="panel">
-        <h2>🧑‍🏫 Seu nome</h2>
-        <label class="fld" for="teacherName">Como você quer ser identificado(a)?</label>
-        <input type="text" id="teacherName" placeholder="ex.: Teacher Ana" autocomplete="name" required>
-        <p class="hint">Usado apenas para estatísticas internas de uso da ferramenta. Não aparece na atividade, no arquivo nem no nome do arquivo.</p>
-      </div>
+<div class="panel">
+<h2>🧑‍🏫 Seu nome</h2>
+<label class="fld" for="teacherName">Como você quer ser identificado(a)?</label>
+<input type="text" id="teacherName" placeholder="ex.: Teacher Ana" autocomplete="name" required>
+<p class="hint">Usado apenas para estatísticas internas de uso da ferramenta. Não aparece na atividade, no arquivo nem no nome do arquivo.</p>
+</div>
 
-      <div class="panel">
-        <h2>🌎 Idioma</h2>
-        <div class="choice-row" id="languageChoices" data-field="language">
-          <button type="button" class="choice is-active" data-value="english">Inglês</button>
-          <button type="button" class="choice" data-value="spanish">Espanhol</button>
-        </div>
-        <p class="hint" id="languageHint">O espanhol sempre gera uma única versão comunicativa (~B1).</p>
-      </div>
+<div class="panel">
+<h2>🌎 Idioma</h2>
+<div class="choice-row" id="languageChoices" data-field="language">
+<button type="button" class="choice is-active" data-value="english">Inglês</button>
+<button type="button" class="choice" data-value="spanish">Espanhol</button>
+</div>
+<p class="hint" id="languageHint">O espanhol usa dois níveis do Quadro Europeu Comum (QECR): Básico (B1) e Avançado (C1).</p>
+</div>
 
-      <div class="panel">
-        <h2>💬 Tópico da aula</h2>
-        <label class="fld" for="topic">Sobre o que vai ser a conversação?</label>
-        <p class="hint hint-lead">Escreva livremente o tema da aula — não precisa ser uma palavra só. Você pode descrever o contexto, o objetivo, situações que quer explorar ou o que os alunos precisam praticar. Quanto mais detalhe, melhor a IA adapta a atividade.</p>
-        <div class="topic-wrap">
-          <textarea id="topic" rows="2" placeholder="ex.: going shopping / uma conversa sobre planejar uma viagem ao Japão, incluindo pedir informações e reservar hotel..." required></textarea>
-          <button type="button" class="mic-btn" id="micBtn" aria-label="Ditar por voz" title="Clique para ditar por voz">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-              <line x1="12" y1="19" x2="12" y2="23"></line>
-              <line x1="8" y1="23" x2="16" y2="23"></line>
-            </svg>
-          </button>
-        </div>
-        <p class="hint" id="micHint"></p>
-        <label class="checkbox-row" for="webSearch">
-          <input type="checkbox" id="webSearch">
-          <span>Pesquisar na internet notícias recentes sobre o tema</span>
-        </label>
-        <p class="hint">Útil para temas atuais (jogos, eventos, notícias). A IA faz até 3 buscas antes de criar a atividade, o que deixa a geração um pouco mais lenta.</p>
-      </div>
+<div class="panel">
+<h2>💬 Tópico da aula</h2>
+<label class="fld" for="topic">Sobre o que vai ser a conversação?</label>
+<p class="hint hint-lead">Escreva livremente o tema da aula — não precisa ser uma palavra só. Você pode descrever o contexto, o objetivo, situações que quer explorar ou o que os alunos precisam praticar. Quanto mais detalhe, melhor a IA adapta a atividade.</p>
+<div class="topic-wrap">
+<textarea id="topic" rows="2" placeholder="ex.: going shopping / uma conversa sobre planejar uma viagem ao Japão, incluindo pedir informações e reservar hotel..." required></textarea>
+<button type="button" class="mic-btn" id="micBtn" aria-label="Ditar por voz" title="Clique para ditar por voz">
+<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+<path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+<line x1="12" y1="19" x2="12" y2="23"></line>
+<line x1="8" y1="23" x2="16" y2="23"></line>
+</svg>
+</button>
+</div>
+<p class="hint" id="micHint"></p>
+<label class="checkbox-row" for="webSearch">
+<input type="checkbox" id="webSearch">
+<span>Pesquisar na internet notícias recentes sobre o tema</span>
+</label>
+<p class="hint">Útil para temas atuais (jogos, eventos, notícias). A IA faz até 3 buscas antes de criar a atividade, o que deixa a geração um pouco mais lenta.</p>
+</div>
 
-      <div class="panel">
-        <h2>👥 Faixa etária dos alunos</h2>
-        <div class="choice-row" id="ageChoices" data-field="ageGroup">
-          <button type="button" class="choice" data-value="preteens">Pré-adolescentes</button>
-          <button type="button" class="choice" data-value="teens">Jovens</button>
-          <button type="button" class="choice is-active" data-value="adults">Adultos</button>
-        </div>
-        <p class="hint">Informação de contexto para a IA. O tema da atividade continua sendo exatamente o que você escrever no tópico — a faixa etária não muda os temas nem simplifica o conteúdo.</p>
-      </div>
+<div class="panel">
+<h2>👥 Faixa etária dos alunos</h2>
+<div class="choice-row" id="ageChoices" data-field="ageGroup">
+<button type="button" class="choice" data-value="preteens">Pré-adolescentes</button>
+<button type="button" class="choice" data-value="teens">Jovens</button>
+<button type="button" class="choice is-active" data-value="adults">Adultos</button>
+</div>
+<p class="hint">Informação de contexto para a IA. O tema da atividade continua sendo exatamente o que você escrever no tópico — a faixa etária não muda os temas nem simplifica o conteúdo.</p>
+</div>
 
-      <div class="panel" id="levelField">
-        <h2>📊 Nível</h2>
-        <div class="choice-row" id="levelChoices" data-field="level">
-          <button type="button" class="choice is-active" data-value="basic">Basic</button>
-          <button type="button" class="choice" data-value="intermediate">Intermediate</button>
-          <button type="button" class="choice" data-value="advanced">Advanced</button>
-          <button type="button" class="choice" data-value="all_levels">Todos os níveis</button>
-        </div>
-        <p class="hint">"Todos os níveis" gera três roteiros separados (Basic + Intermediate + Advanced) — nunca um só mesclado.</p>
-      </div>
+<div class="panel" id="levelField">
+<h2>📊 Nível</h2>
+<div class="choice-row" id="levelChoicesEnglish" data-field="level">
+<button type="button" class="choice is-active" data-value="basic">Basic</button>
+<button type="button" class="choice" data-value="intermediate">Intermediate</button>
+<button type="button" class="choice" data-value="advanced">Advanced</button>
+<button type="button" class="choice" data-value="all_levels">Todos os níveis</button>
+</div>
+<div class="choice-row is-hidden" id="levelChoicesSpanish" data-field="level">
+<button type="button" class="choice is-active" data-value="spanish_basic">Básico (B1)</button>
+<button type="button" class="choice" data-value="spanish_advanced">Avançado (C1)</button>
+<button type="button" class="choice" data-value="all_levels">Todos os níveis</button>
+</div>
+<p class="hint" id="levelHintEnglish">"Todos os níveis" gera três roteiros separados (Basic + Intermediate + Advanced) — nunca um só mesclado.</p>
+<p class="hint is-hidden" id="levelHintSpanish">"Todos os níveis" gera os dois roteiros separados (Básico B1 + Avançado C1) — nunca um só mesclado.</p>
+</div>
 
-      <div class="actions">
-        <button type="submit" class="btn btn-generate" id="generateBtn">Gerar roteiro →</button>
-        <span id="spinner" class="spinner is-hidden" aria-hidden="true"></span>
-        <span id="status" class="status-text"></span>
-      </div>
-      <p class="gen-note is-hidden" id="genNote">⏳ Esta ação pode levar alguns minutos. Pode deixar a página aberta, estamos produzindo sua atividade.</p>
-    </form>
+<div class="actions">
+<button type="submit" class="btn btn-generate" id="generateBtn">Gerar roteiro →</button>
+<span id="spinner" class="spinner is-hidden" aria-hidden="true"></span>
+<span id="status" class="status-text"></span>
+</div>
+<p class="gen-note is-hidden" id="genNote">⏳ Esta ação pode levar alguns minutos. Pode deixar a página aberta, estamos produzindo sua atividade.</p>
+</form>
 
-    <section id="results"></section>
+<section id="results"></section>
 
-  </main>
+</main>
 
-  <footer>
-    <p>Ferramenta desenvolvida exclusivamente para uso interno das escolas Fisk. A utilização deste sistema e de seu conteúdo por pessoas ou instituições não autorizadas, incluindo professores particulares, é proibida. Desenvolvido por @fiskcacapava e @taubatefisk</p>
-  </footer>
+<footer>
+<p>Ferramenta desenvolvida exclusivamente para uso interno das escolas Fisk. A utilização deste sistema e de seu conteúdo por pessoas ou instituições não autorizadas, incluindo professores particulares, é proibida. Desenvolvido por @fiskcacapava e @taubatefisk</p>
+</footer>
 
-  <script src="https://cdn.jsdelivr.net/gh/pedro-fisk/fisk-hub@v1.0.0/assets/fisk-shared.js"></script>
-  <script src="app.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/pedro-fisk/fisk-hub@v1.0.0/assets/fisk-shared.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

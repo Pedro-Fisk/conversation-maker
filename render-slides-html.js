@@ -13,7 +13,7 @@
  *
  *   {
  *     coverTitle: string,               // e.g. "Discovering Japan"
- *     coverLevel: string,                // "Basic" | "Intermediate" | "Advanced" | "Spanish B1"
+ *     coverLevel: string,                // "Basic" | "Intermediate" | "Advanced" | "Spanish B1" | "Spanish C1"
  *     language: string,                  // "english" | "spanish" — drives language-adaptive
  *                                         // static labels (e.g. the Introduction divider title)
  *     topic: string,                     // short topic phrase, e.g. "Japan"
