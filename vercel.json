@@ -9,7 +9,7 @@
       "includeFiles": "assets/bg/**"
     },
     "api/generate-lesson.js": {
-      "maxDuration": 30
+      "maxDuration": 300
     }
   }
 }

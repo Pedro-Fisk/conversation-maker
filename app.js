@@ -391,7 +391,7 @@
     if (!topic || !accessCode) return;
 
     generateBtn.disabled = true;
-    setStatus("Gerando com a IA... isso pode levar alguns segundos.");
+    setStatus("Gerando com a IA... isso pode levar até um ou dois minutos.");
     results.classList.remove("is-visible");
 
     try {
