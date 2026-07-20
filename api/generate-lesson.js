@@ -63,6 +63,11 @@ const DEFAULT_AGE_GROUP = "adults";
 const ENGLISH_LEVELS = ["basic", "intermediate", "advanced"];
 const MODEL = "claude-sonnet-5";
 
+// Teto de buscas na web POR GERAÇÃO quando o professor marca o checkbox
+// "Pesquisar na internet". Cada busca custa ~US$0,01 + tokens; 3 cobre
+// pesquisa inicial + refinamento sem deixar o custo nem o tempo crescerem.
+const MAX_WEB_SEARCHES = 3;
+
 const SYSTEM_PROMPT = `You are the content engine behind Conversation Maker, an authoring tool for language teachers at FISK. You generate ONLY lesson content as structured JSON — a fixed, already-designed 18-page slide template (built in Canva) handles all layout and visuals downstream. Your only job is to fill in the text.
 
 The template has a FIXED structure that never changes, so your output must always contain exactly:
@@ -77,11 +82,15 @@ Every conversation, language game, and evaluation question needs exactly 2 short
 
 Respond with a single JSON object only, no prose, no markdown code fences, matching exactly the schema described in the user message (camelCase keys). Never add or remove array items — always exactly the counts specified above.`;
 
-function buildUserPrompt({ language, topic, level, ageGroup }) {
+function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch }) {
   const guidance = LEVEL_GUIDANCE[level];
   const age = AGE_GUIDANCE[ageGroup] || AGE_GUIDANCE[DEFAULT_AGE_GROUP];
 
-  return `Topic: ${topic}
+  const searchNote = useWebSearch
+    ? `\nBefore writing, use the web search tool (at most ${MAX_WEB_SEARCHES} searches) to gather recent, factual information about the topic — names, results, dates, current events. Base the lesson content on what you find. After searching, your final answer must still be ONLY the JSON object, with no citations, no commentary and no source list inside the JSON values.\n`
+    : "";
+
+  return `${searchNote}Topic: ${topic}
 Level: ${guidance.label}
 ${guidance.prompt}
 
@@ -131,7 +140,20 @@ function clampArray(arr, n) {
   return a;
 }
 
-async function callClaude({ language, topic, level, ageGroup }) {
+async function callClaude({ language, topic, level, ageGroup, useWebSearch }) {
+  const body = {
+    model: MODEL,
+    max_tokens: 8000,
+    system: SYSTEM_PROMPT,
+    messages: [
+      { role: "user", content: buildUserPrompt({ language, topic, level, ageGroup, useWebSearch }) },
+    ],
+  };
+
+  if (useWebSearch) {
+    body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: MAX_WEB_SEARCHES }];
+  }
+
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -139,12 +161,7 @@ async function callClaude({ language, topic, level, ageGroup }) {
       "anthropic-version": "2023-06-01",
       "content-type": "application/json",
     },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 8000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildUserPrompt({ language, topic, level, ageGroup }) }],
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -153,8 +170,13 @@ async function callClaude({ language, topic, level, ageGroup }) {
   }
 
   const data = await response.json();
-  const textBlock = (data.content || []).find((b) => b.type === "text");
-  const text = (textBlock && textBlock.text) || "";
+  // Concatena TODOS os blocos de texto (não só o primeiro): com a busca na
+  // web ativa, a resposta vem intercalada com blocos de tool_use e o texto
+  // final pode chegar fatiado em vários blocos por causa das citações.
+  const text = (data.content || [])
+    .filter((b) => b.type === "text")
+    .map((b) => b.text || "")
+    .join("");
   const debugInfo = `model=${data.model} stop_reason=${data.stop_reason} blocks=${
     (data.content || []).map((b) => b.type).join(",")
   }.`;
@@ -182,8 +204,9 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { accessCode, language, topic, levelChoice, ageGroup } = req.body || {};
+  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch } = req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
+  const searchEnabled = useWebSearch === true;
 
   if (!process.env.ACCESS_CODE || accessCode !== process.env.ACCESS_CODE) {
     res.status(401).json({ error: "Código de acesso inválido." });
@@ -211,7 +234,9 @@ module.exports = async function handler(req, res) {
     // níveis, o tempo total caía fora do maxDuration e o Vercel devolvia
     // 504. Em paralelo, o tempo total é o da chamada mais lenta.
     const lessons = await Promise.all(
-      levels.map((level) => callClaude({ language, topic, level, ageGroup: resolvedAgeGroup }))
+      levels.map((level) =>
+        callClaude({ language, topic, level, ageGroup: resolvedAgeGroup, useWebSearch: searchEnabled })
+      )
     );
 
     // Keep objectives + vocabulary consistent across the whole "todos os
