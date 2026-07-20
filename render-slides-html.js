@@ -14,6 +14,8 @@
  *   {
  *     coverTitle: string,               // e.g. "Discovering Japan"
  *     coverLevel: string,                // "Basic" | "Intermediate" | "Advanced" | "Spanish B1"
+ *     language: string,                  // "english" | "spanish" — drives language-adaptive
+ *                                         // static labels (e.g. the Introduction divider title)
  *     topic: string,                     // short topic phrase, e.g. "Japan"
  *     objectives: string[3],
  *     vocabulary: { word: string, translation: string }[8],
@@ -53,6 +55,66 @@ function bgDataUri(relPath) {
   const uri = `data:image/png;base64,${buf.toString("base64")}`;
   bgCache.set(relPath, uri);
   return uri;
+}
+
+/*
+ * Fonts are self-hosted (base64-embedded @font-face, no external network
+ * fetch) rather than pulled from Google Fonts via @import at render time.
+ * A first version used `@import url('https://fonts.googleapis.com/...')`
+ * and it silently fell back to a system font (Calibri) in production —
+ * headless Chromium on Vercel isn't guaranteed to finish an external font
+ * fetch before the page is rasterized to PDF, so any runtime network
+ * dependency for fonts is fragile. Embedding removes that dependency
+ * entirely, the same fix already applied to the background images.
+ *
+ * Font files come from the @fontsource/* npm packages (added as real
+ * dependencies in package.json) rather than being hand-copied into the
+ * repo, so `npm install` on Vercel's build machine — which has normal
+ * internet access, unlike this sandbox — fetches them at build time.
+ * `require.resolve()` with a literal path lets Vercel's file-tracing
+ * (@vercel/nft) detect and bundle these files automatically, the same way
+ * it already handles any other `require()`d file.
+ */
+const fontCache = new Map();
+
+function fontFaceBase64(pkgPath) {
+  if (fontCache.has(pkgPath)) return fontCache.get(pkgPath);
+  const abs = require.resolve(pkgPath);
+  const buf = fs.readFileSync(abs);
+  const b64 = buf.toString("base64");
+  fontCache.set(pkgPath, b64);
+  return b64;
+}
+
+function buildFontFaceCss() {
+  const poppinsWeights = [400, 500, 600, 700, 800];
+  const poppinsFaces = poppinsWeights
+    .map((w) => {
+      const b64 = fontFaceBase64(`@fontsource/poppins/files/poppins-latin-${w}-normal.woff2`);
+      return `
+  @font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: ${w};
+    font-display: swap;
+    src: url(data:font/woff2;base64,${b64}) format('woff2');
+  }`;
+    })
+    .join("\n");
+
+  const markerB64 = fontFaceBase64(
+    "@fontsource/permanent-marker/files/permanent-marker-latin-400-normal.woff2"
+  );
+  const markerFace = `
+  @font-face {
+    font-family: 'Permanent Marker';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url(data:font/woff2;base64,${markerB64}) format('woff2');
+  }`;
+
+  return poppinsFaces + "\n" + markerFace;
 }
 
 function fieldStyle(field) {
@@ -226,7 +288,7 @@ function buildSlidesHtml(lesson) {
 <head>
 <meta charset="utf-8" />
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Poppins:wght@400;500;600;700;800&display=swap');
+  ${buildFontFaceCss()}
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   .slide {

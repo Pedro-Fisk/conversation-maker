@@ -2,6 +2,7 @@
 module.exports = {
   coverTitle: "Discovering Japan",
   coverLevel: "Basic",
+  language: "english",
   topic: "Japan",
   objectives: [
     "Learn 8 new words related to Japanese culture and travel.",

@@ -4,8 +4,10 @@
   "private": true,
   "description": "Conversation Maker — FISK. Static frontend + Vercel serverless functions (generate-lesson, export-pdf, export-pptx).",
   "dependencies": {
+    "@fontsource/permanent-marker": "^5.3.0",
+    "@fontsource/poppins": "^5.3.0",
+    "@sparticuz/chromium": "^131.0.1",
     "pptxgenjs": "^4.0.1",
-    "puppeteer-core": "^23.9.0",
-    "@sparticuz/chromium": "^131.0.1"
+    "puppeteer-core": "^23.9.0"
   }
 }

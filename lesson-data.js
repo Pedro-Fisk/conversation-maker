@@ -20,6 +20,8 @@ function buildDynamicValue(lesson, key) {
       return lesson.coverLevel || "";
     case "agendaTopicLine":
       return `Conversation about ${lesson.topic || lesson.coverTitle || ""}`;
+    case "introTitle":
+      return lesson.language === "spanish" ? "INTRODUCCIÓN" : "INTRODUCTION";
     case "objectives":
       return lesson.objectives || [];
     case "vocabulary":
