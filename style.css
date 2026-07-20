@@ -346,11 +346,8 @@ input[type="text"]:focus, input[type="password"]:focus, select:focus, textarea:f
 }
 .btn-download:disabled{ opacity: 0.6; cursor: not-allowed; }
 
-.btn-pdf{ background: var(--green); }
-.btn-pdf:hover{ background: #2b9377; transform: none; }
-
-.btn-pptx{ background: var(--green-dark); }
-.btn-pptx:hover{ background: #1f6f5b; transform: none; }
+.btn-pptx{ background: var(--green); }
+.btn-pptx:hover{ background: var(--green-dark); transform: none; }
 
 .deck-foot{
   display: flex;

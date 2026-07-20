@@ -204,7 +204,7 @@
 
     const note = document.createElement("p");
     note.className = "edit-note";
-    note.textContent = "✏️ Revise e corrija o texto abaixo à vontade. As alterações entram no PDF e no .pptx ao baixar.";
+    note.textContent = "✏️ Revise e corrija o texto abaixo à vontade. As alterações entram no .pptx ao baixar.";
     sections.appendChild(note);
 
     function addSection(label, buildBody) {
@@ -341,14 +341,6 @@
     head.className = "deck-head";
     head.innerHTML = `<h3>${escapeHtml(lesson.coverTitle)}</h3><span>${escapeHtml(lesson.coverLevel)}</span>`;
 
-    const pdfBtn = document.createElement("button");
-    pdfBtn.type = "button";
-    pdfBtn.className = "btn btn-download btn-pdf";
-    pdfBtn.textContent = "Baixar PDF";
-    pdfBtn.addEventListener("click", () =>
-      downloadFile({ endpoint: "/api/export-pdf", lesson, extension: "pdf", btn: pdfBtn, busyLabel: "Gerando PDF..." })
-    );
-
     const pptxBtn = document.createElement("button");
     pptxBtn.type = "button";
     pptxBtn.className = "btn btn-download btn-pptx";
@@ -371,7 +363,6 @@
     footLabel.className = "deck-foot-label";
     footLabel.textContent = "Tudo revisado? Baixe a versão final:";
     foot.appendChild(footLabel);
-    foot.appendChild(pdfBtn);
     foot.appendChild(pptxBtn);
 
     deck.appendChild(head);
