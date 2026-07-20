@@ -151,6 +151,7 @@ async function callClaude({ language, topic, level }) {
   return {
     coverTitle: parsed.coverTitle || topic,
     coverLevel: LEVEL_GUIDANCE[level].label,
+    language,
     topic: parsed.topic || topic,
     objectives: clampArray(parsed.objectives, 3),
     vocabulary: clampArray(parsed.vocabulary, 8),
