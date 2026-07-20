@@ -30,13 +30,20 @@
   // Pré-preenche com o último código que gerou uma aula com sucesso, para o
   // professor não digitar toda vez. Fica só no localStorage deste navegador.
   const accessCodeEl = document.getElementById("accessCode");
+  const teacherNameEl = document.getElementById("teacherName");
   try {
     const savedCode = localStorage.getItem("cm-access-code");
     if (savedCode && accessCodeEl) accessCodeEl.value = savedCode;
+    const savedName = localStorage.getItem("cm-teacher-name");
+    if (savedName && teacherNameEl) teacherNameEl.value = savedName;
   } catch (e) {}
 
   function rememberAccessCode(code) {
     try { localStorage.setItem("cm-access-code", code); } catch (e) {}
+  }
+
+  function rememberTeacherName(name) {
+    try { localStorage.setItem("cm-teacher-name", name); } catch (e) {}
   }
 
   function setStatus(text, isError) {
@@ -44,11 +51,11 @@
     statusEl.classList.toggle("is-error", Boolean(isError));
   }
 
-  async function fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch }) {
+  async function fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName }) {
     const response = await fetch("/api/generate-lesson", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch }),
+      body: JSON.stringify({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -400,6 +407,7 @@
     const ageGroup = selectedValue(ageChoices);
     const webSearchEl = document.getElementById("webSearch");
     const useWebSearch = Boolean(webSearchEl && webSearchEl.checked);
+    const teacherName = teacherNameEl ? teacherNameEl.value.trim() : "";
 
     if (!topic || !accessCode) return;
 
@@ -409,11 +417,12 @@
     results.classList.remove("is-visible");
 
     try {
-      const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch });
+      const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName });
 
       // Só memoriza o código depois de uma geração bem-sucedida (ou seja,
       // um código que o servidor aceitou).
       rememberAccessCode(accessCode);
+      if (teacherName) rememberTeacherName(teacherName);
 
       results.innerHTML = "";
       lessons.forEach((lesson) => results.appendChild(renderDeck(lesson)));
