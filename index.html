@@ -35,7 +35,29 @@
       <div class="panel">
         <h2>Tópico da aula</h2>
         <label class="fld" for="topic">Sobre o que vai ser a conversação?</label>
-        <input type="text" id="topic" placeholder="ex.: going shopping, Japan, babies..." required>
+        <p class="hint hint-lead">Escreva livremente o tema da aula — não precisa ser uma palavra só. Você pode descrever o contexto, o objetivo, situações que quer explorar ou o que os alunos precisam praticar. Quanto mais detalhe, melhor a IA adapta a atividade.</p>
+        <div class="topic-wrap">
+          <textarea id="topic" rows="2" placeholder="ex.: going shopping / uma conversa sobre planejar uma viagem ao Japão, incluindo pedir informações e reservar hotel..." required></textarea>
+          <button type="button" class="mic-btn" id="micBtn" aria-label="Ditar por voz" title="Clique para ditar por voz">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+        <p class="hint" id="micHint"></p>
+      </div>
+
+      <div class="panel">
+        <h2>Faixa etária dos alunos</h2>
+        <div class="choice-row" id="ageChoices" data-field="ageGroup">
+          <button type="button" class="choice" data-value="preteens">Pré-adolescentes</button>
+          <button type="button" class="choice" data-value="teens">Jovens</button>
+          <button type="button" class="choice is-active" data-value="adults">Adultos</button>
+        </div>
+        <p class="hint">A IA adapta o tom e os contextos ao perfil da turma: pré-adolescentes recebem uma atividade lúdica e leve, com um jogo caprichado; jovens exploram temas adolescentes; adultos focam em trabalho, negócios, contexto corporativo e família.</p>
       </div>
 
       <div class="panel" id="levelField">

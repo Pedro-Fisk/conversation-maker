@@ -132,6 +132,48 @@ input[type="text"]:focus, select:focus, textarea:focus{
   margin: 0.35rem 0 0;
 }
 
+.hint-lead{ margin: 0 0 0.75rem; line-height: 1.45; }
+
+/* Tópico + botão de microfone */
+.topic-wrap{ position: relative; }
+.topic-wrap textarea{
+  width: 100%;
+  resize: vertical;
+  min-height: 3rem;
+  line-height: 1.4;
+  padding-right: 3.4rem;
+}
+
+.mic-btn{
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--gray-light);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--gray);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.mic-btn:hover{ border-color: var(--red); color: var(--red); }
+.mic-btn.is-recording{
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--white);
+  animation: mic-pulse 1.1s ease-in-out infinite;
+}
+.mic-btn.is-hidden{ display: none; }
+
+@keyframes mic-pulse{
+  0%, 100%{ box-shadow: 0 0 0 0 rgba(216, 31, 38, 0.45); }
+  50%{ box-shadow: 0 0 0 8px rgba(216, 31, 38, 0); }
+}
+
 #levelField{ display: none; }
 #levelField.is-visible{ display: block; }
 
@@ -251,6 +293,69 @@ input[type="text"]:focus, select:focus, textarea:focus{
 .slide-body p{ margin: 0.3rem 0; }
 .slide-body .q{ margin: 0.4rem 0; }
 .slide-body .scaffold{ color: var(--gray); font-style: italic; }
+
+/* Prévia editável */
+.edit-note{
+  margin: 0.75rem 0.5rem 0;
+  padding: 0.6rem 0.85rem;
+  background: #fff3cd;
+  border: 1px solid #f1d67a;
+  border-radius: 10px;
+  color: #7a5c00;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.edit-field{
+  width: 100%;
+  border: 1.5px solid var(--gray-light);
+  border-radius: 8px;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: var(--black);
+  background: var(--white);
+  margin: 0.2rem 0;
+}
+.edit-field:focus{ outline: none; border-color: var(--red); }
+textarea.edit-field{ resize: vertical; line-height: 1.4; }
+
+.edit-label{
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gray);
+  margin: 0.5rem 0 0.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.edit-vocab-row{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  margin: 0.2rem 0;
+}
+
+.edit-qa{
+  border: 1px solid var(--gray-light);
+  border-radius: 10px;
+  padding: 0.5rem 0.6rem;
+  margin: 0.45rem 0;
+}
+.edit-qa .edit-qa-num{
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--red);
+}
+.edit-answers-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+@media (max-width: 560px){
+  .edit-vocab-row, .edit-answers-grid{ grid-template-columns: 1fr; }
+}
 
 footer{
   text-align: center;
