@@ -4,18 +4,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Conversation Maker — FISK</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/pedro-fisk/fisk-hub@v1.0.0/assets/fisk-shared.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+  <div id="confirmClear" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-title">Limpar formulário?</div>
+      <p class="modal-text">Isso apaga o tópico e as opções escolhidas para começar uma nova aula. Seu código de acesso e nome continuam salvos. Deseja continuar?</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost btn-sm" id="cancelClear">Cancelar</button>
+        <button type="button" class="btn btn-gold btn-sm" id="confirmClearBtn">Sim, limpar</button>
+      </div>
+    </div>
+  </div>
+
   <header class="hero">
     <a class="back-link" href="https://pedro-fisk.github.io/fisk-hub/">&larr; Voltar aos recursos</a>
     <button type="button" class="theme-toggle" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar modo escuro">🌙</button>
+    <img class="hero-logo" src="assets/fisk-logo.png" alt="FISK Taubaté · Caçapava">
     <h1>Conversation Maker</h1>
     <p>Crie roteiros de conversação para praticar com os alunos</p>
   </header>
 
   <main class="wrap">
+
+    <div class="row-inline" style="justify-content:flex-end;margin-bottom:14px">
+      <button type="button" class="btn btn-ghost btn-sm" id="clearBtn">🧹 Limpar formulário</button>
+    </div>
 
     <form id="form">
       <div class="panel">
@@ -85,7 +102,7 @@
       </div>
 
       <div class="actions">
-        <button type="submit" class="btn btn-primary" id="generateBtn">Gerar roteiro →</button>
+        <button type="submit" class="btn btn-generate" id="generateBtn">Gerar roteiro →</button>
         <span id="spinner" class="spinner is-hidden" aria-hidden="true"></span>
         <span id="status" class="status-text"></span>
       </div>
@@ -97,9 +114,10 @@
   </main>
 
   <footer>
-    <p>Feito para professores FISK</p>
+    <p>Ferramenta desenvolvida exclusivamente para uso interno das escolas Fisk. A utilização deste sistema e de seu conteúdo por pessoas ou instituições não autorizadas, incluindo professores particulares, é proibida. Desenvolvido por @fiskcacapava e @taubatefisk</p>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/gh/pedro-fisk/fisk-hub@v1.0.0/assets/fisk-shared.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

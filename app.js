@@ -380,22 +380,39 @@
   }
 
   // ---- Modo escuro ----
-  (function setupTheme() {
-    const toggle = document.getElementById("themeToggle");
-    if (!toggle) return;
-    const apply = (dark) => {
-      document.body.classList.toggle("theme-dark", dark);
-      toggle.textContent = dark ? "☀️" : "🌙";
-    };
-    let saved = null;
-    try { saved = localStorage.getItem("cm-theme"); } catch (e) {}
-    apply(saved === "dark");
-    toggle.addEventListener("click", () => {
-      const dark = !document.body.classList.contains("theme-dark");
-      apply(dark);
-      try { localStorage.setItem("cm-theme", dark ? "dark" : "light"); } catch (e) {}
-    });
-  })();
+  fiskInitThemeToggle("themeToggle", { storageKey: "cm-theme" });
+
+  // ---- Limpar formulário (com confirmação) ----
+  function selectChoice(container, value) {
+    const btn = container.querySelector(`.choice[data-value="${value}"]`);
+    if (btn) btn.click();
+  }
+
+  function clearForm() {
+    topicEl.value = "";
+    const webSearchEl = document.getElementById("webSearch");
+    if (webSearchEl) webSearchEl.checked = false;
+    selectChoice(languageChoices, "english");
+    selectChoice(levelChoices, "basic");
+    selectChoice(ageChoices, "adults");
+    results.classList.remove("is-visible", "multi");
+    results.innerHTML = "";
+    setStatus("");
+  }
+
+  fiskInitClearConfirm({
+    triggerId: "clearBtn",
+    modalId: "confirmClear",
+    confirmId: "confirmClearBtn",
+    cancelId: "cancelClear",
+    onConfirm: clearForm,
+  });
+
+  // ---- Avisa antes de fechar/recarregar a aba se houver dados preenchidos ----
+  function hasUnsavedWork() {
+    return Boolean(topicEl.value.trim()) || results.classList.contains("is-visible");
+  }
+  fiskInitBeforeUnloadGuard(hasUnsavedWork);
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
