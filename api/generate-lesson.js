@@ -49,24 +49,14 @@ const LEVEL_GUIDANCE = {
   },
 };
 
-// Perfil da turma escolhido pelo professor. Ajusta tom, contextos e o
-// estilo do language game — sem mudar a estrutura fixa do template.
+// Perfil da turma escolhido pelo professor. Entra no prompt apenas como
+// contexto leve: a IA NÃO deve trocar os temas nem infantilizar o conteúdo
+// por causa da idade — o tópico do professor manda. (Uma versão anterior
+// adaptava os temas por faixa etária e o resultado ficou infantil demais.)
 const AGE_GUIDANCE = {
-  preteens: {
-    label: "Pré-adolescentes",
-    prompt:
-      "Audience: pre-teens (roughly ages 10-13). Keep everything playful, light and fun. Use concrete, familiar contexts from a kid's world (school, games, animals, cartoons, sports, family outings, hobbies). Avoid heavy, abstract, corporate or adult themes. The language game especially must feel like an enjoyable game — clever, engaging and rewarding to play, not a dry grammar drill. Keep sentences short and friendly.",
-  },
-  teens: {
-    label: "Jovens",
-    prompt:
-      "Audience: teenagers. Use themes that genuinely interest adolescents: friendships and social life, music, social media and technology, sports, movies and series, school life, dreams and future plans, identity and self-expression. Keep the register current and relatable without being childish.",
-  },
-  adults: {
-    label: "Adultos",
-    prompt:
-      "Audience: adults. Focus on adult-relevant contexts: work and careers, business and the corporate world, professional situations (meetings, negotiations, networking), family and household life, travel, personal finance and everyday adult responsibilities. Keep the register mature and practical.",
-  },
+  preteens: { label: "pre-teens" },
+  teens: { label: "teenagers" },
+  adults: { label: "adults" },
 };
 const DEFAULT_AGE_GROUP = "adults";
 
@@ -95,9 +85,7 @@ function buildUserPrompt({ language, topic, level, ageGroup }) {
 Level: ${guidance.label}
 ${guidance.prompt}
 
-Student audience: ${age.label}
-${age.prompt}
-Adapt the topic treatment, vocabulary choices, conversation questions, the language game and the model answers so they fit this audience naturally. Keep the fixed structure and counts unchanged.
+Student age group: ${age.label}. Use this ONLY as background context. Do NOT adapt, replace or soften the themes because of the students' age, and never make the content childish or cartoonish — develop the teacher's topic exactly as given, with full depth and a natural register.
 
 Return a single JSON object with exactly these keys:
 {
