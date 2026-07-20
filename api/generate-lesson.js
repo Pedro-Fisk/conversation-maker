@@ -30,17 +30,17 @@ const LEVEL_GUIDANCE = {
   basic: {
     label: "Basic",
     prompt:
-      "Basic level: simple present/past tense, short common-word vocabulary, short direct conversation questions, scaffolded model answers (short, simple sentences a beginner could produce).",
+      "Basic level: simple present/past tense, short common-word vocabulary, short direct conversation questions.",
   },
   intermediate: {
     label: "Intermediate",
     prompt:
-      "Intermediate level: a wider range of tenses and everyday vocabulary, conversation questions that invite a short opinion or explanation, model answers one notch more elaborate than Basic but still natural spoken English.",
+      "Intermediate level: a wider range of tenses and everyday vocabulary, conversation questions that invite a short opinion or explanation.",
   },
   advanced: {
     label: "Advanced",
     prompt:
-      "Advanced level: nuanced/less common vocabulary, questions that invite critical thinking, comparison or hypothetical reasoning, model answers that are fluent and idiomatic, using varied sentence structure.",
+      "Advanced level: nuanced/less common vocabulary, questions that invite critical thinking, comparison or hypothetical reasoning, fluent and idiomatic phrasing.",
   },
   spanish_basic: {
     label: "Spanish B1",
@@ -50,9 +50,53 @@ const LEVEL_GUIDANCE = {
   spanish_advanced: {
     label: "Spanish C1",
     prompt:
-      "Spanish C1 level (CEFR — Common European Framework of Reference for Languages). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). C1 = advanced/proficient: sophisticated and less frequent vocabulary, idiomatic expressions, complex grammatical structures (subjuntivo across multiple tenses, conditional, passive voice, elaborate subordinate clauses), questions that invite nuanced argumentation, critical analysis and hypothetical/counterfactual reasoning, model answers that are fluent, idiomatic and stylistically varied — close to a proficient near-native register.",
+      "Spanish C1 level (CEFR — Common European Framework of Reference for Languages). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). C1 = advanced/proficient: sophisticated and less frequent vocabulary, idiomatic expressions, complex grammatical structures (subjuntivo across multiple tenses, conditional, passive voice, elaborate subordinate clauses), questions that invite nuanced argumentation, critical analysis and hypothetical/counterfactual reasoning — fluent, idiomatic and stylistically varied, close to a proficient near-native register.",
   },
 };
+
+// Estilo dos "modelAnswers" por nível — reformulado a partir de apostilas
+// reais do FISK (Pedro mandou vários exemplos). O padrão real da escola é
+// bem mais aberto do que o que a gente gerava antes: raramente dá a
+// resposta pronta, prefere um começo de frase para o aluno completar, e
+// em vários casos não dá modelo nenhum. Cada nível de inglês tem seu
+// próprio "tier"; os dois níveis de espanhol usam o tier mais próximo em
+// termos de proficiência (B1 ~ basic, C1 ~ advanced).
+const ANSWER_STYLE_TIER = {
+  basic: "basic",
+  intermediate: "intermediate",
+  advanced: "advanced",
+  spanish_basic: "basic",
+  spanish_advanced: "advanced",
+};
+
+// Esta orientação vale só para "conversation" e "evaluation" (perguntas
+// abertas de conversação). O "languageGame" tem seu próprio formato de
+// múltipla escolha — ver LANGUAGE_GAME_GUIDANCE mais abaixo, que vale para
+// todos os níveis igualmente (a dificuldade das distrações escala com o
+// texto de LEVEL_GUIDANCE, não com este bloco).
+const ANSWER_GUIDANCE = {
+  basic: `MODEL ANSWERS (conversation + evaluation questions only) — keep them minimal and open-ended, never a fully spelled-out answer:
+- For most questions (opinions, personal experience, open topics), give AT MOST ONE model answer, and make it an INCOMPLETE sentence starter ending in "..." (e.g. "My favorite player is...", "I'm grateful for...") — never a finished sentence with the content already filled in. The student completes it.
+- It's fine, and encouraged, for a simple/direct question to have NO model answer at all (empty array) — not every question needs scaffolding.
+- ONLY for clearly binary yes/no or true/false questions, you may give up to two short, complete model answers, one for each side (e.g. "Yes, I do." / "No, I don't.").
+- Never give two complete, fully-elaborated example answers for the same open question — that removes the reason for the student to think.`,
+  intermediate: `MODEL ANSWERS (conversation + evaluation questions only) — be sparing, most questions get none:
+- Across the 9 conversation questions, give a model answer to only about 4 of them (roughly 40%) — leave the rest with an empty modelAnswers array entirely. Apply the same rough proportion to the 2 evaluation questions (usually 0 or 1 of them gets one).
+- When you do include one, it must be a single OPEN sentence starter (e.g. "I think that... because...", "In my opinion..."), never a complete, fully-elaborated answer. At most one model answer per question — never two.
+- Choose which questions get a starter based on which ones are harder to begin (more abstract/complex), not randomly.`,
+  advanced: `MODEL ANSWERS (conversation + evaluation questions only) — do not provide any (leave modelAnswers as an empty array for every conversation and evaluation question); students at this level answer fully unprompted.`,
+};
+
+// O language game NÃO usa modelAnswers — é sempre múltipla escolha (3
+// opções, 1 certa). Motivo: o formato antigo (pergunta + respostas-modelo
+// abertas) ficava fácil demais ou com opções parecidas demais (as duas
+// pareciam certas). Vale para todo nível; quem escala com o nível é a
+// sutileza das distrações (ver LEVEL_GUIDANCE).
+const LANGUAGE_GAME_GUIDANCE = `LANGUAGE GAME — always multiple choice, never open model answers:
+- Each item is a short language-focused prompt (fill-in-the-blank, choose the correct word/tense/preposition, etc.) testing the vocabulary/grammar just covered.
+- Provide exactly 3 answer options ("options"). Exactly ONE must be unambiguously correct ("correctIndex", 0-based). The other two must be CLEARLY wrong to anyone who knows the target grammar/vocabulary — not just a different-but-also-acceptable phrasing. Avoid near-duplicate options where two could both pass as correct.
+- Make the two wrong options plausible distractors (a common mistake a learner would make: wrong verb tense, wrong preposition, confusable word) rather than random or absurd — they should require real knowledge to rule out, not be obviously silly.
+- Keep each option short (a word, a short phrase, or a short full-sentence version of the prompt with the blank filled in — pick whichever reads naturally for that question).`;
 
 // Perfil da turma escolhido pelo professor. Entra no prompt apenas como
 // contexto leve: a IA NÃO deve trocar os temas nem infantilizar o conteúdo
@@ -88,13 +132,16 @@ The template has a FIXED structure that never changes, so your output must alway
 - 6 language game items (short language-focused challenges: fill-in-the-blank, choose the correct word/tense, etc. — testing the vocabulary/grammar just covered)
 - 2 evaluation/reflection questions
 
-Every conversation, language game, and evaluation question needs exactly 2 short "modelAnswers" — natural example answers a teacher could read aloud or a student could aim for. These are illustrative models, not a rigid script.
+Each conversation and evaluation question has a "modelAnswers" array of 0 to 2 short strings. This is NOT always 2 — how many (if any), and whether they're open sentence starters or complete answers, is dictated by the MODEL ANSWERS guidance in the user message. Follow it precisely: real FISK classroom material is deliberately sparing with model answers, leaning on open sentence starters (ending in "...") rather than fully-written answers, so students have to produce their own language instead of just reading a ready-made sentence.
 
-Respond with a single JSON object only, no prose, no markdown code fences, matching exactly the schema described in the user message (camelCase keys). Never add or remove array items — always exactly the counts specified above.`;
+Each language game item is DIFFERENT: it's multiple choice, with an "options" array of exactly 3 strings and a "correctIndex" (0, 1, or 2) marking the single correct one — see the LANGUAGE GAME guidance in the user message for how to write good distractors.
+
+Respond with a single JSON object only, no prose, no markdown code fences, matching exactly the schema described in the user message (camelCase keys). Never add or remove array items in the top-level lists — always exactly the counts specified above (modelAnswers arrays are the one exception, and vary in length per the guidance; language game "options" is always exactly 3).`;
 
 function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch }) {
   const guidance = LEVEL_GUIDANCE[level];
   const age = AGE_GUIDANCE[ageGroup] || AGE_GUIDANCE[DEFAULT_AGE_GROUP];
+  const answerGuidance = ANSWER_GUIDANCE[ANSWER_STYLE_TIER[level]] || ANSWER_GUIDANCE.intermediate;
 
   const searchNote = useWebSearch
     ? `\nBefore writing, use the web search tool (at most ${MAX_WEB_SEARCHES} searches) to gather recent, factual information about the topic — names, results, dates, current events. Base the lesson content on what you find. After searching, your final answer must still be ONLY the JSON object, with no citations, no commentary and no source list inside the JSON values.\n`
@@ -106,6 +153,10 @@ ${guidance.prompt}
 
 Student age group: ${age.label}. Use this ONLY as background context. Do NOT adapt, replace or soften the themes because of the students' age, and never make the content childish or cartoonish — develop the teacher's topic exactly as given, with full depth and a natural register.
 
+${answerGuidance}
+
+${LANGUAGE_GAME_GUIDANCE}
+
 Return a single JSON object with exactly these keys:
 {
   "coverTitle": string,        // short, catchy lesson title built from the topic (e.g. "Discovering Japan")
@@ -115,11 +166,11 @@ Return a single JSON object with exactly these keys:
   "vocabulary": [ { "word": string, "translation": string } ]  // exactly 8 items
   ,
   "introText": string,         // exactly one paragraph, no line breaks
-  "conversation": [ { "question": string, "modelAnswers": [string, string] } ]  // exactly 9 items
+  "conversation": [ { "question": string, "modelAnswers": string[] } ]  // exactly 9 items; modelAnswers has 0-2 items per the MODEL ANSWERS guidance above
   ,
-  "languageGame": [ { "question": string, "modelAnswers": [string, string] } ]  // exactly 6 items
+  "languageGame": [ { "question": string, "options": [string, string, string], "correctIndex": number } ]  // exactly 6 items; options is always exactly 3, correctIndex is 0, 1 or 2 — see LANGUAGE GAME guidance above
   ,
-  "evaluation": [ { "question": string, "modelAnswers": [string, string] } ]  // exactly 2 items
+  "evaluation": [ { "question": string, "modelAnswers": string[] } ]  // exactly 2 items; modelAnswers has 0-2 items per the MODEL ANSWERS guidance above
 }`;
 }
 
@@ -148,6 +199,20 @@ function clampArray(arr, n) {
   const a = Array.isArray(arr) ? arr.slice(0, n) : [];
   while (a.length < n) a.push(a[a.length - 1] || {});
   return a;
+}
+
+// O language game é múltipla escolha: garante sempre exatamente 3 opções e
+// um correctIndex válido (0-2), mesmo que a IA erre a contagem.
+function clampLanguageGameItem(item) {
+  const options = Array.isArray(item && item.options) ? item.options.slice(0, 3) : [];
+  while (options.length < 3) options.push(options[options.length - 1] || "");
+  let correctIndex = Number.isInteger(item && item.correctIndex) ? item.correctIndex : 0;
+  if (correctIndex < 0 || correctIndex > 2) correctIndex = 0;
+  return { question: (item && item.question) || "", options, correctIndex };
+}
+
+function clampLanguageGame(arr, n) {
+  return clampArray(arr, n).map(clampLanguageGameItem);
 }
 
 async function callClaude({ language, topic, level, ageGroup, useWebSearch }) {
@@ -203,7 +268,7 @@ async function callClaude({ language, topic, level, ageGroup, useWebSearch }) {
     vocabulary: clampArray(parsed.vocabulary, 8),
     introText: parsed.introText || "",
     conversation: clampArray(parsed.conversation, 9),
-    languageGame: clampArray(parsed.languageGame, 6),
+    languageGame: clampLanguageGame(parsed.languageGame, 6),
     evaluation: clampArray(parsed.evaluation, 2),
   };
 }
