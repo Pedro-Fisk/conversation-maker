@@ -26,6 +26,19 @@
     if (genNoteEl) genNoteEl.classList.toggle("is-hidden", !on);
   }
 
+  // ---- Código de acesso lembrado no navegador ----
+  // Pré-preenche com o último código que gerou uma aula com sucesso, para o
+  // professor não digitar toda vez. Fica só no localStorage deste navegador.
+  const accessCodeEl = document.getElementById("accessCode");
+  try {
+    const savedCode = localStorage.getItem("cm-access-code");
+    if (savedCode && accessCodeEl) accessCodeEl.value = savedCode;
+  } catch (e) {}
+
+  function rememberAccessCode(code) {
+    try { localStorage.setItem("cm-access-code", code); } catch (e) {}
+  }
+
   function setStatus(text, isError) {
     statusEl.textContent = text || "";
     statusEl.classList.toggle("is-error", Boolean(isError));
@@ -389,7 +402,7 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const accessCode = document.getElementById("accessCode").value;
+    const accessCode = accessCodeEl.value;
     const language = selectedValue(languageChoices);
     const topic = topicEl.value.trim();
     const levelChoice = language === "english" ? selectedValue(levelChoices) : null;
@@ -400,12 +413,16 @@
     if (!topic || !accessCode) return;
 
     generateBtn.disabled = true;
-    setStatus("Gerando com a IA...");
+    setStatus(language === "spanish" ? "Creando magia de conversación..." : "Making conversation magic...");
     setGenerating(true);
     results.classList.remove("is-visible");
 
     try {
       const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch });
+
+      // Só memoriza o código depois de uma geração bem-sucedida (ou seja,
+      // um código que o servidor aceitou).
+      rememberAccessCode(accessCode);
 
       results.innerHTML = "";
       lessons.forEach((lesson) => results.appendChild(renderDeck(lesson)));
