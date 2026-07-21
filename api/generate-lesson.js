@@ -98,6 +98,52 @@ const LANGUAGE_GAME_GUIDANCE = `LANGUAGE GAME — always multiple choice, never 
 - Make the two wrong options plausible distractors (a common mistake a learner would make: wrong verb tense, wrong preposition, confusable word) rather than random or absurd — they should require real knowledge to rule out, not be obviously silly.
 - Keep each option short (a word, a short phrase, or a short full-sentence version of the prompt with the blank filled in — pick whichever reads naturally for that question).`;
 
+// Pool de pontos gramaticais para o Language Game, com base nos estágios
+// (livros) que o professor marcou no formulário. Se ele não marcar nenhum,
+// usa o mapeamento padrão por nível (LEVEL_DEFAULT_BOOKS). Só se aplica ao
+// inglês — os estágios (Essentials/Transitions/Fluency/Focus) são do curso
+// de inglês da FISK, sem equivalente em espanhol.
+function pickGrammarSources(level, stages, count) {
+  const validStages = Array.isArray(stages) ? stages.filter((key) => BOOK_CATALOG[key]) : [];
+  const bookKeys = validStages.length ? validStages : LEVEL_DEFAULT_BOOKS[level] || [];
+  if (!bookKeys.length) return null;
+
+  const pool = [];
+  bookKeys.forEach((key) => {
+    const book = BOOK_CATALOG[key];
+    if (!book) return;
+    book.points.forEach((point) => {
+      pool.push({
+        label: `${book.label} · ${point.code}`,
+        promptLabel: `${book.label} — Lesson ${point.code} (${point.title})`,
+        grammar: point.grammar,
+      });
+    });
+  });
+  if (!pool.length) return null;
+
+  // Fisher-Yates shuffle, depois repete o pool se for menor que "count"
+  // (só acontece se o professor marcar um único livro pequeno).
+  const shuffled = pool.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const picked = [];
+  for (let i = 0; i < count; i++) picked.push(shuffled[i % shuffled.length]);
+  return picked;
+}
+
+function buildLanguageGameSourceBlock(sources) {
+  if (!sources || !sources.length) return "";
+  const lines = sources
+    .map((s, i) => `${i + 1}. [${s.promptLabel}] Grammar focus: ${s.grammar}`)
+    .join("\n");
+  return `\nLANGUAGE GAME — GRAMMAR SOURCES (exactly ${sources.length} sources below, one per language game item, IN ORDER — item 1 must test source 1, item 2 must test source 2, and so on):
+${lines}
+Each language game question must specifically test the grammar focus listed for its source — do not mix sources between items, and do not invent a different grammar point. You do NOT need to mention the book or lesson in the question text itself; just write a natural language-focused multiple-choice question that exercises that exact grammar point.\n`;
+}
+
 // Perfil da turma escolhido pelo professor. Entra no prompt apenas como
 // contexto leve: a IA NÃO deve trocar os temas nem infantilizar o conteúdo
 // por causa da idade — o tópico do professor manda. (Uma versão anterior
@@ -112,6 +158,7 @@ const DEFAULT_AGE_GROUP = "adults";
 const { waitUntil } = require("@vercel/functions");
 const { recordTeacherActivity } = require("../canva-lib");
 const { appendActivityLog } = require("../activity-log");
+const { BOOK_CATALOG, LEVEL_DEFAULT_BOOKS } = require("../content-catalog");
 
 const ENGLISH_LEVELS = ["basic", "intermediate", "advanced"];
 const SPANISH_LEVELS = ["spanish_basic", "spanish_advanced"];
@@ -138,10 +185,11 @@ Each language game item is DIFFERENT: it's multiple choice, with an "options" ar
 
 Respond with a single JSON object only, no prose, no markdown code fences, matching exactly the schema described in the user message (camelCase keys). Never add or remove array items in the top-level lists — always exactly the counts specified above (modelAnswers arrays are the one exception, and vary in length per the guidance; language game "options" is always exactly 3).`;
 
-function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch }) {
+function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources }) {
   const guidance = LEVEL_GUIDANCE[level];
   const age = AGE_GUIDANCE[ageGroup] || AGE_GUIDANCE[DEFAULT_AGE_GROUP];
   const answerGuidance = ANSWER_GUIDANCE[ANSWER_STYLE_TIER[level]] || ANSWER_GUIDANCE.intermediate;
+  const sourceBlock = buildLanguageGameSourceBlock(sources);
 
   const searchNote = useWebSearch
     ? `\nBefore writing, use the web search tool (at most ${MAX_WEB_SEARCHES} searches) to gather recent, factual information about the topic — names, results, dates, current events. Base the lesson content on what you find. After searching, your final answer must still be ONLY the JSON object, with no citations, no commentary and no source list inside the JSON values.\n`
@@ -156,7 +204,7 @@ Student age group: ${age.label}. Use this ONLY as background context. Do NOT ada
 ${answerGuidance}
 
 ${LANGUAGE_GAME_GUIDANCE}
-
+${sourceBlock}
 Return a single JSON object with exactly these keys:
 {
   "coverTitle": string,        // short, catchy lesson title built from the topic (e.g. "Discovering Japan")
@@ -208,20 +256,39 @@ function clampLanguageGameItem(item) {
   while (options.length < 3) options.push(options[options.length - 1] || "");
   let correctIndex = Number.isInteger(item && item.correctIndex) ? item.correctIndex : 0;
   if (correctIndex < 0 || correctIndex > 2) correctIndex = 0;
-  return { question: (item && item.question) || "", options, correctIndex };
+  return { question: (item && item.question) || "", options, correctIndex, source: "" };
 }
 
 function clampLanguageGame(arr, n) {
   return clampArray(arr, n).map(clampLanguageGameItem);
 }
 
-async function callClaude({ language, topic, level, ageGroup, useWebSearch }) {
+// Anota, por índice, a qual fonte (livro + lição) cada pergunta do
+// Language Game corresponde — não confiamos na IA para ecoar o rótulo de
+// volta certinho no JSON; como NÓS escolhemos os "sources" na ordem exata
+// pedida no prompt, é mais confiável carimbar aqui depois de receber a
+// resposta. Sem sources (ex.: espanhol, ou nível sem mapeamento), o campo
+// "source" fica como string vazia e o rodapé simplesmente não aparece.
+function attachLanguageGameSources(languageGame, sources) {
+  if (!sources || !sources.length) return languageGame;
+  return languageGame.map((item, i) => ({
+    ...item,
+    source: sources[i % sources.length].label,
+  }));
+}
+
+async function callClaude({ language, topic, level, ageGroup, useWebSearch, stages }) {
+  // Os estágios (Essentials/Transitions/Fluency/Focus) são do curso de
+  // inglês da FISK — não têm equivalente em espanhol, então só sorteamos
+  // fontes gramaticais quando language === "english".
+  const sources = language === "english" ? pickGrammarSources(level, stages, 6) : null;
+
   const body = {
     model: MODEL,
     max_tokens: 8000,
     system: SYSTEM_PROMPT,
     messages: [
-      { role: "user", content: buildUserPrompt({ language, topic, level, ageGroup, useWebSearch }) },
+      { role: "user", content: buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources }) },
     ],
   };
 
@@ -268,7 +335,7 @@ async function callClaude({ language, topic, level, ageGroup, useWebSearch }) {
     vocabulary: clampArray(parsed.vocabulary, 8),
     introText: parsed.introText || "",
     conversation: clampArray(parsed.conversation, 9),
-    languageGame: clampLanguageGame(parsed.languageGame, 6),
+    languageGame: attachLanguageGameSources(clampLanguageGame(parsed.languageGame, 6), sources),
     evaluation: clampArray(parsed.evaluation, 2),
   };
 }
@@ -279,7 +346,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName } = req.body || {};
+  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages } = req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
 
@@ -316,7 +383,7 @@ module.exports = async function handler(req, res) {
     // 504. Em paralelo, o tempo total é o da chamada mais lenta.
     const lessons = await Promise.all(
       levels.map((level) =>
-        callClaude({ language, topic, level, ageGroup: resolvedAgeGroup, useWebSearch: searchEnabled })
+        callClaude({ language, topic, level, ageGroup: resolvedAgeGroup, useWebSearch: searchEnabled, stages })
       )
     );
 
