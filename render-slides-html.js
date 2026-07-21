@@ -1,8 +1,8 @@
 /*
  * render-slides-html.js
  *
- * Turns a `lesson` object into a single self-contained HTML document (18
- * pages, one per Canva template slide) using slide-layouts.js for exact
+ * Turns a `lesson` object into a single self-contained HTML document (one
+ * page per Canva template slide, 20 pages total) using slide-layouts.js for exact
  * positioning over the real exported backgrounds. This HTML is what both
  * the PDF renderer (api/export-pdf.js, via headless Chromium) and, in
  * spirit, the pptx builder (pptx-builder.js) are driven from — the layout
@@ -232,9 +232,12 @@ function renderQaBlock(field, items) {
 
 // Language game vira múltipla escolha (3 opções, 1 certa) em vez de
 // modelAnswers abertas — mesma caixa/posição do template, só o conteúdo
-// interno muda. A opção certa ganha uma bolinha verde na frente, dando
-// já uma pista visual de qual é a resposta (uma versão estática do que a
-// futura animação clique-a-clique vai revelar aos poucos).
+// interno muda. Cada grupo de perguntas agora tem DOIS slides com o MESMO
+// fundo: um com field.revealAnswer=false (todas as opções neutras) e outro
+// com field.revealAnswer=true (a certa ganha bolinha verde) — passar de um
+// slide pro outro na apresentação já funciona como a "revelação" da
+// resposta (a animação clique-a-clique não funcionou de forma confiável no
+// PowerPoint, então Pedro optou por este caminho mais simples).
 const CORRECT_OPTION_COLOR = "#1F9D55";
 
 function renderMultipleChoiceBlock(field, items) {
@@ -251,7 +254,7 @@ function renderMultipleChoiceBlock(field, items) {
       ].join(";");
       const options = (item.options || [])
         .map((opt, oi) => {
-          const isCorrect = oi === item.correctIndex;
+          const isCorrect = field.revealAnswer && oi === item.correctIndex;
           const aStyle = [
             `font-family:${field.answerFont}`,
             `font-size:${field.answerFontSize}px`,

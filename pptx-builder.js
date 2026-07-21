@@ -214,9 +214,12 @@ function addQaBlock(slide, field, lesson) {
 }
 
 // Language game é múltipla escolha (3 opções, 1 certa) em vez de
-// modelAnswers abertas — mesma caixa/posição do template. A opção certa
-// ganha uma bolinha verde na frente (pista visual estática; uma futura
-// versão animada pode revelar isso clique a clique).
+// modelAnswers abertas — mesma caixa/posição do template. Cada grupo de
+// perguntas tem DOIS slides com o mesmo fundo: um com field.revealAnswer
+// false (opções neutras) e outro com true (a certa ganha bolinha verde) —
+// passar de slide já funciona como a "revelação" da resposta. (Tentamos
+// animação clique-a-clique de verdade primeiro, mas não funcionou de forma
+// confiável no PowerPoint, então Pedro optou por este caminho mais simples.)
 const CORRECT_OPTION_COLOR = "1F9D55";
 const OPTION_LETTERS = ["A", "B", "C"];
 
@@ -236,7 +239,7 @@ function addMultipleChoiceBlock(slide, field, lesson) {
     });
     const options = item.options || [];
     options.forEach((opt, oi) => {
-      const isCorrect = oi === item.correctIndex;
+      const isCorrect = field.revealAnswer && oi === item.correctIndex;
       const isLast = oi === options.length - 1;
       const marker = isCorrect ? "● " : "";
       runs.push({

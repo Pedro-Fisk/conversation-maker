@@ -1,8 +1,10 @@
 /*
  * slide-layouts.js
  *
- * Exact layout map for the 18-page "Conversation Maker" Canva Brand
- * Template (design DAHPwZYsMkA / brand template EAHP3MbB56Y). Positions
+ * Exact layout map for the "Conversation Maker" Canva Brand Template
+ * (design DAHPwZYsMkA / brand template EAHP3MbB56Y) — 20 pages, after the
+ * language game grew from 2 to 4 pages (unrevealed/revealed pairs; see the
+ * comment above those entries below). Positions
  * were captured directly from the template's own elements (in Canva's
  * native 1920x1080 page coordinate space) via the Canva MCP editing
  * transaction, so a text box placed at these coordinates lines up exactly
@@ -330,20 +332,39 @@ const LAYOUTS = [
       },
     ],
   },
+  // Language game agora são 4 páginas em vez de 2: cada grupo de 3
+  // perguntas aparece primeiro SEM a resposta marcada (o professor projeta
+  // e a turma discute/decide) e depois um slide idêntico (mesmo fundo) só
+  // que COM a bolinha verde na opção certa — passar de slide já funciona
+  // como a "revelação" da resposta, sem precisar de animação de verdade
+  // (que não funcionou de forma confiável no PowerPoint). Pedro pediu essa
+  // troca depois de testar a versão animada.
   {
     page: 14,
     role: "languageGame",
     bg: "assets/bg/14-language-game-q1-3.png",
-    fields: [qaBlockField("languageGame", 0, 3)],
+    fields: [qaBlockField("languageGame", 0, 3, false)],
   },
   {
     page: 15,
     role: "languageGame",
-    bg: "assets/bg/15-language-game-q4-6.png",
-    fields: [qaBlockField("languageGame", 3, 3)],
+    bg: "assets/bg/14-language-game-q1-3.png",
+    fields: [qaBlockField("languageGame", 0, 3, true)],
   },
   {
     page: 16,
+    role: "languageGame",
+    bg: "assets/bg/15-language-game-q4-6.png",
+    fields: [qaBlockField("languageGame", 3, 3, false)],
+  },
+  {
+    page: 17,
+    role: "languageGame",
+    bg: "assets/bg/15-language-game-q4-6.png",
+    fields: [qaBlockField("languageGame", 3, 3, true)],
+  },
+  {
+    page: 18,
     role: "divider",
     bg: "assets/bg/16-divider-evaluation.png",
     fields: [
@@ -360,7 +381,7 @@ const LAYOUTS = [
     ],
   },
   {
-    page: 17,
+    page: 19,
     role: "evaluation",
     bg: "assets/bg/17-evaluation-q1-2.png",
     fields: [
@@ -385,7 +406,7 @@ const LAYOUTS = [
     ],
   },
   {
-    page: 18,
+    page: 20,
     role: "closing",
     bg: "assets/bg/18-closing.png",
     fields: [
@@ -410,13 +431,17 @@ const LAYOUTS = [
 // options, vs. conversation's question + 0-2 short answers), so they use
 // smaller type and tighter spacing to fit the same 3-per-slide box without
 // overflowing.
-function qaBlockField(group, startIndex, count) {
+function qaBlockField(group, startIndex, count, revealAnswer) {
   const isLanguageGame = group === "languageGame";
   return {
     kind: "qaBlock",
     group,
     startIndex,
     count,
+    // Só importa para languageGame: controla se a opção certa aparece
+    // marcada (bolinha verde) ou se todas as opções ficam neutras — o par
+    // de slides "sem resposta" / "com resposta" reusa o mesmo fundo.
+    revealAnswer,
     ...box(64.8, 95.4, 1423.9, 894.5),
     questionFont: FONT_BODY,
     questionFontSize: isLanguageGame ? 46 : 60,
