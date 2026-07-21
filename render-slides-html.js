@@ -22,9 +22,14 @@
  *     introText: string,                 // 1 short paragraph (Basic) or 2 paragraphs
  *                                         // joined with a blank line (Intermediate/Advanced)
  *     conversation: { question: string, modelAnswers: string[0-2] }[9],
- *     languageGame: { question: string, options: string[3], correctIndex: 0|1|2 }[6],
+ *     languageGame: { question: string, options: string[3], correctIndex: 0|1|2, source: string }[6],
  *                                         // multiple choice, not modelAnswers — see LANGUAGE
- *                                         // GAME guidance in api/generate-lesson.js
+ *                                         // GAME guidance in api/generate-lesson.js. "source" is
+ *                                         // "<Book> · <lesson code>" (e.g. "Essentials 1 · 3A"),
+ *                                         // attached by attachLanguageGameSources() based on the
+ *                                         // course stages the teacher picked (or the level's
+ *                                         // default books) — empty string when not applicable
+ *                                         // (e.g. Spanish decks).
  *     evaluation: { question: string, modelAnswers: string[0-2] }[2],
  *                                         // modelAnswers length/style varies by level — see the
  *                                         // MODEL ANSWERS guidance in api/generate-lesson.js
@@ -276,6 +281,27 @@ function renderMultipleChoiceBlock(field, items) {
   return `<div style="${style}"><div style="width:100%;">${blocks}</div></div>`;
 }
 
+// Rodapé com a fonte (livro + lição) de cada pergunta do Language Game —
+// item.source vem de api/generate-lesson.js (attachLanguageGameSources),
+// vazio quando a aula foi gerada sem estágios/mapeamento (ex.: espanhol).
+// Nesse caso a linha fica vazia e o campo simplesmente não aparece.
+function renderLanguageGameSources(field, items) {
+  const parts = items
+    .map((item, i) => (item.source ? `${field.startIndex + i + 1}) ${escapeHtml(item.source)}` : null))
+    .filter(Boolean);
+  if (!parts.length) return "";
+  const style = fieldStyle(field);
+  const textStyle = [
+    `font-family:${field.font}`,
+    `font-size:${field.fontSize}px`,
+    `font-weight:${field.fontWeight}`,
+    `color:${field.color}`,
+    `line-height:${field.lineHeight || 1.2}`,
+    `font-style:italic`,
+  ].join(";");
+  return `<div style="${style}"><div style="${textStyle}">${parts.join("&nbsp;&nbsp;&nbsp;&nbsp;")}</div></div>`;
+}
+
 function renderField(field, lesson) {
   if (field.kind === "static" || field.kind === "badge") {
     return renderTextField(field);
@@ -286,6 +312,10 @@ function renderField(field, lesson) {
       return renderMultipleChoiceBlock(field, items);
     }
     return renderQaBlock(field, items);
+  }
+  if (field.kind === "languageGameSources") {
+    const items = getQaItems(lesson, field.group, field.startIndex, field.count);
+    return renderLanguageGameSources(field, items);
   }
   // dynamic
   const value = buildDynamicValue(lesson, field.key);

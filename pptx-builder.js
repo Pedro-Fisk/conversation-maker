@@ -270,6 +270,32 @@ function addMultipleChoiceBlock(slide, field, lesson) {
   });
 }
 
+// Rodapé com a fonte (livro + lição) de cada pergunta do Language Game —
+// mesma lógica do render-slides-html.js (item.source vem de
+// attachLanguageGameSources em api/generate-lesson.js; fica vazio para
+// aulas sem estágio/mapeamento, ex.: espanhol, e o texto some sozinho).
+function addLanguageGameSources(slide, field, lesson) {
+  const items = getQaItems(lesson, field.group, field.startIndex, field.count);
+  const parts = items
+    .map((item, i) => (item.source ? `${field.startIndex + i + 1}) ${item.source}` : null))
+    .filter(Boolean);
+  if (!parts.length) return;
+
+  slide.addText(parts.join("     "), {
+    x: xIn(field.left),
+    y: yIn(field.top),
+    w: wIn(field.width),
+    h: hIn(field.height),
+    fontFace: faceFor(field.font),
+    fontSize: pt(field.fontSize),
+    italic: true,
+    color: hex(field.color),
+    align: field.align || "left",
+    valign: "middle",
+    wrap: true,
+  });
+}
+
 function renderField(slide, field, lesson, pptx) {
   if (field.kind === "badge") return addBadge(slide, field, pptx);
   if (field.kind === "static") return addStatic(slide, field);
@@ -277,6 +303,7 @@ function renderField(slide, field, lesson, pptx) {
     return addMultipleChoiceBlock(slide, field, lesson);
   }
   if (field.kind === "qaBlock") return addQaBlock(slide, field, lesson);
+  if (field.kind === "languageGameSources") return addLanguageGameSources(slide, field, lesson);
 
   // dynamic
   const value = buildDynamicValue(lesson, field.key);

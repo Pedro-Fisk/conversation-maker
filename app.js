@@ -15,6 +15,8 @@ const levelHintEnglish = document.getElementById("levelHintEnglish");
 const levelHintSpanish = document.getElementById("levelHintSpanish");
 const levelField = document.getElementById("levelField");
 const ageChoices = document.getElementById("ageChoices");
+const stagesField = document.getElementById("stagesField");
+const stageChoices = document.getElementById("stageChoices");
 const results = document.getElementById("results");
 const generateBtn = document.getElementById("generateBtn");
 const statusEl = document.getElementById("status");
@@ -54,11 +56,11 @@ statusEl.textContent = text || "";
 statusEl.classList.toggle("is-error", Boolean(isError));
 }
 
-async function fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName }) {
+async function fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages }) {
 const response = await fetch("/api/generate-lesson", {
 method: "POST",
 headers: { "content-type": "application/json" },
-body: JSON.stringify({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName }),
+body: JSON.stringify({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages }),
 });
 const data = await response.json().catch(() => ({}));
 if (!response.ok) {
@@ -72,6 +74,10 @@ const active = container.querySelector(".choice.is-active");
 return active ? active.dataset.value : null;
 }
 
+function selectedValues(container) {
+return Array.from(container.querySelectorAll(".choice.is-active")).map((c) => c.dataset.value);
+}
+
 function wireChoiceRow(container, onChange) {
 container.addEventListener("click", (e) => {
 const btn = e.target.closest(".choice");
@@ -79,6 +85,17 @@ if (!btn) return;
 container.querySelectorAll(".choice").forEach((c) => c.classList.remove("is-active"));
 btn.classList.add("is-active");
 onChange(btn.dataset.value);
+});
+}
+
+// Estágios do curso: diferente das outras choice-rows, aqui o professor
+// pode marcar vários botões ao mesmo tempo (ou nenhum) — cada clique só
+// alterna o próprio botão, sem desmarcar os outros.
+function wireMultiChoiceRow(container) {
+container.addEventListener("click", (e) => {
+const btn = e.target.closest(".choice");
+if (!btn) return;
+btn.classList.toggle("is-active");
 });
 }
 
@@ -99,12 +116,17 @@ levelChoicesEnglish.classList.toggle("is-hidden", isSpanish);
 levelChoicesSpanish.classList.toggle("is-hidden", !isSpanish);
 if (levelHintEnglish) levelHintEnglish.classList.toggle("is-hidden", isSpanish);
 if (levelHintSpanish) levelHintSpanish.classList.toggle("is-hidden", !isSpanish);
+// Estágios (Essentials/Transitions/Fluency/Focus) são do curso de
+// inglês da FISK, sem equivalente em espanhol — o painel só aparece
+// quando o idioma escolhido é inglês.
+if (stagesField) stagesField.classList.toggle("is-hidden", isSpanish);
 }
 
 wireChoiceRow(languageChoices, updateLevelVisibility);
 wireChoiceRow(levelChoicesEnglish, () => {});
 wireChoiceRow(levelChoicesSpanish, () => {});
 wireChoiceRow(ageChoices, () => {});
+if (stageChoices) wireMultiChoiceRow(stageChoices);
 updateLevelVisibility(selectedValue(languageChoices));
 
 // ---- Ditado por voz (Web Speech API) ----
@@ -519,6 +541,7 @@ selectChoice(languageChoices, "english");
 selectChoice(levelChoicesEnglish, "basic");
 selectChoice(levelChoicesSpanish, "spanish_basic");
 selectChoice(ageChoices, "adults");
+if (stageChoices) stageChoices.querySelectorAll(".choice.is-active").forEach((b) => b.classList.remove("is-active"));
 results.classList.remove("is-visible", "multi");
 results.innerHTML = "";
 setStatus("");
@@ -549,6 +572,7 @@ const ageGroup = selectedValue(ageChoices);
 const webSearchEl = document.getElementById("webSearch");
 const useWebSearch = Boolean(webSearchEl && webSearchEl.checked);
 const teacherName = teacherNameEl ? teacherNameEl.value.trim() : "";
+const stages = language === "english" && stageChoices ? selectedValues(stageChoices) : [];
 
 if (!topic || !accessCode) return;
 
@@ -558,7 +582,7 @@ setGenerating(true);
 results.classList.remove("is-visible");
 
 try {
-const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName });
+const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages });
 
 // Só memoriza o código depois de uma geração bem-sucedida (ou seja,
 // um código que o servidor aceitou).

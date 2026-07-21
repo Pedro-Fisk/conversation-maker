@@ -343,25 +343,25 @@ const LAYOUTS = [
     page: 14,
     role: "languageGame",
     bg: "assets/bg/14-language-game-q1-3.png",
-    fields: [qaBlockField("languageGame", 0, 3, false)],
+    fields: [qaBlockField("languageGame", 0, 3, false), languageGameSourceField(0, 3)],
   },
   {
     page: 15,
     role: "languageGame",
     bg: "assets/bg/14-language-game-q1-3.png",
-    fields: [qaBlockField("languageGame", 0, 3, true)],
+    fields: [qaBlockField("languageGame", 0, 3, true), languageGameSourceField(0, 3)],
   },
   {
     page: 16,
     role: "languageGame",
     bg: "assets/bg/15-language-game-q4-6.png",
-    fields: [qaBlockField("languageGame", 3, 3, false)],
+    fields: [qaBlockField("languageGame", 3, 3, false), languageGameSourceField(3, 3)],
   },
   {
     page: 17,
     role: "languageGame",
     bg: "assets/bg/15-language-game-q4-6.png",
-    fields: [qaBlockField("languageGame", 3, 3, true)],
+    fields: [qaBlockField("languageGame", 3, 3, true), languageGameSourceField(3, 3)],
   },
   {
     page: 18,
@@ -454,6 +454,28 @@ function qaBlockField(group, startIndex, count, revealAnswer) {
     align: "left",
     lineHeight: isLanguageGame ? 1.2 : 1.35,
     blockSpacing: isLanguageGame ? "0.6em" : "1.5em",
+  };
+}
+
+// Rodapé com a fonte (livro + lição) de cada pergunta do Language Game —
+// só existe conteúdo aqui quando o professor gerou a aula com estágios do
+// curso marcados (ou o mapeamento padrão por nível), ver content-catalog.js
+// e api/generate-lesson.js. Fica dentro da faixa vermelha na parte de baixo
+// do slide, à esquerda do selo "FISK" (que ocupa o canto inferior direito),
+// em branco para contrastar com o fundo vermelho.
+function languageGameSourceField(startIndex, count) {
+  return {
+    kind: "languageGameSources",
+    group: "languageGame",
+    startIndex,
+    count,
+    ...box(1008, 95.4, 1450, 46),
+    font: FONT_BODY,
+    fontSize: 26,
+    fontWeight: 500,
+    color: "#FFFFFF",
+    align: "left",
+    lineHeight: 1.2,
   };
 }
 
