@@ -8,6 +8,13 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<script>/* tema herdado do Hub via ?theme= (domínio diferente não compartilha localStorage) e aplicado antes da primeira pintura */
+try{
+  var p=new URLSearchParams(location.search).get('theme');
+  if(p==='dark'||p==='light') localStorage.setItem('cm-theme',p);
+  if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme-dark');
+}catch(e){}
+</script>
 
 <div id="confirmClear" class="modal-overlay">
 <div class="modal-card">
