@@ -301,6 +301,30 @@ padding: 0.2rem 0.65rem;
 margin-bottom: 0.5rem;
 }
 
+/* Linha com o rótulo da seção (.slide-layout) + botão "gerar de novo" */
+.slide-tag-row{
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 0.5rem;
+}
+
+.btn-regen{
+flex: 0 0 auto;
+border: 1.5px solid var(--gray-light);
+background: var(--white);
+color: var(--gray);
+font-size: 0.75rem;
+font-weight: 700;
+cursor: pointer;
+padding: 0.2rem 0.6rem;
+border-radius: 999px;
+margin-bottom: 0.5rem;
+transition: all 0.12s ease;
+}
+.btn-regen:hover{ border-color: var(--red); color: var(--red); }
+.btn-regen:disabled{ opacity: 0.6; cursor: wait; }
+
 .slide-body{ font-size: 0.9rem; color: var(--black); }
 .slide-body p{ margin: 0.3rem 0; }
 .slide-body .q{ margin: 0.4rem 0; }

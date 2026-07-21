@@ -246,25 +246,109 @@ el.addEventListener("input", () => onInput(el.value));
 return el;
 }
 
+// Mapeia a chave de seção (a mesma que /api/regenerate-section espera) ao
+// campo correspondente no objeto `lesson`. Usado tanto para montar o corpo
+// do pedido quanto para saber onde encaixar a resposta de volta.
+const SECTION_FIELD = {
+objectives: "objectives",
+vocabulary: "vocabulary",
+introText: "introText",
+conversation: "conversation",
+languageGame: "languageGame",
+evaluation: "evaluation",
+};
+
+// Substitui o CONTEÚDO de um array no lugar (em vez de trocar a
+// referência) — importante porque addQASection/addLanguageGameSection
+// recebem o array por parâmetro (list = lesson.conversation, etc.) e essa
+// referência precisa continuar apontando pros dados novos depois de
+// regenerar, senão o refresh() re-renderiza os dados antigos.
+function replaceArrayInPlace(arr, newItems) {
+arr.splice(0, arr.length, ...(newItems || []));
+}
+
+async function regenerateSection({ lesson, sectionKey, btn, onDone }) {
+const originalLabel = btn.textContent;
+btn.disabled = true;
+btn.textContent = "Gerando...";
+try {
+const response = await fetch("/api/regenerate-section", {
+method: "POST",
+headers: { "content-type": "application/json" },
+body: JSON.stringify({
+accessCode: accessCodeEl.value,
+language: lesson.language,
+topic: lesson._genTopic || lesson.topic,
+level: lesson.levelKey,
+ageGroup: lesson._genAgeGroup,
+useWebSearch: lesson._genUseWebSearch,
+stages: lesson._genStages,
+teacherName: teacherNameEl ? teacherNameEl.value.trim() : "",
+section: sectionKey,
+}),
+});
+const data = await response.json().catch(() => ({}));
+if (!response.ok) {
+throw new Error(data.error || `Erro ${response.status} ao regenerar esta seção.`);
+}
+const field = SECTION_FIELD[sectionKey];
+if (Array.isArray(lesson[field])) {
+replaceArrayInPlace(lesson[field], data[field]);
+} else {
+lesson[field] = data[field];
+}
+onDone();
+} catch (err) {
+alert(err.message || "Não foi possível regenerar esta seção. Tente novamente.");
+} finally {
+btn.disabled = false;
+btn.textContent = originalLabel;
+}
+}
+
 function renderLessonPreview(lesson) {
 const sections = document.createElement("div");
 sections.className = "slide-list";
 
 const note = document.createElement("p");
 note.className = "edit-note";
-note.textContent = "✏️ Revise e corrija o texto abaixo à vontade. As alterações entram no .pptx ao baixar.";
+note.textContent = "✏️ Revise e corrija o texto abaixo à vontade. As alterações entram no .pptx ao baixar. Não gostou de uma seção inteira? Use \"🔄 Gerar de novo\" para pedir só aquela parte de novo pra IA, sem mexer no resto.";
 sections.appendChild(note);
 
-function addSection(label, buildBody) {
+function addSection(label, buildBody, opts) {
+opts = opts || {};
 const el = document.createElement("div");
 el.className = "slide";
+
+const tagRow = document.createElement("div");
+tagRow.className = "slide-tag-row";
 const tag = document.createElement("span");
 tag.className = "slide-layout";
 tag.textContent = label;
+tagRow.appendChild(tag);
+
 const body = document.createElement("div");
 body.className = "slide-body";
+
+function refresh() {
+body.innerHTML = "";
 buildBody(body);
-el.appendChild(tag);
+}
+
+if (opts.sectionKey) {
+const regenBtn = document.createElement("button");
+regenBtn.type = "button";
+regenBtn.className = "btn-regen";
+regenBtn.textContent = "🔄 Gerar de novo";
+regenBtn.title = `Pede pra IA uma nova versão só de "${label}", sem mexer no resto da aula`;
+regenBtn.addEventListener("click", () =>
+regenerateSection({ lesson, sectionKey: opts.sectionKey, btn: regenBtn, onDone: refresh })
+);
+tagRow.appendChild(regenBtn);
+}
+
+refresh();
+el.appendChild(tagRow);
 el.appendChild(body);
 sections.appendChild(el);
 }
@@ -283,7 +367,7 @@ body.appendChild(
 editField(o, (v) => { lesson.objectives[i] = v; }, { multiline: true, rows: 1 })
 );
 });
-});
+}, { sectionKey: "objectives" });
 
 // Vocabulário (8) — palavra + tradução
 addSection("Vocabulário", (body) => {
@@ -296,14 +380,14 @@ editField(w.translation, (v) => { lesson.vocabulary[i].translation = v; }, { pla
 );
 body.appendChild(row);
 });
-});
+}, { sectionKey: "vocabulary" });
 
 // Introdução (1 parágrafo)
 addSection("Introdução", (body) => {
 body.appendChild(
 editField(lesson.introText, (v) => { lesson.introText = v; }, { multiline: true, rows: 4 })
 );
-});
+}, { sectionKey: "introText" });
 
 // Blocos de perguntas com 0-2 respostas-modelo cada (o número e o estilo
 // variam por nível — ver a orientação MODEL ANSWERS em
@@ -356,7 +440,7 @@ container.appendChild(addBtn);
 }
 }
 
-function addQASection(label, list) {
+function addQASection(label, list, sectionKey) {
 addSection(label, (body) => {
 list.forEach((q, i) => {
 const card = document.createElement("div");
@@ -383,13 +467,13 @@ renderAnswers(answersContainer, list, i);
 
 body.appendChild(card);
 });
-});
+}, { sectionKey });
 }
 
 // Language game é múltipla escolha (pergunta + 3 opções, uma marcada como
 // certa) em vez de perguntas abertas com respostas-modelo — editor
 // separado do addQASection acima.
-function addLanguageGameSection(list) {
+function addLanguageGameSection(list, sectionKey) {
 addSection("Language Game", (body) => {
 list.forEach((q, i) => {
 const card = document.createElement("div");
@@ -442,12 +526,12 @@ card.appendChild(optionsContainer);
 
 body.appendChild(card);
 });
-});
+}, { sectionKey });
 }
 
-addQASection("Conversação", lesson.conversation);
-addLanguageGameSection(lesson.languageGame);
-addQASection("Avaliação", lesson.evaluation);
+addQASection("Conversação", lesson.conversation, "conversation");
+addLanguageGameSection(lesson.languageGame, "languageGame");
+addQASection("Avaliação", lesson.evaluation, "evaluation");
 
 return sections;
 }
@@ -588,6 +672,19 @@ const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, a
 // um código que o servidor aceitou).
 rememberAccessCode(accessCode);
 if (teacherName) rememberTeacherName(teacherName);
+
+// Guarda os parâmetros exatos usados nesta geração em cada lesson — o
+// botão "🔄 Gerar de novo" de cada seção precisa deles depois para
+// chamar /api/regenerate-section com o mesmo tópico/nível/idade/estágios,
+// mesmo que o professor já tenha mudado algo no formulário nesse meio
+// tempo. lesson.topic pode ter sido encurtado pela IA (ex.: "Japan"), por
+// isso guardamos o texto ORIGINAL digitado em _genTopic separadamente.
+lessons.forEach((lesson) => {
+lesson._genTopic = topic;
+lesson._genAgeGroup = ageGroup;
+lesson._genUseWebSearch = useWebSearch;
+lesson._genStages = stages;
+});
 
 results.innerHTML = "";
 lessons.forEach((lesson) => results.appendChild(renderDeck(lesson)));
