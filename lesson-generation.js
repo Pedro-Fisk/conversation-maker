@@ -182,7 +182,7 @@ ${lines}
 Each language game question must specifically test the grammar focus listed for its source — do not mix sources between items, and do not invent a different grammar point. You do NOT need to mention the book or lesson in the question text itself; just write a natural language-focused multiple-choice question that exercises that exact grammar point.\n`;
 }
 
-function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources }) {
+function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript }) {
   const guidance = LEVEL_GUIDANCE[level];
   const age = AGE_GUIDANCE[ageGroup] || AGE_GUIDANCE[DEFAULT_AGE_GROUP];
   const answerGuidance = ANSWER_GUIDANCE[ANSWER_STYLE_TIER[level]] || ANSWER_GUIDANCE.intermediate;
@@ -192,7 +192,11 @@ function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sourc
     ? `\nBefore writing, use the web search tool (at most ${MAX_WEB_SEARCHES} searches) to gather recent, factual information about the topic — names, results, dates, current events. Base the lesson content on what you find. After searching, your final answer must still be ONLY the JSON object, with no citations, no commentary and no source list inside the JSON values.\n`
     : "";
 
-  return `${searchNote}Topic: ${topic}
+  const transcriptNote = transcript
+    ? `\nYOUTUBE VIDEO TRANSCRIPT — The teacher attached a YouTube video to this lesson. Use the content of this transcript to inspire and enrich the vocabulary, conversation questions, and language game items, making them directly relevant to what the video is about:\n\n${transcript.slice(0, 8000)}\n`
+    : "";
+
+  return `${searchNote}${transcriptNote}Topic: ${topic}
 Level: ${guidance.label}
 ${guidance.prompt}
 
@@ -371,7 +375,7 @@ async function callAnthropicRaw(body) {
   return extractJson(text, debugInfo);
 }
 
-async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, stages }) {
+async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, stages, transcript }) {
   const sources = language === "english" ? pickGrammarSources(level, stages, 6) : null;
 
   const body = {
@@ -379,7 +383,7 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
     max_tokens: 8000,
     system: SYSTEM_PROMPT,
     messages: [
-      { role: "user", content: buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources }) },
+      { role: "user", content: buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript }) },
     ],
   };
   if (useWebSearch) {

@@ -45,13 +45,44 @@ const {
   generateFullLesson,
 } = require("../lesson-generation");
 
+async function fetchYouTubeTranscript(videoId) {
+  try {
+    const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+      headers: { "Accept-Language": "en-US,en;q=0.9", "User-Agent": "Mozilla/5.0" },
+    });
+    if (!pageRes.ok) return null;
+    const html = await pageRes.text();
+    const match = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});(?:\s*var\s|<\/script>)/s);
+    if (!match) return null;
+    const playerResponse = JSON.parse(match[1]);
+    const captionTracks =
+      playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+    if (!captionTracks?.length) return null;
+    const track =
+      captionTracks.find((t) => t.languageCode === "en") || captionTracks[0];
+    const captionRes = await fetch(track.baseUrl + "&fmt=json3");
+    if (!captionRes.ok) return null;
+    const captionData = await captionRes.json();
+    const text = (captionData.events || [])
+      .filter((e) => e.segs)
+      .map((e) => e.segs.map((s) => s.utf8 || "").join(""))
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return text || null;
+  } catch (err) {
+    console.error("[transcript] falha:", err.message);
+    return null;
+  }
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
 
-  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages } = req.body || {};
+  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId } = req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
 
@@ -83,12 +114,14 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    const transcript = videoId ? await fetchYouTubeTranscript(videoId) : null;
+
     // As chamadas rodam em PARALELO (antes eram sequenciais): com três
     // níveis, o tempo total caía fora do maxDuration e o Vercel devolvia
     // 504. Em paralelo, o tempo total é o da chamada mais lenta.
     const lessons = await Promise.all(
       levels.map((level) =>
-        generateFullLesson({ language, topic, level, ageGroup: resolvedAgeGroup, useWebSearch: searchEnabled, stages })
+        generateFullLesson({ language, topic, level, ageGroup: resolvedAgeGroup, useWebSearch: searchEnabled, stages, transcript })
       )
     );
 

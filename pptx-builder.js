@@ -320,11 +320,26 @@ function buildPptx(lesson) {
   pptx.author = "FISK — Conversation Maker";
   pptx.title = lesson.coverTitle || "Conversation Maker";
 
+  const videoId = lesson._videoId || null;
+
   LAYOUTS.forEach((layout) => {
     const slide = pptx.addSlide();
     const bgPath = path.join(__dirname, layout.bg);
     slide.addImage({ path: bgPath, x: 0, y: 0, w: SLIDE_W_IN, h: SLIDE_H_IN });
     layout.fields.forEach((field) => renderField(slide, field, lesson, pptx));
+
+    if (layout.role === "intro" && videoId) {
+      const videoSlide = pptx.addSlide();
+      videoSlide.background = { color: "000000" };
+      videoSlide.addMedia({
+        type: "online",
+        link: `https://www.youtube.com/embed/${videoId}`,
+        x: 0.9,
+        y: 0.5,
+        w: 11.5,
+        h: 6.47,
+      });
+    }
   });
 
   return pptx;

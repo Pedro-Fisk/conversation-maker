@@ -85,6 +85,9 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <span>Pesquisar na internet notícias recentes sobre o tema</span>
 </label>
 <p class="hint">Útil para temas atuais (jogos, eventos, notícias). A IA faz até 3 buscas antes de criar a atividade, o que deixa a geração um pouco mais lenta.</p>
+<label class="fld" for="youtubeUrl">Link do YouTube <span style="font-weight:400;color:var(--gray)">(opcional)</span></label>
+<input type="text" id="youtubeUrl" placeholder="ex.: https://www.youtube.com/watch?v=...">
+<p class="hint">Cole aqui o link de um vídeo do YouTube. A transcrição vai alimentar a IA ao gerar perguntas, e o vídeo aparecerá em um slide extra logo após a introdução no .pptx.</p>
 </div>
 
 <div class="panel">
