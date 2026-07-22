@@ -38,8 +38,9 @@ module.exports = async function handler(req, res) {
     const cleanPart = (s) =>
       String(s || "")
         .normalize("NFD")
-        .replace(/[̀-ͯ]/g, "")
-        .replace(/[\\/:*?"<>|]+/g, "")
+        .replace(/[̀-ͯ]/g, "")   // remove combining diacritics (accents)
+        .replace(/[^\x20-\x7E]/g, "")      // strip any remaining non-ASCII (em-dash, curly quotes, emoji…)
+        .replace(/[\\/:*?"<>|]+/g, "")     // remove filename-illegal chars
         .replace(/\s+/g, " ")
         .trim();
     const fileName = `AC - ${cleanPart(lesson.coverTitle) || "Atividade"} - ${
