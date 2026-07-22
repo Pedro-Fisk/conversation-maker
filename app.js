@@ -26,6 +26,9 @@ const micHint = document.getElementById("micHint");
 const spinnerEl = document.getElementById("spinner");
 const genNoteEl = document.getElementById("genNote");
 const youtubeEl = document.getElementById("youtubeUrl");
+const youtubeCheckEl = document.getElementById("youtubeCheck");
+const youtubeWrapEl = document.getElementById("youtubeWrap");
+const youtubeLuckyEl = document.getElementById("youtubeLucky");
 const extraActivityCheckEl = document.getElementById("extraActivityCheck");
 const extraActivityWrapEl = document.getElementById("extraActivityWrap");
 const extraActivityEl = document.getElementById("extraActivity");
@@ -73,17 +76,17 @@ statusEl.textContent = text || "";
 statusEl.classList.toggle("is-error", Boolean(isError));
 }
 
-async function fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, extraActivity }) {
+async function fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity }) {
 const response = await fetch("/api/generate-lesson", {
 method: "POST",
 headers: { "content-type": "application/json" },
-body: JSON.stringify({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, extraActivity }),
+body: JSON.stringify({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity }),
 });
 const data = await response.json().catch(() => ({}));
 if (!response.ok) {
 throw new Error(data.error || `Erro ${response.status} ao gerar a aula.`);
 }
-return data.lessons;
+return { lessons: data.lessons, resolvedVideoId: data.resolvedVideoId || null };
 }
 
 function selectedValue(container) {
@@ -154,6 +157,25 @@ wireChoiceRow(levelChoicesSpanish, () => {});
 wireChoiceRow(ageChoices, () => {});
 if (stageChoices) wireMultiChoiceRow(stageChoices);
 updateLevelVisibility(selectedValue(languageChoices));
+
+// YouTube checkbox toggle
+if (youtubeCheckEl && youtubeWrapEl) {
+  youtubeCheckEl.addEventListener("change", () => {
+    youtubeWrapEl.classList.toggle("is-hidden", !youtubeCheckEl.checked);
+    if (!youtubeCheckEl.checked) {
+      if (youtubeEl) youtubeEl.value = "";
+      if (youtubeLuckyEl) { youtubeLuckyEl.checked = false; if (youtubeEl) youtubeEl.disabled = false; }
+    }
+  });
+}
+
+// "Estou com sorte" — grays out the URL field when checked
+if (youtubeLuckyEl && youtubeEl) {
+  youtubeLuckyEl.addEventListener("change", () => {
+    youtubeEl.disabled = youtubeLuckyEl.checked;
+    if (youtubeLuckyEl.checked) youtubeEl.value = "";
+  });
+}
 
 // Extra Activity checkbox toggle
 if (extraActivityCheckEl && extraActivityWrapEl) {
@@ -701,7 +723,10 @@ function clearForm() {
 topicEl.value = "";
 const webSearchEl = document.getElementById("webSearch");
 if (webSearchEl) webSearchEl.checked = false;
-if (youtubeEl) youtubeEl.value = "";
+if (youtubeCheckEl) { youtubeCheckEl.checked = false; }
+if (youtubeWrapEl) youtubeWrapEl.classList.add("is-hidden");
+if (youtubeLuckyEl) { youtubeLuckyEl.checked = false; }
+if (youtubeEl) { youtubeEl.value = ""; youtubeEl.disabled = false; }
 if (extraActivityCheckEl) { extraActivityCheckEl.checked = false; }
 if (extraActivityWrapEl) extraActivityWrapEl.classList.add("is-hidden");
 if (extraActivityEl) extraActivityEl.value = "";
@@ -741,7 +766,8 @@ const webSearchEl = document.getElementById("webSearch");
 const useWebSearch = Boolean(webSearchEl && webSearchEl.checked);
 const teacherName = teacherNameEl ? teacherNameEl.value.trim() : "";
 const stages = language === "english" && stageChoices ? selectedValues(stageChoices) : [];
-const videoId = extractVideoId(youtubeEl ? youtubeEl.value : "");
+const videoSearch = !!(youtubeLuckyEl && youtubeLuckyEl.checked && youtubeCheckEl && youtubeCheckEl.checked);
+const videoId = (youtubeCheckEl && youtubeCheckEl.checked && !videoSearch) ? extractVideoId(youtubeEl ? youtubeEl.value : "") : null;
 const extraActivity = (extraActivityCheckEl && extraActivityCheckEl.checked && extraActivityEl && extraActivityEl.value.trim()) ? extraActivityEl.value.trim() : null;
 
 if (!topic || !accessCode || !teacherName) return;
@@ -752,7 +778,7 @@ setGenerating(true);
 results.classList.remove("is-visible");
 
 try {
-const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, extraActivity });
+const { lessons, resolvedVideoId } = await fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity });
 
 // Só memoriza o código depois de uma geração bem-sucedida (ou seja,
 // um código que o servidor aceitou).
@@ -765,12 +791,13 @@ if (teacherName) rememberTeacherName(teacherName);
 // mesmo que o professor já tenha mudado algo no formulário nesse meio
 // tempo. lesson.topic pode ter sido encurtado pela IA (ex.: "Japan"), por
 // isso guardamos o texto ORIGINAL digitado em _genTopic separadamente.
+const finalVideoId = resolvedVideoId || videoId || null;
 lessons.forEach((lesson) => {
 lesson._genTopic = topic;
 lesson._genAgeGroup = ageGroup;
 lesson._genUseWebSearch = useWebSearch;
 lesson._genStages = stages;
-lesson._videoId = videoId || null;
+lesson._videoId = finalVideoId;
 });
 
 results.innerHTML = "";

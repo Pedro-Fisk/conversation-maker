@@ -49,6 +49,12 @@ color: var(--black);
 background: var(--white);
 }
 
+input[type="text"]:disabled, textarea:disabled{
+opacity: 0.38;
+cursor: not-allowed;
+background: var(--gray-light);
+}
+
 input[type="text"]:focus, input[type="password"]:focus, select:focus, textarea:focus{
 outline: none;
 border-color: var(--red);
@@ -68,6 +74,7 @@ flex-wrap: wrap;
 gap: 0.6rem;
 }
 
+.is-hidden{ display: none !important; }
 .choice-row.is-hidden{ display: none; }
 
 .choice{
@@ -328,6 +335,30 @@ transition: all 0.12s ease;
 }
 .btn-regen:hover{ border-color: var(--red); color: var(--red); }
 .btn-regen:disabled{ opacity: 0.6; cursor: wait; }
+
+/* Painel destaque (tópico da aula) */
+.panel-featured{
+background: #EBF3FF;
+border-color: #2563EB;
+}
+.panel-featured h2{ color: #1D4ED8; }
+
+body.theme-dark .panel-featured{
+background: #0d1e36;
+border-color: #3B82F6;
+}
+body.theme-dark .panel-featured h2{ color: #60A5FA; }
+
+/* Seções dentro do painel de incrementos */
+.increment-section{
+padding: 0.9rem 0 0.5rem;
+border-top: 1px solid var(--gray-light);
+}
+.increment-section:first-of-type{ border-top: none; padding-top: 0.2rem; }
+.increment-title{
+font-size: 0.97rem;
+font-weight: 700;
+}
 
 /* Chevron de colapsar/expandir */
 .slide-chevron{

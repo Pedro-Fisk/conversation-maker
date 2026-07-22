@@ -45,6 +45,22 @@ const {
   generateFullLesson,
 } = require("../lesson-generation");
 
+async function searchYouTubeVideo(topic) {
+  try {
+    const query = encodeURIComponent(`${topic} english conversation lesson`);
+    const res = await fetch(`https://www.youtube.com/results?search_query=${query}`, {
+      headers: { "Accept-Language": "en-US,en;q=0.9", "User-Agent": "Mozilla/5.0" },
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const m = html.match(/"videoId":"([A-Za-z0-9_-]{11})"/);
+    return m ? m[1] : null;
+  } catch (err) {
+    console.error("[videoSearch] falha:", err.message);
+    return null;
+  }
+}
+
 async function fetchYouTubeTranscript(videoId) {
   try {
     const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
@@ -82,7 +98,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, extraActivity } = req.body || {};
+  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity } = req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
 
@@ -114,7 +130,11 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const transcript = videoId ? await fetchYouTubeTranscript(videoId) : null;
+    let resolvedVideoId = videoId || null;
+    if (videoSearch && !resolvedVideoId) {
+      resolvedVideoId = await searchYouTubeVideo(topic);
+    }
+    const transcript = resolvedVideoId ? await fetchYouTubeTranscript(resolvedVideoId) : null;
 
     // As chamadas rodam em PARALELO (antes eram sequenciais): com três
     // níveis, o tempo total caía fora do maxDuration e o Vercel devolvia
@@ -133,7 +153,7 @@ module.exports = async function handler(req, res) {
       lessons[i].vocabulary = lessons[0].vocabulary;
     }
 
-    res.status(200).json({ lessons });
+    res.status(200).json({ lessons, resolvedVideoId: resolvedVideoId || null });
 
     // Contabiliza a atividade por professor (apenas estatística interna;
     // o nome não entra na aula nem no arquivo). Roda após a resposta.

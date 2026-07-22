@@ -64,12 +64,12 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <p class="hint" id="languageHint">Os níveis do espanhol (Básico, Intermediário e Avançado) correspondem aos estágios Inmediato 1, 2 e 3 do curso.</p>
 </div>
 
-<div class="panel">
+<div class="panel panel-featured">
 <h2>💬 Tópico da aula</h2>
-<label class="fld" for="topic">Sobre o que vai ser a conversação?</label>
+<label class="fld" for="topic">Sobre o que vai ser a conversação? <span class="req">* obrigatório</span></label>
 <p class="hint hint-lead">Escreva livremente o tema da aula — não precisa ser uma palavra só. Você pode descrever o contexto, o objetivo, situações que quer explorar ou o que os alunos precisam praticar. Quanto mais detalhe, melhor a IA adapta a atividade.</p>
 <div class="topic-wrap">
-<textarea id="topic" rows="2" placeholder="ex.: going shopping / uma conversa sobre planejar uma viagem ao Japão, incluindo pedir informações e reservar hotel..." required></textarea>
+<textarea id="topic" rows="3" placeholder="ex.: going shopping / uma conversa sobre planejar uma viagem ao Japão, incluindo pedir informações e reservar hotel..." required></textarea>
 <button type="button" class="mic-btn" id="micBtn" aria-label="Ditar por voz" title="Clique para ditar por voz">
 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -80,22 +80,44 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </button>
 </div>
 <p class="hint" id="micHint"></p>
+</div>
+
+<div class="panel">
+<h2>✨ Incrementos</h2>
+<p class="hint hint-lead" style="margin-top:0">Recursos opcionais para enriquecer a atividade. Ative os que quiser usar.</p>
+
+<div class="increment-section">
 <label class="checkbox-row" for="webSearch">
 <input type="checkbox" id="webSearch">
-<span>Pesquisar na internet notícias recentes sobre o tema</span>
+<span class="increment-title">🔍 Pesquisar na internet</span>
 </label>
 <p class="hint">Útil para temas atuais (jogos, eventos, notícias). A IA faz até 3 buscas antes de criar a atividade, o que deixa a geração um pouco mais lenta.</p>
-<label class="fld" for="youtubeUrl">Link do YouTube <span style="font-weight:400;color:var(--gray)">(opcional)</span></label>
+</div>
+
+<div class="increment-section">
+<label class="checkbox-row" for="youtubeCheck">
+<input type="checkbox" id="youtubeCheck">
+<span class="increment-title">📺 Vídeo do YouTube</span>
+</label>
+<div id="youtubeWrap" class="is-hidden">
+<p class="hint hint-lead">A transcrição vai alimentar a IA ao gerar perguntas, e o vídeo aparecerá em um slide extra logo após a introdução no .pptx.</p>
 <input type="text" id="youtubeUrl" placeholder="ex.: https://www.youtube.com/watch?v=...">
-<p class="hint">Cole aqui o link de um vídeo do YouTube. A transcrição vai alimentar a IA ao gerar perguntas, e o vídeo aparecerá em um slide extra logo após a introdução no .pptx.</p>
+<label class="checkbox-row" for="youtubeLucky" style="margin-top:0.6rem">
+<input type="checkbox" id="youtubeLucky">
+<span>Estou com sorte — deixar a IA escolher um vídeo relevante automaticamente</span>
+</label>
+</div>
+</div>
+
+<div class="increment-section">
 <label class="checkbox-row" for="extraActivityCheck">
 <input type="checkbox" id="extraActivityCheck">
-<span>Incluir atividade extra / dinâmica em sala</span>
+<span class="increment-title">🎯 Atividade extra / dinâmica</span>
 </label>
 <div id="extraActivityWrap" class="is-hidden">
-<label class="fld" for="extraActivity">Descreva a dinâmica que você quer fazer</label>
-<p class="hint hint-lead">Pode ser um debate, entrevista entre alunos, jogo, corrida pela sala, rodada de perguntas, etc. A IA vai entender sua proposta e gerar um slide extra com instruções claras logo após a introdução.</p>
+<p class="hint hint-lead">Pode ser um debate, entrevista entre alunos, jogo, corrida pela sala, rodada de perguntas, etc. A IA vai gerar um slide extra com instruções claras logo após a introdução.</p>
 <textarea id="extraActivity" rows="3" placeholder="ex.: Quero que os alunos se entrevistem em duplas por 3 minutos sobre o tema, depois trocam de parceiro e repetem..."></textarea>
+</div>
 </div>
 </div>
 
