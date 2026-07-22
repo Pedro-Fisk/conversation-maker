@@ -193,7 +193,7 @@ function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sourc
     : "";
 
   const transcriptNote = transcript
-    ? `\nYOUTUBE VIDEO TRANSCRIPT — The teacher attached a YouTube video to this lesson. Use the content of this transcript to inspire and enrich the vocabulary, conversation questions, and language game items, making them directly relevant to what the video is about:\n\n${transcript.slice(0, 8000)}\n`
+    ? `\nYOUTUBE VIDEO TRANSCRIPT — The teacher attached a YouTube video related to this lesson's topic. Use it SPARINGLY: exactly 2 of the 9 conversation questions and exactly 2 of the 6 language game items should draw directly from specific content in the video (a detail, example, or idea from the transcript). The remaining 7 conversation questions and 4 language game items must be written normally based on the teacher's topic alone, as if no video existed. Do NOT let the video dominate or replace the topic — it is a supplementary reference only.\n\nTranscript:\n${transcript.slice(0, 8000)}\n`
     : "";
 
   return `${searchNote}${transcriptNote}Topic: ${topic}
