@@ -2,6 +2,8 @@
 .theme-toggle, .modal-*, .btn, .btn-ghost, .btn-generate/.btn-gold vêm
 de fisk-shared.css. Aqui só fica o que é específico do Conversation Maker. */
 
+.req{color:var(--red-dark);font-weight:800;font-size:12px}
+
 .wrap{
 flex: 1;
 max-width: 780px;
@@ -24,6 +26,8 @@ margin: 0 0 1rem;
 font-size: 1.15rem;
 font-weight: 800;
 }
+
+.req{color:var(--red-dark);font-weight:800;font-size:12px}
 
 .fld{
 display: block;
