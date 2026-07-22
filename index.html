@@ -49,7 +49,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </div>
 
 <div class="panel">
-<h2>🧑‍🏫 Seu nome</h2>
+<h2>🧑‍🏫 Nome do professor</h2>
 <label class="fld" for="teacherName">Como você quer ser identificado(a)? <span class="req">* obrigatório</span></label>
 <input type="text" id="teacherName" placeholder="ex.: Teacher Ana" autocomplete="name" required>
 <p class="hint">Usado apenas para estatísticas internas de uso da ferramenta. Não aparece na atividade, no arquivo nem no nome do arquivo.</p>
@@ -61,7 +61,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <button type="button" class="choice is-active" data-value="english">Inglês</button>
 <button type="button" class="choice" data-value="spanish">Espanhol</button>
 </div>
-<p class="hint" id="languageHint">O espanhol usa dois níveis do Quadro Europeu Comum (QECR): Básico (B1) e Avançado (C1).</p>
+<p class="hint" id="languageHint">Os níveis do espanhol (Básico, Intermediário e Avançado) correspondem aos estágios Inmediato 1, 2 e 3 do curso.</p>
 </div>
 
 <div class="panel">
@@ -88,6 +88,15 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <label class="fld" for="youtubeUrl">Link do YouTube <span style="font-weight:400;color:var(--gray)">(opcional)</span></label>
 <input type="text" id="youtubeUrl" placeholder="ex.: https://www.youtube.com/watch?v=...">
 <p class="hint">Cole aqui o link de um vídeo do YouTube. A transcrição vai alimentar a IA ao gerar perguntas, e o vídeo aparecerá em um slide extra logo após a introdução no .pptx.</p>
+<label class="checkbox-row" for="extraActivityCheck">
+<input type="checkbox" id="extraActivityCheck">
+<span>Incluir atividade extra / dinâmica em sala</span>
+</label>
+<div id="extraActivityWrap" class="is-hidden">
+<label class="fld" for="extraActivity">Descreva a dinâmica que você quer fazer</label>
+<p class="hint hint-lead">Pode ser um debate, entrevista entre alunos, jogo, corrida pela sala, rodada de perguntas, etc. A IA vai entender sua proposta e gerar um slide extra com instruções claras logo após a introdução.</p>
+<textarea id="extraActivity" rows="3" placeholder="ex.: Quero que os alunos se entrevistem em duplas por 3 minutos sobre o tema, depois trocam de parceiro e repetem..."></textarea>
+</div>
 </div>
 
 <div class="panel">
@@ -103,18 +112,21 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <div class="panel" id="levelField">
 <h2>📊 Nível</h2>
 <div class="choice-row" id="levelChoicesEnglish" data-field="level">
+<button type="button" class="choice" data-value="real_beginners">Real Beginners</button>
+<button type="button" class="choice" data-value="teens">Teens</button>
 <button type="button" class="choice is-active" data-value="basic">Basic</button>
 <button type="button" class="choice" data-value="intermediate">Intermediate</button>
 <button type="button" class="choice" data-value="advanced">Advanced</button>
 <button type="button" class="choice" data-value="all_levels">Todos os níveis</button>
 </div>
 <div class="choice-row is-hidden" id="levelChoicesSpanish" data-field="level">
-<button type="button" class="choice is-active" data-value="spanish_basic">Básico (B1)</button>
-<button type="button" class="choice" data-value="spanish_advanced">Avançado (C1)</button>
+<button type="button" class="choice is-active" data-value="spanish_basic">Básico</button>
+<button type="button" class="choice" data-value="spanish_intermediate">Intermediário</button>
+<button type="button" class="choice" data-value="spanish_advanced">Avançado</button>
 <button type="button" class="choice" data-value="all_levels">Todos os níveis</button>
 </div>
-<p class="hint" id="levelHintEnglish">"Todos os níveis" gera três roteiros separados (Basic + Intermediate + Advanced) — nunca um só mesclado.</p>
-<p class="hint is-hidden" id="levelHintSpanish">"Todos os níveis" gera os dois roteiros separados (Básico B1 + Avançado C1) — nunca um só mesclado.</p>
+<p class="hint" id="levelHintEnglish">"Todos os níveis" gera cinco roteiros separados (Real Beginners → Advanced) — nunca um só mesclado. <strong>Teens</strong> seleciona automaticamente a faixa etária Pré-adolescentes.</p>
+<p class="hint is-hidden" id="levelHintSpanish">Os níveis Básico, Intermediário e Avançado correspondem aos estágios do curso: Inmediato 1, 2 e 3. "Todos os níveis" gera os três roteiros separados.</p>
 </div>
 
 <div class="panel" id="stagesField">
@@ -129,7 +141,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <button type="button" class="choice" data-value="fluency2">Fluency 2</button>
 <button type="button" class="choice" data-value="focus">In Focus Review</button>
 </div>
-<p class="hint">Sem nenhum estágio marcado, a plataforma usa perguntas genéricas dentro do nível escolhido: Basic → Essentials, Intermediate → Transitions, Advanced → Fluency + In Focus Review.</p>
+<p class="hint">Sem nenhum estágio marcado, a IA gera perguntas genéricas adequadas ao nível, sem referenciar o conteúdo de nenhum livro específico.</p>
 </div>
 
 <div class="actions">

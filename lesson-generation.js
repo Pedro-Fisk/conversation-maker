@@ -17,6 +17,16 @@
  */
 
 const LEVEL_GUIDANCE = {
+  real_beginners: {
+    label: "Real Beginners",
+    prompt:
+      "Real Beginners level: absolute beginners studying English for the very first time. Use only the most basic vocabulary (greetings, colors, numbers, family, simple objects), present simple at its simplest ('I am', 'I have', 'I like'), very short and direct questions. Every question should be answerable with one or two words. Model answers must almost complete the sentence, leaving only one small piece for the student to fill in.",
+  },
+  teens: {
+    label: "Teens",
+    prompt:
+      "Teens level: young learners aged 10–11, slightly above Real Beginners but below Basic. Use simple present and very common past tense, friendly and engaging topics that feel relevant to pre-teens. Questions should be short and concrete. Model answers guide the student clearly, leaving the key content word(s) for them to supply.",
+  },
   basic: {
     label: "Basic",
     prompt:
@@ -33,14 +43,19 @@ const LEVEL_GUIDANCE = {
       "Advanced level: nuanced/less common vocabulary, questions that invite critical thinking, comparison or hypothetical reasoning, fluent and idiomatic phrasing.",
   },
   spanish_basic: {
-    label: "Spanish B1",
+    label: "Básico",
     prompt:
-      "Spanish B1 level (CEFR — Common European Framework of Reference for Languages). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). B1 = intermediate: everyday vocabulary, common tenses (presente, pretérito, futuro próximo), natural conversational Spanish a B1 student could both understand and answer.",
+      "Spanish Básico level (Inmediato 1 — FISK course). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). Simple vocabulary and tenses: presente de indicativo, ser/estar, common phrases. Natural, simple conversational Spanish appropriate for Inmediato 1 learners.",
+  },
+  spanish_intermediate: {
+    label: "Intermediário",
+    prompt:
+      "Spanish Intermediário level (Inmediato 2 — FISK course). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). A wider range of vocabulary and tenses: presente, pretérito indefinido, futuro próximo, common reflexive verbs. Natural conversational Spanish appropriate for Inmediato 2 learners.",
   },
   spanish_advanced: {
-    label: "Spanish C1",
+    label: "Avançado",
     prompt:
-      "Spanish C1 level (CEFR — Common European Framework of Reference for Languages). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). C1 = advanced/proficient: sophisticated and less frequent vocabulary, idiomatic expressions, complex grammatical structures (subjuntivo across multiple tenses, conditional, passive voice, elaborate subordinate clauses), questions that invite nuanced argumentation, critical analysis and hypothetical/counterfactual reasoning — fluent, idiomatic and stylistically varied, close to a proficient near-native register.",
+      "Spanish Avançado level (Inmediato 3 — FISK course). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). More complex vocabulary and structures: multiple tenses including subjuntivo, condicional, idiomatic expressions, questions that invite nuanced opinions. Fluent, natural Spanish appropriate for Inmediato 3 learners.",
   },
 };
 
@@ -49,10 +64,13 @@ const LEVEL_GUIDANCE = {
 // modelo padrão: raramente dá a resposta pronta, prefere um começo de
 // frase para o aluno completar, e em vários casos não dá modelo nenhum.
 const ANSWER_STYLE_TIER = {
+  real_beginners: "real_beginners",
+  teens: "teens",
   basic: "basic",
   intermediate: "intermediate",
   advanced: "advanced",
   spanish_basic: "basic",
+  spanish_intermediate: "intermediate",
   spanish_advanced: "advanced",
 };
 
@@ -60,11 +78,18 @@ const ANSWER_STYLE_TIER = {
 // abertas de conversação). O "languageGame" tem seu próprio formato de
 // múltipla escolha — ver LANGUAGE_GAME_GUIDANCE mais abaixo.
 const ANSWER_GUIDANCE = {
-  basic: `MODEL ANSWERS (conversation + evaluation questions only) — keep them minimal and open-ended, never a fully spelled-out answer:
-- For most questions (opinions, personal experience, open topics), give AT MOST ONE model answer, and make it an INCOMPLETE sentence starter ending in "..." (e.g. "My favorite player is...", "I'm grateful for...") — never a finished sentence with the content already filled in. The student completes it.
-- It's fine, and encouraged, for a simple/direct question to have NO model answer at all (empty array) — not every question needs scaffolding.
-- ONLY for clearly binary yes/no or true/false questions, you may give up to two short, complete model answers, one for each side (e.g. "Yes, I do." / "No, I don't.").
-- Never give two complete, fully-elaborated example answers for the same open question — that removes the reason for the student to think.`,
+  real_beginners: `MODEL ANSWERS (conversation + evaluation questions only) — Real Beginners need maximum support:
+- Give a model answer to EVERY question, no exceptions.
+- For yes/no or binary questions: give TWO near-complete starters, one for each side (e.g. "Yes, I ___." / "No, I ___.") — leave only the final verb or content word blank.
+- For open questions: give ONE nearly-complete sentence starter that leaves only ONE word or very short expression for the student to fill in (e.g. "My name is ___.", "I like ___ because it is ___."). The student supplies only the blank.`,
+  teens: `MODEL ANSWERS (conversation + evaluation questions only) — Teens need clear scaffolding:
+- Give a model answer to every question.
+- For yes/no or binary questions: give TWO short complete answers, one for each side (e.g. "Yes, I do." / "No, I don't.").
+- For open questions: give ONE sentence starter ending in "..." that clearly guides the structure and leaves the content for the student (e.g. "My favorite subject is... because..."). Make the starter fairly complete.`,
+  basic: `MODEL ANSWERS (conversation + evaluation questions only) — Basic students benefit from varied scaffolding:
+- For yes/no or binary questions: give TWO complete model answers, one for each side (e.g. "Yes, I did." / "No, I didn't."). Keep them short and natural.
+- For open questions (opinions, experiences, preferences): give ONE model answer, mixing styles across the activity — roughly half of the open questions get a COMPLETE sentence showing the expected structure and vocabulary (e.g. "My favorite hero is Iron Man because he is very smart."), and the other half get an INCOMPLETE sentence starter ending in "..." (e.g. "My favorite hero is... because..."). Choose whichever best helps that specific question.
+- It is acceptable for a very simple question to have no model answer (empty array) when the expected response is self-evident.`,
   intermediate: `MODEL ANSWERS (conversation + evaluation questions only) — be sparing, most questions get none:
 - Across the questions, give a model answer to only about 40% of them — leave the rest with an empty modelAnswers array entirely.
 - When you do include one, it must be a single OPEN sentence starter (e.g. "I think that... because...", "In my opinion..."), never a complete, fully-elaborated answer. At most one model answer per question — never two.
@@ -91,10 +116,10 @@ const AGE_GUIDANCE = {
 };
 const DEFAULT_AGE_GROUP = "adults";
 
-const { BOOK_CATALOG, LEVEL_DEFAULT_BOOKS } = require("./content-catalog");
+const { BOOK_CATALOG } = require("./content-catalog");
 
-const ENGLISH_LEVELS = ["basic", "intermediate", "advanced"];
-const SPANISH_LEVELS = ["spanish_basic", "spanish_advanced"];
+const ENGLISH_LEVELS = ["real_beginners", "teens", "basic", "intermediate", "advanced"];
+const SPANISH_LEVELS = ["spanish_basic", "spanish_intermediate", "spanish_advanced"];
 const MODEL = "claude-sonnet-5";
 
 // Teto de buscas na web POR GERAÇÃO quando o professor marca o checkbox
@@ -137,13 +162,12 @@ const SECTION_SYSTEM_PROMPT = `You are the content engine behind Conversation Ma
 Respond with a single JSON object only, no prose, no markdown code fences, containing ONLY the one key requested in the user message, with exactly the item count specified.`;
 
 // Pool de pontos gramaticais para o Language Game, com base nos estágios
-// (livros) que o professor marcou no formulário. Se ele não marcar nenhum,
-// usa o mapeamento padrão por nível (LEVEL_DEFAULT_BOOKS). Só se aplica ao
-// inglês — os estágios (Essentials/Transitions/Fluency/Focus) são do curso
-// de inglês da FISK, sem equivalente em espanhol.
+// (livros) que o professor marcou no formulário. Se nenhum livro for
+// marcado, retorna null — a IA gera inglês genérico dentro do nível, sem
+// referenciar conteúdo específico de nenhum livro. Só se aplica ao inglês.
 function pickGrammarSources(level, stages, count) {
   const validStages = Array.isArray(stages) ? stages.filter((key) => BOOK_CATALOG[key]) : [];
-  const bookKeys = validStages.length ? validStages : LEVEL_DEFAULT_BOOKS[level] || [];
+  const bookKeys = validStages;
   if (!bookKeys.length) return null;
 
   const pool = [];
@@ -182,7 +206,7 @@ ${lines}
 Each language game question must specifically test the grammar focus listed for its source — do not mix sources between items, and do not invent a different grammar point. You do NOT need to mention the book or lesson in the question text itself; just write a natural language-focused multiple-choice question that exercises that exact grammar point.\n`;
 }
 
-function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript }) {
+function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity }) {
   const guidance = LEVEL_GUIDANCE[level];
   const age = AGE_GUIDANCE[ageGroup] || AGE_GUIDANCE[DEFAULT_AGE_GROUP];
   const answerGuidance = ANSWER_GUIDANCE[ANSWER_STYLE_TIER[level]] || ANSWER_GUIDANCE.intermediate;
@@ -193,16 +217,28 @@ function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sourc
     : "";
 
   const transcriptNote = transcript
-    ? `\nYOUTUBE VIDEO TRANSCRIPT — The teacher attached a YouTube video related to this lesson's topic. Use it SPARINGLY: exactly 2 of the 9 conversation questions and exactly 2 of the 6 language game items should draw directly from specific content in the video (a detail, example, or idea from the transcript). The remaining 7 conversation questions and 4 language game items must be written normally based on the teacher's topic alone, as if no video existed. Do NOT let the video dominate or replace the topic — it is a supplementary reference only.\n\nTranscript:\n${transcript.slice(0, 8000)}\n`
+    ? `\nYOUTUBE VIDEO TRANSCRIPT — The teacher attached a YouTube video related to this lesson's topic. Use it SPARINGLY: exactly 2 of the 9 conversation questions and exactly 2 of the 6 language game items should draw directly from specific content in the video (a detail, example, or idea from the transcript). The remaining 7 conversation questions and 4 language game items must be written normally based on the teacher's topic alone, as if no video existed. Do NOT let the video dominate or replace the topic — it is a supplementary reference only. IMPORTANT: do NOT include the video URL or any link in any text field — the URL is displayed separately on its own slide.\n\nTranscript:\n${transcript.slice(0, 8000)}\n`
     : "";
 
-  return `${searchNote}${transcriptNote}Topic: ${topic}
+  const extraActivityNote = extraActivity
+    ? `\nEXTRA ACTIVITY — The teacher wants to include a specific class activity or dynamic. Their description: "${extraActivity}". Generate a short, creative title for this activity (2–5 words) as "extraActivityTitle", and clear step-by-step instructions (3–6 sentences) as "extraActivityInstructions". Instructions should be practical and cover what both the teacher and students should do.\n`
+    : "";
+
+  const extraActivitySchema = extraActivity
+    ? `,\n  "extraActivityTitle": string,         // short creative title for the activity (2–5 words)\n  "extraActivityInstructions": string   // step-by-step instructions, 3–6 sentences`
+    : "";
+
+  return `${searchNote}${transcriptNote}${extraActivityNote}Topic: ${topic}
 Level: ${guidance.label}
 ${guidance.prompt}
 
 Student age group: ${age.label}. Use this ONLY as background context. Do NOT adapt, replace or soften the themes because of the students' age, and never make the content childish or cartoonish — develop the teacher's topic exactly as given, with full depth and a natural register.
 
 ${answerGuidance}
+
+EVALUATION QUESTIONS — exactly 2 questions total, mixing two types:
+1. ONE question about the lesson topic itself (opinion, reflection, or favourite moment related to the theme).
+2. ONE metacognition question where the student reflects on their OWN learning and participation in today's activity. Examples: "What new word did you learn today that you want to remember?", "From 0 to 10, how would you rate your own participation in today's conversation? Why?", "How do you feel about your pronunciation today?", "What would you like to practice more after this activity?". Write it naturally and age-appropriately; do not repeat the same metacognition question across lessons — vary the angle each time.
 
 ${LANGUAGE_GAME_GUIDANCE}
 ${sourceBlock}
@@ -214,12 +250,12 @@ Return a single JSON object with exactly these keys:
   "objectives": [string, string, string],
   "vocabulary": [ { "word": string, "translation": string } ]  // exactly 8 items
   ,
-  "introText": string,         // exactly one paragraph, no line breaks
+  "introText": string,         // exactly one paragraph, no line breaks, maximum 100 words — NEVER include URLs, links, or references to external content
   "conversation": [ { "question": string, "modelAnswers": string[] } ]  // exactly 9 items; modelAnswers has 0-2 items per the MODEL ANSWERS guidance above
   ,
   "languageGame": [ { "question": string, "options": [string, string, string], "correctIndex": number } ]  // exactly 6 items; options is always exactly 3, correctIndex is 0, 1 or 2 — see LANGUAGE GAME guidance above
   ,
-  "evaluation": [ { "question": string, "modelAnswers": string[] } ]  // exactly 2 items; modelAnswers has 0-2 items per the MODEL ANSWERS guidance above
+  "evaluation": [ { "question": string, "modelAnswers": string[] } ]  // exactly 2 items: item 0 = topic question, item 1 = metacognition question; modelAnswers per MODEL ANSWERS guidance above${extraActivitySchema}
 }`;
 }
 
@@ -375,7 +411,7 @@ async function callAnthropicRaw(body) {
   return extractJson(text, debugInfo);
 }
 
-async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, stages, transcript }) {
+async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, stages, transcript, extraActivity }) {
   const sources = language === "english" ? pickGrammarSources(level, stages, 6) : null;
 
   const body = {
@@ -383,7 +419,7 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
     max_tokens: 8000,
     system: SYSTEM_PROMPT,
     messages: [
-      { role: "user", content: buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript }) },
+      { role: "user", content: buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity }) },
     ],
   };
   if (useWebSearch) {
@@ -406,6 +442,8 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
     conversation: clampArray(parsed.conversation, 9),
     languageGame: attachLanguageGameSources(clampLanguageGame(parsed.languageGame, 6), sources),
     evaluation: clampArray(parsed.evaluation, 2),
+    extraActivityTitle: extraActivity ? (parsed.extraActivityTitle || null) : null,
+    extraActivityInstructions: extraActivity ? (parsed.extraActivityInstructions || null) : null,
   };
 }
 

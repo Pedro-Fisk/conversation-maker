@@ -82,7 +82,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId } = req.body || {};
+  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, extraActivity } = req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
 
@@ -121,7 +121,7 @@ module.exports = async function handler(req, res) {
     // 504. Em paralelo, o tempo total é o da chamada mais lenta.
     const lessons = await Promise.all(
       levels.map((level) =>
-        generateFullLesson({ language, topic, level, ageGroup: resolvedAgeGroup, useWebSearch: searchEnabled, stages, transcript })
+        generateFullLesson({ language, topic, level, ageGroup: resolvedAgeGroup, useWebSearch: searchEnabled, stages, transcript, extraActivity: extraActivity || null })
       )
     );
 

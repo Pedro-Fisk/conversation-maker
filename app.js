@@ -26,6 +26,9 @@ const micHint = document.getElementById("micHint");
 const spinnerEl = document.getElementById("spinner");
 const genNoteEl = document.getElementById("genNote");
 const youtubeEl = document.getElementById("youtubeUrl");
+const extraActivityCheckEl = document.getElementById("extraActivityCheck");
+const extraActivityWrapEl = document.getElementById("extraActivityWrap");
+const extraActivityEl = document.getElementById("extraActivity");
 
 function extractVideoId(url) {
 if (!url) return null;
@@ -70,11 +73,11 @@ statusEl.textContent = text || "";
 statusEl.classList.toggle("is-error", Boolean(isError));
 }
 
-async function fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId }) {
+async function fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, extraActivity }) {
 const response = await fetch("/api/generate-lesson", {
 method: "POST",
 headers: { "content-type": "application/json" },
-body: JSON.stringify({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId }),
+body: JSON.stringify({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, extraActivity }),
 });
 const data = await response.json().catch(() => ({}));
 if (!response.ok) {
@@ -137,11 +140,27 @@ if (stagesField) stagesField.classList.toggle("is-hidden", isSpanish);
 }
 
 wireChoiceRow(languageChoices, updateLevelVisibility);
-wireChoiceRow(levelChoicesEnglish, () => {});
+wireChoiceRow(levelChoicesEnglish, (level) => {
+  if (level === "teens") {
+    // Teens → trava faixa etária em Pré-adolescentes
+    const preBtn = ageChoices.querySelector('.choice[data-value="preteens"]');
+    if (preBtn && !preBtn.classList.contains("is-active")) preBtn.click();
+    ageChoices.querySelectorAll(".choice").forEach((b) => { b.disabled = true; b.style.opacity = "0.5"; b.style.cursor = "default"; });
+  } else {
+    ageChoices.querySelectorAll(".choice").forEach((b) => { b.disabled = false; b.style.opacity = ""; b.style.cursor = ""; });
+  }
+});
 wireChoiceRow(levelChoicesSpanish, () => {});
 wireChoiceRow(ageChoices, () => {});
 if (stageChoices) wireMultiChoiceRow(stageChoices);
 updateLevelVisibility(selectedValue(languageChoices));
+
+// Extra Activity checkbox toggle
+if (extraActivityCheckEl && extraActivityWrapEl) {
+  extraActivityCheckEl.addEventListener("change", () => {
+    extraActivityWrapEl.classList.toggle("is-hidden", !extraActivityCheckEl.checked);
+  });
+}
 
 // ---- Ditado por voz (Web Speech API) ----
 // Deixa o professor falar livremente; o texto reconhecido é anexado à
@@ -361,6 +380,18 @@ regenerateSection({ lesson, sectionKey: opts.sectionKey, btn: regenBtn, onDone: 
 tagRow.appendChild(regenBtn);
 }
 
+// Botão de colapsar/expandir
+const chevron = document.createElement("span");
+chevron.className = "slide-chevron";
+chevron.setAttribute("aria-hidden", "true");
+tagRow.appendChild(chevron);
+
+tagRow.style.cursor = "pointer";
+tagRow.addEventListener("click", (e) => {
+if (e.target.closest(".btn-regen")) return;
+el.classList.toggle("is-collapsed");
+});
+
 refresh();
 el.appendChild(tagRow);
 el.appendChild(body);
@@ -402,6 +433,41 @@ body.appendChild(
 editField(lesson.introText, (v) => { lesson.introText = v; }, { multiline: true, rows: 4 })
 );
 }, { sectionKey: "introText" });
+
+// Slide de atividade extra (só aparece quando o professor preencheu o campo)
+if (lesson.extraActivityTitle) {
+addSection("Atividade Extra", (body) => {
+const titleEl = document.createElement("p");
+titleEl.style.cssText = "font-weight:800;font-size:1rem;margin:0 0 0.5rem;";
+titleEl.textContent = lesson.extraActivityTitle;
+body.appendChild(
+editField(lesson.extraActivityTitle, (v) => { lesson.extraActivityTitle = v; }, { placeholder: "título da atividade" })
+);
+const instrLabel = document.createElement("span");
+instrLabel.className = "edit-label";
+instrLabel.textContent = "Instruções";
+body.appendChild(instrLabel);
+body.appendChild(
+editField(lesson.extraActivityInstructions, (v) => { lesson.extraActivityInstructions = v; }, { multiline: true, rows: 4 })
+);
+});
+}
+
+// Slide de vídeo (só aparece quando o professor colou um link do YouTube)
+if (lesson._videoId) {
+addSection("Vídeo do YouTube", (body) => {
+const wrapper = document.createElement("div");
+wrapper.style.cssText = "position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;";
+const iframe = document.createElement("iframe");
+iframe.src = `https://www.youtube.com/embed/${lesson._videoId}`;
+iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+iframe.allowFullscreen = true;
+iframe.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;border:0;border-radius:8px;";
+iframe.title = "Vídeo da aula";
+wrapper.appendChild(iframe);
+body.appendChild(wrapper);
+});
+}
 
 // Blocos de perguntas com 0-2 respostas-modelo cada (o número e o estilo
 // variam por nível — ver a orientação MODEL ANSWERS em
@@ -636,6 +702,9 @@ topicEl.value = "";
 const webSearchEl = document.getElementById("webSearch");
 if (webSearchEl) webSearchEl.checked = false;
 if (youtubeEl) youtubeEl.value = "";
+if (extraActivityCheckEl) { extraActivityCheckEl.checked = false; }
+if (extraActivityWrapEl) extraActivityWrapEl.classList.add("is-hidden");
+if (extraActivityEl) extraActivityEl.value = "";
 selectChoice(languageChoices, "english");
 selectChoice(levelChoicesEnglish, "basic");
 selectChoice(levelChoicesSpanish, "spanish_basic");
@@ -673,6 +742,7 @@ const useWebSearch = Boolean(webSearchEl && webSearchEl.checked);
 const teacherName = teacherNameEl ? teacherNameEl.value.trim() : "";
 const stages = language === "english" && stageChoices ? selectedValues(stageChoices) : [];
 const videoId = extractVideoId(youtubeEl ? youtubeEl.value : "");
+const extraActivity = (extraActivityCheckEl && extraActivityCheckEl.checked && extraActivityEl && extraActivityEl.value.trim()) ? extraActivityEl.value.trim() : null;
 
 if (!topic || !accessCode || !teacherName) return;
 
@@ -682,7 +752,7 @@ setGenerating(true);
 results.classList.remove("is-visible");
 
 try {
-const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId });
+const lessons = await fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, extraActivity });
 
 // Só memoriza o código depois de uma geração bem-sucedida (ou seja,
 // um código que o servidor aceitou).

@@ -329,6 +329,22 @@ transition: all 0.12s ease;
 .btn-regen:hover{ border-color: var(--red); color: var(--red); }
 .btn-regen:disabled{ opacity: 0.6; cursor: wait; }
 
+/* Chevron de colapsar/expandir */
+.slide-chevron{
+  display: inline-block;
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--gray);
+  transition: transform 0.18s ease;
+  flex-shrink: 0;
+  user-select: none;
+}
+.slide-chevron::after{ content: "▼"; }
+.slide.is-collapsed .slide-chevron{ transform: rotate(-90deg); }
+
+/* Colapsar o corpo da seção */
+.slide.is-collapsed .slide-body{ display: none; }
+
 .slide-body{ font-size: 0.9rem; color: var(--black); }
 .slide-body p{ margin: 0.3rem 0; }
 .slide-body .q{ margin: 0.4rem 0; }

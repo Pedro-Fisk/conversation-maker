@@ -313,7 +313,95 @@ function renderField(slide, field, lesson, pptx) {
   return addSimpleDynamic(slide, field, value);
 }
 
-function buildPptx(lesson) {
+// Tenta buscar a thumbnail do YouTube como base64 (maxres → hq como fallback).
+// Retorna null se falhar — o slide de vídeo ainda é criado, só sem imagem.
+async function fetchYoutubeThumbnail(videoId) {
+  const candidates = [
+    `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+    `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+  ];
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const buf = Buffer.from(await res.arrayBuffer());
+      return "image/jpeg;base64," + buf.toString("base64");
+    } catch (_) {}
+  }
+  return null;
+}
+
+function addVideoSlide(pptx, videoId, thumbnailData) {
+  const slide = pptx.addSlide();
+  slide.background = { color: "000000" };
+
+  if (thumbnailData) {
+    slide.addImage({ data: thumbnailData, x: 0, y: 0, w: SLIDE_W_IN, h: SLIDE_H_IN });
+  }
+
+  // Barra escura na base para o texto do link ser legível sobre qualquer thumbnail
+  slide.addShape(pptx.ShapeType.rect, {
+    x: 0,
+    y: SLIDE_H_IN - 1.6,
+    w: SLIDE_W_IN,
+    h: 1.6,
+    fill: { color: "000000", transparency: 20 },
+    line: { type: "none" },
+  });
+
+  slide.addText(
+    [{ text: "▶  Assistir no YouTube", options: { hyperlink: { url: `https://www.youtube.com/watch?v=${videoId}`, tooltip: "Abrir vídeo no YouTube" } } }],
+    {
+      x: 1,
+      y: SLIDE_H_IN - 1.5,
+      w: 11.333,
+      h: 1.4,
+      align: "center",
+      valign: "middle",
+      fontFace: "Poppins",
+      fontSize: 32,
+      bold: true,
+      color: "FFFFFF",
+    }
+  );
+}
+
+function addExtraActivitySlide(pptx, lesson) {
+  const slide = pptx.addSlide();
+  const bgPath = path.join(__dirname, "assets/bg/08-intro.png");
+  slide.addImage({ path: bgPath, x: 0, y: 0, w: SLIDE_W_IN, h: SLIDE_H_IN });
+
+  slide.addText(lesson.extraActivityTitle || "", {
+    x: xIn(5),
+    y: yIn(8),
+    w: xIn(90),
+    h: yIn(18),
+    align: "center",
+    valign: "middle",
+    fontFace: "Poppins",
+    fontSize: 48,
+    bold: true,
+    color: "D81F26",
+    wrap: true,
+  });
+
+  slide.addText(lesson.extraActivityInstructions || "", {
+    x: xIn(8),
+    y: yIn(28),
+    w: xIn(84),
+    h: yIn(55),
+    align: "center",
+    valign: "top",
+    fontFace: "Poppins",
+    fontSize: 28,
+    bold: false,
+    color: "161414",
+    lineSpacingMultiple: 1.4,
+    wrap: true,
+  });
+}
+
+function buildPptx(lesson, thumbnailData) {
   const pptx = new pptxgen();
   pptx.defineLayout({ name: "FISK_16x9", width: SLIDE_W_IN, height: SLIDE_H_IN });
   pptx.layout = "FISK_16x9";
@@ -329,16 +417,10 @@ function buildPptx(lesson) {
     layout.fields.forEach((field) => renderField(slide, field, lesson, pptx));
 
     if (layout.role === "intro" && videoId) {
-      const videoSlide = pptx.addSlide();
-      videoSlide.background = { color: "000000" };
-      videoSlide.addMedia({
-        type: "online",
-        link: `https://www.youtube.com/embed/${videoId}`,
-        x: 0.9,
-        y: 0.5,
-        w: 11.5,
-        h: 6.47,
-      });
+      addVideoSlide(pptx, videoId, thumbnailData || null);
+    }
+    if (layout.role === "intro" && lesson.extraActivityTitle) {
+      addExtraActivitySlide(pptx, lesson);
     }
   });
 
@@ -351,7 +433,9 @@ function buildPptx(lesson) {
  * fixed 18-page layout (slide-layouts.js) and the lesson object are enough.
  */
 async function buildPptxBuffer(lesson) {
-  const pptx = buildPptx(lesson);
+  const videoId = lesson._videoId || null;
+  const thumbnailData = videoId ? await fetchYoutubeThumbnail(videoId) : null;
+  const pptx = buildPptx(lesson, thumbnailData);
   return pptx.write({ outputType: "nodebuffer" });
 }
 
