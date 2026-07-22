@@ -658,7 +658,7 @@ const useWebSearch = Boolean(webSearchEl && webSearchEl.checked);
 const teacherName = teacherNameEl ? teacherNameEl.value.trim() : "";
 const stages = language === "english" && stageChoices ? selectedValues(stageChoices) : [];
 
-if (!topic || !accessCode) return;
+if (!topic || !accessCode || !teacherName) return;
 
 generateBtn.disabled = true;
 setStatus(language === "spanish" ? "Creando magia de conversación..." : "Making conversation magic...");
