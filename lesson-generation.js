@@ -171,9 +171,34 @@ Respond with a single JSON object only, no prose, no markdown code fences, conta
 // (livros) que o professor marcou no formulário. Se nenhum livro for
 // marcado, retorna null — a IA gera inglês genérico dentro do nível, sem
 // referenciar conteúdo específico de nenhum livro. Só se aplica ao inglês.
+/**
+ * Livros CANÔNICOS de cada nível. Escolher o nível já garante que o Language
+ * Game caia na gramática dele — sem depender de o professor marcar estágio.
+ * O que ele marca ENTRA A MAIS (decisão do Pedro, 25/07/2026): a marcação
+ * complementa, não restringe.
+ *
+ * Real Beginners e Teens ficam de fora de propósito: o primeiro não viu livro
+ * nenhum, o segundo usa a apostila própria do curso Teens, que ainda não está
+ * catalogada aqui. Nesses dois a âncora é o descritor CEFR pré-A1/A1 do
+ * LEVEL_GUIDANCE, e o jogo sai sem citar livro.
+ *
+ * Nota histórica: um mapeamento nível→livros existiu e foi removido no commit
+ * 32506ce ("AI generates generic content when no stages selected"). Volta agora
+ * com a diferença de ser somado à marcação, não substituído por ela. Efeito
+ * colateral conhecido e aceito: o rodapé do slide passa a citar lições que a
+ * turma pode ainda não ter visto.
+ */
+const BOOKS_BY_LEVEL = {
+  basic: ["essentials1", "essentials2"],
+  intermediate: ["transitions1", "transitions2"],
+  advanced: ["fluency1", "fluency2", "focus"],
+};
+
 function pickGrammarSources(level, stages, count) {
   const validStages = Array.isArray(stages) ? stages.filter((key) => BOOK_CATALOG[key]) : [];
-  const bookKeys = validStages;
+  const doNivel = BOOKS_BY_LEVEL[level] || [];
+  // união, sem repetir: os do nível primeiro, depois os que o professor somou
+  const bookKeys = doNivel.concat(validStages.filter((k) => doNivel.indexOf(k) < 0));
   if (!bookKeys.length) return null;
 
   const pool = [];
@@ -572,6 +597,8 @@ async function generateSection({ section, language, topic, level, ageGroup, useW
 }
 
 module.exports = {
+  BOOKS_BY_LEVEL,
+  pickGrammarSources,   // exportado para teste: é o que garante a gramática do nível
   LEVEL_GUIDANCE,
   AGE_GUIDANCE,
   DEFAULT_AGE_GROUP,

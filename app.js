@@ -20,12 +20,9 @@ const languageChoices = document.getElementById("languageChoices");
 const matrixTable = document.getElementById("matrixTable");
 const levelHintEnglish = document.getElementById("levelHintEnglish");
 const levelHintSpanish = document.getElementById("levelHintSpanish");
-const stagesField = document.getElementById("stagesField");
-const stagesAutoHint = document.getElementById("stagesAutoHint");
 const sourceFileEl = document.getElementById("sourceFile");
 const sourceStatusEl = document.getElementById("sourceStatus");
 const sourceInstructionEl = document.getElementById("sourceInstruction");
-const stageChoices = document.getElementById("stageChoices");
 const results = document.getElementById("results");
 const generateBtn = document.getElementById("generateBtn");
 const statusEl = document.getElementById("status");
@@ -230,51 +227,14 @@ spanish: [
 ],
 };
 
-// Livros de cada nível, para quando o lote tem NÍVEIS DIFERENTES: aí não existe
-// uma escolha de estágio que sirva para todos (Basic e Advanced não viram os
-// mesmos livros), então o estágio é derivado do nível de cada aula.
-// Mapa da trilha de adultos: Essentials→básico, Transitions→intermediário,
-// Fluency/In Focus→avançado. Real Beginners e Teens ficam sem livro — o
-// primeiro porque a turma ainda não viu nenhum, o segundo porque o curso Teens
-// tem apostila própria, ainda não catalogada aqui. Nesses dois a IA se guia
-// pelo descritor CEFR pré-A1/A1 que está no LEVEL_GUIDANCE do gerador, não por
-// livro (os dois níveis compartilham a mesma faixa linguística).
-const STAGES_BY_LEVEL = {
-real_beginners: [],
-teens: [],
-basic: ["essentials1", "essentials2"],
-intermediate: ["transitions1", "transitions2"],
-advanced: ["fluency1", "fluency2", "focus"],
-};
+// O mapa nível→livros mora SÓ no servidor (BOOKS_BY_LEVEL, em
+// lesson-generation.js): escolher o nível já garante a gramática dele no
+// Language Game, e o que o professor marca aqui entra a mais. Ter o mapa nos
+// dois lados só criaria risco de dessincronizar.
 
 // Combinações selecionadas, em ORDEM de clique: [{ level, age }].
 let selectedCombos = [];
 
-// A faixa etária não muda o livro — só o nível muda. Então marcar
-// Basic×Jovens e Basic×Adultos ainda é UM nível, e a escolha manual de
-// estágio continua valendo para as duas aulas.
-function niveisSelecionados() {
-const vistos = {};
-selectedCombos.forEach((c) => { vistos[c.level] = true; });
-return Object.keys(vistos);
-}
-
-function estagioEhAutomatico() {
-return niveisSelecionados().length > 1;
-}
-
-function stagesDoNivel(levelKey) {
-return (STAGES_BY_LEVEL[levelKey] || []).slice();
-}
-
-// O painel de estágio só aparece quando a escolha manual pode ser respeitada:
-// inglês (os livros são do curso de inglês) e no máximo um nível no lote.
-function syncStagesField() {
-if (!stagesField) return;
-const isSpanish = selectedValue(languageChoices) === "spanish";
-stagesField.classList.toggle("is-hidden", isSpanish || estagioEhAutomatico());
-if (stagesAutoHint) stagesAutoHint.classList.toggle("is-hidden", isSpanish || !estagioEhAutomatico());
-}
 
 function findCombo(level, age) {
 return selectedCombos.findIndex((c) => c.level === level && c.age === age);
@@ -300,7 +260,6 @@ const badge = cell.querySelector(".matrix-order");
 if (badge) badge.textContent = idx === -1 ? "" : String(idx + 1);
 });
 updateGenerateButton();
-syncStagesField();
 }
 
 function updateGenerateButton() {
@@ -381,11 +340,10 @@ if (levelHintSpanish) levelHintSpanish.classList.toggle("is-hidden", !isSpanish)
 // Os níveis mudam por idioma, então a matriz é reconstruída e a
 // seleção anterior deixa de fazer sentido.
 selectedCombos = [];
-buildMatrix(language);   // refreshMatrixBadges() no fim chama syncStagesField()
+buildMatrix(language);
 }
 
 wireChoiceRow(languageChoices, updateLanguageUI);
-if (stageChoices) wireMultiChoiceRow(stageChoices);
 updateLanguageUI(selectedValue(languageChoices));
 
 /* ============ ATIVIDADE PRONTA (.pptx) ============
@@ -620,7 +578,6 @@ topic: lesson._genTopic || lesson.topic,
 level: lesson.levelKey,
 ageGroup: lesson._genAgeGroup,
 useWebSearch: lesson._genUseWebSearch,
-stages: lesson._genStages,
 teacherName: profSession ? profSession.name : "",
 section: sectionKey,
 }),
@@ -1033,16 +990,9 @@ function stampLesson(lesson, params, resolvedVideoId) {
 lesson._genTopic = params.topic;
 lesson._genAgeGroup = lesson.ageKey || params.ageGroup;
 lesson._genUseWebSearch = params.useWebSearch;
-lesson._genStages = params.stages;
 lesson._videoId = resolvedVideoId || null;
 }
 
-// Estágios que valem para UMA aula do lote: no lote de vários níveis cada aula
-// usa os livros do próprio nível; com um nível só, o que o professor marcou.
-function stagesDoCombo(combo) {
-const p = batch.params;
-return p.stagesAuto ? stagesDoNivel(combo.level) : p.stages;
-}
 
 async function generateForCombo(combo, extras) {
 const p = batch.params;
@@ -1056,7 +1006,6 @@ levelChoice: combo.level,
 ageGroup: combo.age,
 useWebSearch: p.useWebSearch,
 teacherName: p.teacherName,
-stages: stagesDoCombo(combo),
 // O vídeo é resolvido UMA vez (na primeira aula) e reaproveitado
 // pelas demais — sem nova busca, todas apontam pro mesmo vídeo.
 videoId: batch.videoId,
@@ -1069,7 +1018,7 @@ const { lessons, resolvedVideoId } = await fetchLessons(payload);
 const lesson = lessons[0];
 // grava os estágios REALMENTE usados nesta aula (podem diferir entre aulas
 // do mesmo lote) — é o que vai para o histórico e para o log do diretor
-stampLesson(lesson, { ...p, ageGroup: combo.age, stages: stagesDoCombo(combo) }, resolvedVideoId || batch.videoId);
+stampLesson(lesson, { ...p, ageGroup: combo.age }, resolvedVideoId || batch.videoId);
 return lesson;
 }
 
@@ -1511,7 +1460,6 @@ if (extraActivityCheckEl) { extraActivityCheckEl.checked = false; }
 if (extraActivityWrapEl) extraActivityWrapEl.classList.add("is-hidden");
 if (extraActivityEl) extraActivityEl.value = "";
 selectChoice(languageChoices, "english");
-if (stageChoices) stageChoices.querySelectorAll(".choice.is-active").forEach((b) => b.classList.remove("is-active"));
 selectedCombos = [];
 refreshMatrixBadges();
 batch = null;
@@ -1541,7 +1489,6 @@ const language = selectedValue(languageChoices);
 const topic = topicEl.value.trim();
 const webSearchEl = document.getElementById("webSearch");
 const useWebSearch = Boolean(webSearchEl && webSearchEl.checked);
-const stages = language === "english" && stageChoices ? selectedValues(stageChoices) : [];
 const videoSearch = !!(youtubeLuckyEl && youtubeLuckyEl.checked && youtubeCheckEl && youtubeCheckEl.checked);
 const videoId = (youtubeCheckEl && youtubeCheckEl.checked && !videoSearch) ? extractVideoId(youtubeEl ? youtubeEl.value : "") : null;
 const extraActivity = (extraActivityCheckEl && extraActivityCheckEl.checked && extraActivityEl && extraActivityEl.value.trim()) ? extraActivityEl.value.trim() : null;
@@ -1577,7 +1524,6 @@ try {
 // Lote com níveis diferentes: não existe escolha de estágio que sirva para
 // todos, então cada aula usa os livros do próprio nível (o painel manual
 // está escondido nesse caso).
-const stagesAuto = estagioEhAutomatico();
 
 // Atividade pronta subida pelo professor: o texto extraído + o que ele pediu
 // para fazer com ela. Vai junto em TODAS as aulas do lote.
@@ -1590,14 +1536,13 @@ instrucao: (sourceInstructionEl && sourceInstructionEl.value.trim()) || "",
 batch = {
 language,
 videoId: null,
-params: { topic, useWebSearch, teacherName: profSession.name, stages, stagesAuto, extraActivity, sourceActivity },
+params: { topic, useWebSearch, teacherName: profSession.name, extraActivity, sourceActivity },
 slots: combos.map((combo) => ({ combo, versions: [], active: 0, recreations: 0, busy: null, error: null, slideEl: null })),
 generatingRest: false,
 barEl: null,
 };
 
 const first = batch.slots[0];
-const stagesPrimeira = stagesDoCombo(first.combo);
 const payload = {
 profToken: profSession.token,
 language,
@@ -1606,7 +1551,6 @@ levelChoice: first.combo.level,
 ageGroup: first.combo.age,
 useWebSearch,
 teacherName: profSession.name,
-stages: stagesPrimeira,
 videoId,
 videoSearch,
 extraActivity,
@@ -1616,7 +1560,7 @@ const { lessons, resolvedVideoId } = await fetchLessons(payload);
 
 batch.videoId = resolvedVideoId || videoId || null;
 const lesson = lessons[0];
-stampLesson(lesson, { topic, ageGroup: first.combo.age, useWebSearch, stages: stagesPrimeira }, batch.videoId);
+stampLesson(lesson, { topic, ageGroup: first.combo.age, useWebSearch }, batch.videoId);
 first.versions.push(lesson);
 first.active = 0;
 

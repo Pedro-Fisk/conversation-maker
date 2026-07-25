@@ -164,26 +164,10 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <div class="matrix-scroll">
 <table class="matrix" id="matrixTable" aria-label="Seleção de combinações de nível e faixa etária"></table>
 </div>
-<p class="hint" id="levelHintEnglish">A faixa etária é contexto para a IA: o tema continua sendo exatamente o que você escreveu no tópico. O nível <strong>Teens</strong> é exclusivo da faixa Pré-adolescentes.</p>
+<p class="hint" id="levelHintEnglish">A faixa etária é contexto para a IA: o tema continua sendo exatamente o que você escreveu no tópico. O nível <strong>Teens</strong> é exclusivo da faixa Pré-adolescentes.<br>O <strong>Language Game</strong> já sai na gramática do nível, sem você precisar configurar nada: <strong>Basic</strong> usa Essentials 1 e 2, <strong>Intermediate</strong> usa Transitions 1 e 2, <strong>Advanced</strong> usa Fluency 1, 2 e In Focus — e cada pergunta mostra no rodapé do slide a qual livro e lição se refere. <strong>Real Beginners</strong> e <strong>Teens</strong> seguem o nível pré-A1/A1 do Quadro Europeu, sem citar livro.</p>
 <p class="hint is-hidden" id="levelHintSpanish">Os níveis Básico, Intermediário e Avançado correspondem aos estágios do curso: Inmediato 1, 2 e 3.</p>
 </div>
 
-<div class="panel" id="stagesField">
-<h2>📚 Estágio do curso (opcional)</h2>
-<p class="hint hint-lead">Marque os livros que a turma já viu para basear as perguntas do Language Game na gramática desses estágios — cada pergunta mostra no rodapé do slide a qual livro e lição ela se refere. Pode marcar vários ou nenhum.</p>
-<div class="choice-row" id="stageChoices" data-field="stages">
-<button type="button" class="choice" data-value="essentials1">Essentials 1</button>
-<button type="button" class="choice" data-value="essentials2">Essentials 2</button>
-<button type="button" class="choice" data-value="transitions1">Transitions 1</button>
-<button type="button" class="choice" data-value="transitions2">Transitions 2</button>
-<button type="button" class="choice" data-value="fluency1">Fluency 1</button>
-<button type="button" class="choice" data-value="fluency2">Fluency 2</button>
-<button type="button" class="choice" data-value="focus">In Focus Review</button>
-</div>
-<p class="hint">Sem nenhum estágio marcado, a IA gera perguntas genéricas adequadas ao nível, sem referenciar o conteúdo de nenhum livro específico.</p>
-</div>
-
-<p class="hint is-hidden" id="stagesAutoHint">📚 <strong>Estágio do curso:</strong> como você marcou níveis diferentes, cada aula usa os livros do próprio nível — <strong>Basic</strong> → Essentials 1 e 2, <strong>Intermediate</strong> → Transitions 1 e 2, <strong>Advanced</strong> → Fluency 1, 2 e In Focus. Não há como escolher um estágio só que sirva para todos. <strong>Real Beginners</strong> e <strong>Teens</strong> não usam esses livros: os dois seguem o nível <strong>pré-A1/A1</strong> do Quadro Europeu (o curso Teens tem apostila própria, com o mesmo grau de dificuldade e temas de pré-adolescente). Para escolher os livros na mão, marque combinações de um único nível.</p>
 
 <div class="actions">
 <button type="submit" class="btn btn-generate" id="generateBtn">Gerar roteiro →</button>
