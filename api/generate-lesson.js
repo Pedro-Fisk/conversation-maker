@@ -2,7 +2,7 @@
  * Vercel serverless function: POST /api/generate-lesson
  *
  * Body: { accessCode, language, topic, levelChoice, ageGroup, useWebSearch,
- *         teacherName, stages }
+ *         teacherName }
  * Returns: { lessons: [ ...Lesson ] }  (1 lesson, or several for "all_levels")
  *
  * Requires two environment variables set in the Vercel project dashboard
@@ -119,7 +119,7 @@ module.exports = async function handler(req, res) {
   // as demais combinações nível×faixa são geradas a partir dela.
   // previousLesson + feedback: recriação de UMA aula que o professor
   // rejeitou, com o texto do modal descrevendo o que mudar.
-  const { accessCode, profToken, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity } = req.body || {};
+  const { accessCode, profToken, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, videoId, videoSearch, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity } = req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
 
@@ -183,7 +183,6 @@ module.exports = async function handler(req, res) {
           level,
           ageGroup: resolvedAgeGroup,
           useWebSearch: searchEnabled,
-          stages,
           transcript,
           extraActivity: extraActivity || null,
           referenceLesson: referenceLesson || null,

@@ -26,10 +26,10 @@
  *                                         // multiple choice, not modelAnswers — see LANGUAGE
  *                                         // GAME guidance in api/generate-lesson.js. "source" is
  *                                         // "<Book> · <lesson code>" (e.g. "Essentials 1 · 3A"),
- *                                         // attached by attachLanguageGameSources() based on the
- *                                         // course stages the teacher picked (or the level's
- *                                         // default books) — empty string when not applicable
- *                                         // (e.g. Spanish decks).
+ *                                         // attached by attachLanguageGameSources() from the books
+ *                                         // of the chosen level (BOOKS_BY_LEVEL) — there is no
+ *                                         // per-teacher stage choice. Empty string when not
+ *                                         // applicable (Spanish decks, Real Beginners, Teens).
  *     evaluation: { question: string, modelAnswers: string[0-2] }[2],
  *                                         // modelAnswers length/style varies by level — see the
  *                                         // MODEL ANSWERS guidance in api/generate-lesson.js

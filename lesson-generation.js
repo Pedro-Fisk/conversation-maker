@@ -167,26 +167,22 @@ const SECTION_SYSTEM_PROMPT = `You are the content engine behind Conversation Ma
 
 Respond with a single JSON object only, no prose, no markdown code fences, containing ONLY the one key requested in the user message, with exactly the item count specified.`;
 
-// Pool de pontos gramaticais para o Language Game, com base nos estágios
-// (livros) que o professor marcou no formulário. Se nenhum livro for
-// marcado, retorna null — a IA gera inglês genérico dentro do nível, sem
-// referenciar conteúdo específico de nenhum livro. Só se aplica ao inglês.
 /**
- * Livros CANÔNICOS de cada nível. Escolher o nível já garante que o Language
- * Game caia na gramática dele — sem depender de o professor marcar estágio.
- * O que ele marca ENTRA A MAIS (decisão do Pedro, 25/07/2026): a marcação
- * complementa, não restringe.
+ * Livros CANÔNICOS de cada nível — a ÚNICA fonte do Language Game.
+ * Escolher o nível já garante que o jogo caia na gramática dele: não há (nem
+ * deve haver) escolha de estágio pelo professor. Cada pergunta gerada cita no
+ * rodapé do slide o livro e a lição de onde veio.
  *
  * Real Beginners e Teens ficam de fora de propósito: o primeiro não viu livro
- * nenhum, o segundo usa a apostila própria do curso Teens, que ainda não está
- * catalogada aqui. Nesses dois a âncora é o descritor CEFR pré-A1/A1 do
- * LEVEL_GUIDANCE, e o jogo sai sem citar livro.
+ * nenhum, o segundo usa a apostila própria do curso Teens, ainda não catalogada
+ * aqui. Nesses dois a âncora é o descritor CEFR pré-A1/A1 do LEVEL_GUIDANCE, e
+ * o jogo sai sem citar livro (pickGrammarSources devolve null).
  *
- * Nota histórica: um mapeamento nível→livros existiu e foi removido no commit
- * 32506ce ("AI generates generic content when no stages selected"). Volta agora
- * com a diferença de ser somado à marcação, não substituído por ela. Efeito
- * colateral conhecido e aceito: o rodapé do slide passa a citar lições que a
- * turma pode ainda não ter visto.
+ * Histórico, para não reabrir sem querer: um mapeamento assim existiu, foi
+ * removido no commit 32506ce em favor de o professor marcar os livros, e voltou
+ * em 25/07/2026 — desta vez com a marcação manual eliminada de propósito
+ * (decisão do Pedro: era complicação demais para o professor). Efeito colateral
+ * conhecido e aceito: o rodapé pode citar lições que a turma ainda não viu.
  */
 const BOOKS_BY_LEVEL = {
   basic: ["essentials1", "essentials2"],
@@ -194,11 +190,8 @@ const BOOKS_BY_LEVEL = {
   advanced: ["fluency1", "fluency2", "focus"],
 };
 
-function pickGrammarSources(level, stages, count) {
-  const validStages = Array.isArray(stages) ? stages.filter((key) => BOOK_CATALOG[key]) : [];
-  const doNivel = BOOKS_BY_LEVEL[level] || [];
-  // união, sem repetir: os do nível primeiro, depois os que o professor somou
-  const bookKeys = doNivel.concat(validStages.filter((k) => doNivel.indexOf(k) < 0));
+function pickGrammarSources(level, count) {
+  const bookKeys = BOOKS_BY_LEVEL[level] || [];
   if (!bookKeys.length) return null;
 
   const pool = [];
@@ -514,8 +507,8 @@ async function callAnthropicRaw(body) {
   return extractJson(text, debugInfo);
 }
 
-async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, stages, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity }) {
-  const sources = language === "english" ? pickGrammarSources(level, stages, 6) : null;
+async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity }) {
+  const sources = language === "english" ? pickGrammarSources(level, 6) : null;
 
   const body = {
     model: MODEL,
@@ -557,12 +550,12 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
 
 // Regenera SÓ uma seção (usado por api/regenerate-section.js), sem tocar
 // no resto da aula. Retorna só a chave pedida, ex.: { languageGame: [...] }.
-async function generateSection({ section, language, topic, level, ageGroup, useWebSearch, stages }) {
+async function generateSection({ section, language, topic, level, ageGroup, useWebSearch }) {
   if (!SECTION_LABELS[section]) {
     throw new Error(`Seção inválida: ${section}`);
   }
 
-  const sources = section === "languageGame" && language === "english" ? pickGrammarSources(level, stages, 6) : null;
+  const sources = section === "languageGame" && language === "english" ? pickGrammarSources(level, 6) : null;
 
   const body = {
     model: MODEL,

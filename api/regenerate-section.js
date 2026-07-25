@@ -8,7 +8,7 @@
  * tokens, e desmancha as edições manuais já feitas nas outras seções).
  *
  * Body: { accessCode, language, topic, level, ageGroup, useWebSearch,
- *         stages, section, teacherName }
+ *         section, teacherName }
  *   - "topic" aqui deve ser o texto ORIGINAL que o professor digitou (o
  *     app.js guarda isso em lesson._genTopic no momento da geração cheia,
  *     já que lesson.topic pode ter sido encurtado pela IA).
@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { accessCode, profToken, language, topic, level, ageGroup, useWebSearch, stages, section, teacherName } =
+  const { accessCode, profToken, language, topic, level, ageGroup, useWebSearch, section, teacherName } =
     req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
@@ -88,7 +88,6 @@ module.exports = async function handler(req, res) {
       level,
       ageGroup: resolvedAgeGroup,
       useWebSearch: searchEnabled,
-      stages,
     });
 
     res.status(200).json(result);
