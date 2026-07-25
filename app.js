@@ -528,6 +528,21 @@ el.addEventListener("input", () => onInput(el.value));
 return el;
 }
 
+/**
+ * Recalcula a altura das caixas de texto dentro de `raiz`.
+ * Necessário porque a altura vem de `scrollHeight`, que é ZERO enquanto o bloco
+ * está recolhido (display:none) — os blocos agora nascem recolhidos, então sem
+ * este reajuste a caixa abre com o texto cortado. Chamar sempre que um bloco
+ * passa de recolhido para expandido.
+ */
+function reajustarCaixas(raiz) {
+if (!raiz) return;
+raiz.querySelectorAll("textarea.edit-field").forEach((t) => {
+t.style.height = "auto";
+t.style.height = t.scrollHeight + "px";
+});
+}
+
 // Mapeia a chave de seção (a mesma que /api/regenerate-section espera) ao
 // campo correspondente no objeto `lesson`. Usado tanto para montar o corpo
 // do pedido quanto para saber onde encaixar a resposta de volta.
@@ -628,6 +643,7 @@ alternarTudo.title = abertos
 alternarTudo.addEventListener("click", () => {
 const fechar = blocosAbertos() > 0;
 sections.querySelectorAll(".slide").forEach((s) => s.classList.toggle("is-collapsed", fechar));
+if (!fechar) reajustarCaixas(sections);   // abriu tudo: remedir as caixas
 sincronizarAlternarTudo();
 });
 
@@ -676,6 +692,9 @@ tagRow.style.cursor = "pointer";
 tagRow.addEventListener("click", (e) => {
 if (e.target.closest(".btn-regen")) return;
 el.classList.toggle("is-collapsed");
+// abriu: as caixas foram medidas com o bloco escondido (scrollHeight 0),
+// então a altura só pode ser calculada agora
+if (!el.classList.contains("is-collapsed")) reajustarCaixas(el);
 sincronizarAlternarTudo();
 });
 
