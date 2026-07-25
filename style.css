@@ -595,7 +595,13 @@ width: 100%;
 border-collapse: separate;
 border-spacing: 0.35rem;
 min-width: 430px; /* em telas estreitas a tabela rola dentro de .matrix-scroll */
+/* fixed: sem isso a coluna "PRÉ-ADOLESCENTES" fica muito mais larga que as
+   outras duas só por causa do tamanho do rótulo. Com a largura da coluna dos
+   níveis definida, as três faixas dividem o resto em partes iguais. */
+table-layout: fixed;
 }
+
+.matrix-corner{ width: 9.5rem; }
 
 .matrix th{
 font-size: 0.78rem;
@@ -685,8 +691,14 @@ scroll-snap-align: center;
 }
 
 /* Header destacado, letras grandes: o professor identifica de imediato
-* qual aula está vendo (ex.: "BÁSICO · JOVENS"). */
+* qual aula está vendo (ex.: "BÁSICO · JOVENS"). Fica GRUDADO no topo ao
+* rolar, porque a aula é comprida e é fácil perder a referência de qual
+* combinação está sendo revisada. Mora fora do .car-track de propósito:
+* sticky não funciona dentro de um ancestral com overflow. */
 .car-badge{
+position: sticky;
+top: 0;
+z-index: 5;
 background: var(--red);
 color: #ffffff;
 border-radius: 14px 14px 0 0;

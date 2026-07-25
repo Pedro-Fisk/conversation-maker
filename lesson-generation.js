@@ -17,15 +17,21 @@
  */
 
 const LEVEL_GUIDANCE = {
+  // Real Beginners e Teens compartilham a MESMA faixa linguística — pré-A1/A1 do
+  // Quadro Europeu Comum. O que os separa é o enquadramento (adulto iniciante x
+  // pré-adolescente), não a dificuldade do inglês. Ambos ficam sem livro
+  // marcável no formulário: o Real Beginners porque a turma ainda não viu
+  // nenhum, o Teens porque o curso tem apostila própria, que ainda não está
+  // catalogada aqui — daí a âncora ser o descritor CEFR, e não um estágio.
   real_beginners: {
     label: "Real Beginners",
     prompt:
-      "Real Beginners level: absolute beginners studying English for the very first time. Use only the most basic vocabulary (greetings, colors, numbers, family, simple objects), present simple at its simplest ('I am', 'I have', 'I like'), very short and direct questions. Every question should be answerable with one or two words. Model answers must almost complete the sentence, leaving only one small piece for the student to fill in.",
+      "Real Beginners level: absolute beginners studying English for the very first time. Target CEFR pre-A1 (A0) moving into A1 — never above A1. Stay inside pre-A1 can-do statements: greet and introduce yourself, say where you are from, numbers, colors, days, family, classroom and everyday objects, express basic likes and needs. Grammar limited to present simple at its simplest ('I am', 'I have', 'I like', 'this is'), plus can for ability. Use only high-frequency words; no idioms, no phrasal verbs, no past or future tenses. Very short and direct questions, each answerable with one or two words. Model answers must almost complete the sentence, leaving only one small piece for the student to fill in.",
   },
   teens: {
     label: "Teens",
     prompt:
-      "Teens level: young learners aged 10–11, slightly above Real Beginners but below Basic. Use simple present and very common past tense, friendly and engaging topics that feel relevant to pre-teens. Questions should be short and concrete. Model answers guide the student clearly, leaving the key content word(s) for them to supply.",
+      "Teens level: young learners aged 10–11 (pre-teens). Linguistically this is the SAME band as Real Beginners — target CEFR pre-A1/A1, leaning A1, and never above A1. What changes is the framing, not the difficulty: topics, examples and names must feel relevant to a pre-teen (school, friends, games, sports, family, animals, food, routines) instead of adult or workplace contexts. Grammar limited to present simple, present continuous, can, and the most common past of 'be'/regular verbs; high-frequency vocabulary only, no idioms or phrasal verbs. Questions should be short and concrete. Model answers guide the student clearly, leaving the key content word(s) for them to supply. The Teens course uses its own coursebooks, so never reference the adult-track books (Essentials, Transitions, Fluency, In Focus).",
   },
   basic: {
     label: "Basic",
