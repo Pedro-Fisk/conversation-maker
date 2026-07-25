@@ -564,6 +564,26 @@ flex-wrap: wrap;
 }
 .logged-as{ font-size: 0.97rem; }
 
+/* ---- Página "Minhas Aulas" (histórico) ---- */
+.hist-list{ display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.75rem; }
+.hist-row{
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 0.75rem 1rem;
+flex-wrap: wrap;
+border: 1.5px solid var(--gray-light);
+border-radius: 12px;
+padding: 0.8rem 1rem;
+}
+.hist-info{ min-width: 0; flex: 1 1 16rem; }
+.hist-topic{ font-weight: 700; overflow-wrap: anywhere; }
+.hist-sub{ font-size: 0.82rem; color: var(--gray); margin-top: 0.15rem; }
+.hist-row .btn{ flex: 0 0 auto; min-height: 2.5rem; display: inline-flex; align-items: center; }
+@media (max-width: 560px){
+.hist-row .btn{ flex: 1 1 100%; justify-content: center; }
+}
+
 /* ---- Matriz nível × faixa etária ---- */
 .matrix-scroll{
 overflow-x: auto;

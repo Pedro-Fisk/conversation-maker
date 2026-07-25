@@ -19,6 +19,7 @@ const { waitUntil } = require("@vercel/functions");
 const { buildPptxBuffer } = require("../pptx-builder");
 const { uploadPptxToCanva } = require("../canva-lib");
 const { appendActivityLog } = require("../activity-log");
+const { backupPptxToDrive } = require("../drive-backup");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
@@ -69,6 +70,17 @@ module.exports = async function handler(req, res) {
     waitUntil(
       uploadPptxToCanva(buffer, designTitle).catch((err) => console.error("[canva] upload falhou:", err.message))
     );
+
+    // Backup automático no Drive da organização (banco central de
+    // atividades + fonte do histórico do professor). Depois da resposta,
+    // nunca atrasa o download; falhas só vão para o log do Vercel.
+    if (meta && meta.profToken) {
+      waitUntil(
+        backupPptxToDrive({ buffer, fileName, profToken: meta.profToken, lesson }).catch((err) =>
+          console.error("[drive] backup falhou:", err.message)
+        )
+      );
+    }
 
     // Log de produção: registra o download como evento próprio, com qual
     // versão virou a definitiva (após N recriações). Só a versão baixada

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minhas Aulas — Conversation Maker</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/pedro-fisk/fisk-hub@v1.0.0/assets/fisk-shared.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<script>/* mesmo pré-paint de tema do index */
+try{
+var p=new URLSearchParams(location.search).get('theme');
+if(p==='dark'||p==='light') localStorage.setItem('cm-theme',p);
+if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme-dark');
+}catch(e){}
+</script>
+
+<header class="hero">
+<a class="back-link" href="index.html">&larr; Voltar ao Conversation Maker</a>
+<button type="button" class="theme-toggle" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar modo escuro">🌙</button>
+<img class="hero-logo" src="assets/fisk-logo.png" alt="FISK Taubaté · Caçapava">
+<h1>Minhas Aulas</h1>
+<p>Histórico das atividades que você já gerou e baixou</p>
+</header>
+
+<main class="wrap">
+
+<div class="panel is-hidden" id="authGate">
+<h2>🔒 Entre pelo Fisk Hub</h2>
+<p class="hint hint-lead" id="authGateMsg">Esta página usa o seu login do Fisk Hub. Abra o Hub, entre com seu usuário e senha e clique em "Conversation Maker" por lá.</p>
+<a class="btn btn-gold btn-sm" href="https://pedro-fisk.github.io/fisk-hub/">Ir para o Fisk Hub →</a>
+</div>
+
+<div class="panel is-hidden" id="historyPanel">
+<h2>🗂 Aulas de <span id="histName"></span></h2>
+<p class="hint hint-lead">Cada linha é a versão final que você baixou — ela fica guardada no Drive da escola. "Baixar novamente" recupera o arquivo já salvo, sem gerar cópia nova nem gastar créditos de IA.</p>
+<p class="hint" id="histStatus">Carregando seu histórico...</p>
+<div id="histList" class="hist-list"></div>
+</div>
+
+</main>
+
+<footer>
+<p>Ferramenta desenvolvida exclusivamente para uso interno das escolas Fisk. Desenvolvido por @fiskcacapava e @taubatefisk</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/gh/pedro-fisk/fisk-hub@v1.0.0/assets/fisk-shared.js"></script>
+<script src="historico.js"></script>
+</body>
+</html>

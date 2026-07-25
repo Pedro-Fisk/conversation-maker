@@ -1158,6 +1158,8 @@ return deck;
 function downloadMeta(slot) {
 return {
 teacherName: batch.params.teacherName,
+// Token para o backup automático no Drive (validado server-side lá).
+profToken: profSession ? profSession.token : null,
 event: "download",
 recreations: slot.recreations,
 versionInfo: slot.versions.length > 1
