@@ -336,6 +336,26 @@ transition: all 0.12s ease;
 .btn-regen:hover{ border-color: var(--red); color: var(--red); }
 .btn-regen:disabled{ opacity: 0.6; cursor: wait; }
 
+/* Recolher/expandir todos os blocos de uma vez — são 8 por aula, e fechar um
+   por um só para ver a estrutura não se sustenta. */
+.slide-list-bar{
+display: flex;
+justify-content: flex-end;
+margin-bottom: 0.6rem;
+}
+.btn-collapse-all{
+border: 1.5px solid var(--gray-light);
+background: var(--white);
+color: var(--gray);
+font-size: 0.78rem;
+font-weight: 700;
+cursor: pointer;
+padding: 0.3rem 0.75rem;
+border-radius: 999px;
+transition: all 0.12s ease;
+}
+.btn-collapse-all:hover{ border-color: var(--red); color: var(--red); }
+
 /* Painel destaque (tópico da aula) */
 .panel-featured{
 background: #EBF3FF;

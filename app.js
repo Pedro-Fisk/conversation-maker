@@ -598,6 +598,39 @@ note.className = "edit-note";
 note.textContent = "✏️ Revise e corrija o texto abaixo à vontade. As alterações entram no .pptx ao baixar. Não gostou de uma seção inteira? Use \"🔄 Gerar de novo\" para pedir só aquela parte de novo pra IA, sem mexer no resto.";
 sections.appendChild(note);
 
+// Cada bloco já colapsa sozinho (clique na faixa do rótulo), mas são 8 blocos
+// por aula: recolher um por um só para ver a estrutura não é viável. Este
+// controle fecha ou abre todos de uma vez. A aula continua abrindo EXPANDIDA,
+// porque esta tela existe para revisar o texto.
+const barra = document.createElement("div");
+barra.className = "slide-list-bar";
+const alternarTudo = document.createElement("button");
+alternarTudo.type = "button";
+alternarTudo.className = "btn-collapse-all";
+barra.appendChild(alternarTudo);
+sections.appendChild(barra);
+
+function blocosAbertos() {
+return sections.querySelectorAll(".slide:not(.is-collapsed)").length;
+}
+
+// O rótulo tem de contar a verdade mesmo depois de colapsar blocos na mão.
+function sincronizarAlternarTudo() {
+const total = sections.querySelectorAll(".slide").length;
+barra.classList.toggle("is-hidden", total === 0);
+const abertos = blocosAbertos();
+alternarTudo.textContent = abertos ? "⌃ Recolher tudo" : "⌄ Expandir tudo";
+alternarTudo.title = abertos
+? "Fecha todos os blocos — mostra só a estrutura da aula"
+: "Abre todos os blocos para revisar o texto";
+}
+
+alternarTudo.addEventListener("click", () => {
+const fechar = blocosAbertos() > 0;
+sections.querySelectorAll(".slide").forEach((s) => s.classList.toggle("is-collapsed", fechar));
+sincronizarAlternarTudo();
+});
+
 function addSection(label, buildBody, opts) {
 opts = opts || {};
 const el = document.createElement("div");
@@ -640,6 +673,7 @@ tagRow.style.cursor = "pointer";
 tagRow.addEventListener("click", (e) => {
 if (e.target.closest(".btn-regen")) return;
 el.classList.toggle("is-collapsed");
+sincronizarAlternarTudo();
 });
 
 refresh();
@@ -860,6 +894,7 @@ addQASection("Conversação", lesson.conversation, "conversation");
 addLanguageGameSection(lesson.languageGame, "languageGame");
 addQASection("Avaliação", lesson.evaluation, "evaluation");
 
+sincronizarAlternarTudo();   // só agora dá para saber quantos blocos a aula tem
 return sections;
 }
 
