@@ -66,26 +66,18 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </div>
 
 <form id="form">
-<div class="panel" id="loginPanel">
-<h2>🔐 Login do professor</h2>
-<div id="loginFields">
-<p class="hint hint-lead">Entre com o mesmo usuário e senha do Fisk Hub. Ainda não tem senha? Peça à direção.</p>
-<label class="fld" for="profName">Professor</label>
-<select id="profName"><option value="">Carregando lista...</option></select>
-<label class="fld" for="profPass">Senha</label>
-<input type="password" id="profPass" placeholder="sua senha do Fisk Hub" autocomplete="current-password">
-<div class="row-inline login-row">
-<button type="button" class="btn btn-gold btn-sm" id="loginBtn">Entrar</button>
-<span class="hint" id="loginMsg"></span>
+<div class="panel is-hidden" id="authGate">
+<h2>🔒 Entre pelo Fisk Hub</h2>
+<p class="hint hint-lead" id="authGateMsg">Esta ferramenta usa o seu login do Fisk Hub — você não precisa de outra senha. Abra o Hub, entre com seu usuário e senha e clique em "Conversation Maker" por lá.</p>
+<a class="btn btn-gold btn-sm" href="https://pedro-fisk.github.io/fisk-hub/">Ir para o Fisk Hub →</a>
 </div>
-</div>
-<div id="loggedInBox" class="is-hidden">
+
+<div class="panel is-hidden" id="loggedInBox">
 <div class="row-inline logged-row">
-<span class="logged-as">🧑‍🏫 Logado como <strong id="loggedName"></strong></span>
-<button type="button" class="btn btn-ghost btn-sm" id="logoutBtn">Sair</button>
+<span class="logged-as">🧑‍🏫 Logado como <strong id="loggedName"></strong> <span class="hint" style="display:inline">(pelo Fisk Hub)</span></span>
+<button type="button" class="btn btn-ghost btn-sm" id="logoutBtn">Sair neste computador</button>
 </div>
 <p class="hint">Seu nome vai automaticamente para o registro de atividades. Ele não aparece na atividade, no arquivo nem no nome do arquivo.</p>
-</div>
 </div>
 
 <div class="panel">

@@ -66,19 +66,19 @@ if (spinnerEl) spinnerEl.classList.toggle("is-hidden", !on);
 if (genNoteEl) genNoteEl.classList.toggle("is-hidden", !on);
 }
 
-// ---- Login do professor (mesmo usuário/senha do Fisk Hub) ----
-// O login chama o profLogin do fisk-hub-backend (Apps Script), que emite um
-// token de sessão de 6h. O token viaja em cada chamada às APIs daqui, que o
-// validam server-side (profCheck) — o nome do professor vem das credenciais,
-// nunca de um campo digitado, então o log do diretor fica sempre correto.
+// ---- Sessão do professor (SSO do Fisk Hub) ----
+// NÃO existe login aqui: o professor entra UMA vez no Fisk Hub, e o link
+// "Conversation Maker" de lá chega com #proftok=<token> na URL (fragmento
+// não vai a servidores/logs — mesmo padrão do #dirtok= do Painel da
+// Direção). A gente valida o token no fisk-hub-backend (profCheck), guarda
+// a sessão neste navegador e tira o token da URL. O token é durável no
+// servidor: só morre quando o professor loga de novo no Hub (rotação).
 const FISK_HUB_API =
 "https://script.google.com/macros/s/AKfycbw13tpIVD3Ji9XhWW1VwDSw8qAZOmtMGPV0FI1rlHpEQ7HABumVpi_aMWQXfo7dwkd1/exec";
+const FISK_HUB_HOME = "https://pedro-fisk.github.io/fisk-hub/";
 
-const profNameSel = document.getElementById("profName");
-const profPassEl = document.getElementById("profPass");
-const loginBtn = document.getElementById("loginBtn");
-const loginMsg = document.getElementById("loginMsg");
-const loginFields = document.getElementById("loginFields");
+const authGate = document.getElementById("authGate");
+const authGateMsg = document.getElementById("authGateMsg");
 const loggedInBox = document.getElementById("loggedInBox");
 const loggedNameEl = document.getElementById("loggedName");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -100,7 +100,7 @@ updateAuthUI();
 
 function updateAuthUI() {
 const logged = Boolean(profSession);
-if (loginFields) loginFields.classList.toggle("is-hidden", logged);
+if (authGate) authGate.classList.toggle("is-hidden", logged);
 if (loggedInBox) loggedInBox.classList.toggle("is-hidden", !logged);
 if (loggedNameEl && profSession) loggedNameEl.textContent = profSession.name;
 }
@@ -113,70 +113,42 @@ body: JSON.stringify(body),
 }).then((r) => r.json());
 }
 
-function loadProfList() {
-if (!profNameSel) return;
-fetch(FISK_HUB_API + "?action=profList")
-.then((r) => r.json())
-.then((res) => {
-if (!res || !res.ok) throw new Error();
-profNameSel.innerHTML = '<option value="">— escolha seu nome —</option>';
-(res.profs || [])
-.slice()
-.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
-.forEach((p) => {
-const opt = document.createElement("option");
-opt.value = p.name;
-opt.textContent = p.name;
-profNameSel.appendChild(opt);
-});
-})
-.catch(() => {
-profNameSel.innerHTML = '<option value="">Não consegui carregar a lista — recarregue a página</option>';
-});
-}
-
-async function doLogin() {
-const name = profNameSel ? profNameSel.value : "";
-const password = profPassEl ? profPassEl.value : "";
-if (!name) { loginMsg.textContent = "Escolha seu nome na lista."; return; }
-if (!password) { loginMsg.textContent = "Digite sua senha."; return; }
-loginBtn.disabled = true;
-loginMsg.textContent = "Entrando...";
-try {
-const res = await hubPost({ action: "profLogin", name, password });
-if (res && res.ok && res.token) {
-setSession({ token: res.token, name: (res.prof && (res.prof.fullName || res.prof.name)) || name });
-loginMsg.textContent = "";
-if (profPassEl) profPassEl.value = "";
-} else {
-loginMsg.textContent = (res && res.error) || "Não foi possível entrar. Tente novamente.";
-}
-} catch (err) {
-loginMsg.textContent = "Não foi possível entrar. Verifique sua conexão e tente novamente.";
-} finally {
-loginBtn.disabled = false;
-}
-}
-
-if (loginBtn) loginBtn.addEventListener("click", doLogin);
-if (profPassEl) profPassEl.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); doLogin(); } });
-if (logoutBtn) logoutBtn.addEventListener("click", () => setSession(null));
-
-// Sessão expirada no meio do uso (o token dura 6h): volta pro login com aviso.
+// Sessão rejeitada pelo servidor (o professor logou de novo no Hub em outro
+// lugar e o token daqui rotacionou): mostra a porteira com aviso.
 function sessionExpired() {
 setSession(null);
-if (loginMsg) loginMsg.textContent = "Sua sessão expirou. Entre novamente para continuar.";
-if (loginFields) loginFields.scrollIntoView({ behavior: "smooth", block: "center" });
+if (authGateMsg) authGateMsg.textContent = "Sua sessão expirou. Abra o Fisk Hub, entre novamente e clique em \"Conversation Maker\" por lá.";
+if (authGate) authGate.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
-// Restaura a sessão salva: valida o token no servidor antes de confiar nela.
+(function initSession() {
+// 1) Chegou do Hub com token na URL? Valida, guarda e limpa a URL.
+const m = location.hash.match(/#proftok=([^&]+)/);
+if (m) {
+history.replaceState(null, "", location.pathname + location.search);
+const token = decodeURIComponent(m[1]);
+hubPost({ action: "profCheck", token })
+.then((res) => {
+if (res && res.ok && res.prof) {
+setSession({ token, name: res.prof.fullName || res.prof.name });
+} else if (!profSession) {
+sessionExpired();
+}
+})
+.catch(() => { if (!profSession) updateAuthUI(); });
 updateAuthUI();
-loadProfList();
+return;
+}
+// 2) Sem token na URL: usa a sessão salva (revalidando em segundo plano).
+updateAuthUI();
 if (profSession) {
 hubPost({ action: "profCheck", token: profSession.token })
-.then((res) => { if (!res || !res.ok) setSession(null); })
+.then((res) => { if (res && !res.ok) sessionExpired(); })
 .catch(() => {}); // rede fora do ar: mantém a sessão, o servidor revalida a cada geração
 }
+})();
+
+if (logoutBtn) logoutBtn.addEventListener("click", () => setSession(null));
 
 function setStatus(text, isError) {
 statusEl.textContent = text || "";
@@ -1382,8 +1354,8 @@ const extraActivity = (extraActivityCheckEl && extraActivityCheckEl.checked && e
 if (!topic) return;
 
 if (!profSession) {
-setStatus("Faça login com seu usuário do Fisk Hub antes de gerar.", true);
-if (loginFields) loginFields.scrollIntoView({ behavior: "smooth", block: "center" });
+setStatus("Entre pelo Fisk Hub antes de gerar — clique em \"Conversation Maker\" por lá.", true);
+if (authGate) authGate.scrollIntoView({ behavior: "smooth", block: "center" });
 return;
 }
 
