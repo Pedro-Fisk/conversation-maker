@@ -554,6 +554,33 @@ background: var(--gray-light);
 color: var(--gray);
 }
 
+/* ---- Login do professor ---- */
+.login-row{
+display: flex;
+align-items: center;
+gap: 0.75rem;
+margin-top: 0.9rem;
+}
+.logged-row{
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 0.75rem;
+flex-wrap: wrap;
+}
+.logged-as{ font-size: 0.97rem; }
+#profName{
+width: 100%;
+padding: 0.7rem 0.85rem;
+border: 1.5px solid var(--gray-light);
+border-radius: 10px;
+font-size: 0.98rem;
+font-family: inherit;
+color: var(--black);
+background: var(--white);
+}
+#profName:focus{ outline: none; border-color: var(--red); }
+
 /* ---- Matriz nível × faixa etária ---- */
 .matrix-scroll{
 overflow-x: auto;

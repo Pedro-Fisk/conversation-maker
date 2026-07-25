@@ -19,7 +19,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <div id="confirmClear" class="modal-overlay">
 <div class="modal-card">
 <div class="modal-title">Limpar formulário?</div>
-<p class="modal-text">Isso apaga o tópico e as opções escolhidas para começar uma nova aula. Seu código de acesso e nome continuam salvos. Deseja continuar?</p>
+<p class="modal-text">Isso apaga o tópico e as opções escolhidas para começar uma nova aula. Seu login continua ativo. Deseja continuar?</p>
 <div class="modal-actions">
 <button type="button" class="btn btn-ghost btn-sm" id="cancelClear">Cancelar</button>
 <button type="button" class="btn btn-gold btn-sm" id="confirmClearBtn">Sim, limpar</button>
@@ -66,17 +66,26 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </div>
 
 <form id="form">
-<div class="panel">
-<h2>🔑 Código de acesso</h2>
-<label class="fld" for="accessCode">Código compartilhado com os professores FISK Caçapava e Taubaté</label>
-<input type="password" id="accessCode" placeholder="código de acesso" autocomplete="current-password" required>
+<div class="panel" id="loginPanel">
+<h2>🔐 Login do professor</h2>
+<div id="loginFields">
+<p class="hint hint-lead">Entre com o mesmo usuário e senha do Fisk Hub. Ainda não tem senha? Peça à direção.</p>
+<label class="fld" for="profName">Professor</label>
+<select id="profName"><option value="">Carregando lista...</option></select>
+<label class="fld" for="profPass">Senha</label>
+<input type="password" id="profPass" placeholder="sua senha do Fisk Hub" autocomplete="current-password">
+<div class="row-inline login-row">
+<button type="button" class="btn btn-gold btn-sm" id="loginBtn">Entrar</button>
+<span class="hint" id="loginMsg"></span>
 </div>
-
-<div class="panel">
-<h2>🧑‍🏫 Nome do professor</h2>
-<label class="fld" for="teacherName">Como você quer ser identificado(a)? <span class="req">* obrigatório</span></label>
-<input type="text" id="teacherName" placeholder="ex.: Teacher Ana" autocomplete="name" required>
-<p class="hint">Usado apenas para estatísticas internas de uso da ferramenta. Não aparece na atividade, no arquivo nem no nome do arquivo.</p>
+</div>
+<div id="loggedInBox" class="is-hidden">
+<div class="row-inline logged-row">
+<span class="logged-as">🧑‍🏫 Logado como <strong id="loggedName"></strong></span>
+<button type="button" class="btn btn-ghost btn-sm" id="logoutBtn">Sair</button>
+</div>
+<p class="hint">Seu nome vai automaticamente para o registro de atividades. Ele não aparece na atividade, no arquivo nem no nome do arquivo.</p>
+</div>
 </div>
 
 <div class="panel">

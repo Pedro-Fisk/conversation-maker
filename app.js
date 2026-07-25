@@ -66,24 +66,116 @@ if (spinnerEl) spinnerEl.classList.toggle("is-hidden", !on);
 if (genNoteEl) genNoteEl.classList.toggle("is-hidden", !on);
 }
 
-// ---- Código de acesso lembrado no navegador ----
-// Pré-preenche com o último código que gerou uma aula com sucesso, para o
-// professor não digitar toda vez. Fica só no localStorage deste navegador.
-const accessCodeEl = document.getElementById("accessCode");
-const teacherNameEl = document.getElementById("teacherName");
+// ---- Login do professor (mesmo usuário/senha do Fisk Hub) ----
+// O login chama o profLogin do fisk-hub-backend (Apps Script), que emite um
+// token de sessão de 6h. O token viaja em cada chamada às APIs daqui, que o
+// validam server-side (profCheck) — o nome do professor vem das credenciais,
+// nunca de um campo digitado, então o log do diretor fica sempre correto.
+const FISK_HUB_API =
+"https://script.google.com/macros/s/AKfycbw13tpIVD3Ji9XhWW1VwDSw8qAZOmtMGPV0FI1rlHpEQ7HABumVpi_aMWQXfo7dwkd1/exec";
+
+const profNameSel = document.getElementById("profName");
+const profPassEl = document.getElementById("profPass");
+const loginBtn = document.getElementById("loginBtn");
+const loginMsg = document.getElementById("loginMsg");
+const loginFields = document.getElementById("loginFields");
+const loggedInBox = document.getElementById("loggedInBox");
+const loggedNameEl = document.getElementById("loggedName");
+const logoutBtn = document.getElementById("logoutBtn");
+
+let profSession = null; // { token, name }
 try {
-const savedCode = localStorage.getItem("cm-access-code");
-if (savedCode && accessCodeEl) accessCodeEl.value = savedCode;
-const savedName = localStorage.getItem("cm-teacher-name");
-if (savedName && teacherNameEl) teacherNameEl.value = savedName;
+const saved = JSON.parse(localStorage.getItem("cm-prof-session") || "null");
+if (saved && saved.token && saved.name) profSession = saved;
 } catch (e) {}
 
-function rememberAccessCode(code) {
-try { localStorage.setItem("cm-access-code", code); } catch (e) {}
+function setSession(session) {
+profSession = session;
+try {
+if (session) localStorage.setItem("cm-prof-session", JSON.stringify(session));
+else localStorage.removeItem("cm-prof-session");
+} catch (e) {}
+updateAuthUI();
 }
 
-function rememberTeacherName(name) {
-try { localStorage.setItem("cm-teacher-name", name); } catch (e) {}
+function updateAuthUI() {
+const logged = Boolean(profSession);
+if (loginFields) loginFields.classList.toggle("is-hidden", logged);
+if (loggedInBox) loggedInBox.classList.toggle("is-hidden", !logged);
+if (loggedNameEl && profSession) loggedNameEl.textContent = profSession.name;
+}
+
+function hubPost(body) {
+return fetch(FISK_HUB_API, {
+method: "POST",
+headers: { "Content-Type": "text/plain;charset=utf-8" },
+body: JSON.stringify(body),
+}).then((r) => r.json());
+}
+
+function loadProfList() {
+if (!profNameSel) return;
+fetch(FISK_HUB_API + "?action=profList")
+.then((r) => r.json())
+.then((res) => {
+if (!res || !res.ok) throw new Error();
+profNameSel.innerHTML = '<option value="">— escolha seu nome —</option>';
+(res.profs || [])
+.slice()
+.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
+.forEach((p) => {
+const opt = document.createElement("option");
+opt.value = p.name;
+opt.textContent = p.name;
+profNameSel.appendChild(opt);
+});
+})
+.catch(() => {
+profNameSel.innerHTML = '<option value="">Não consegui carregar a lista — recarregue a página</option>';
+});
+}
+
+async function doLogin() {
+const name = profNameSel ? profNameSel.value : "";
+const password = profPassEl ? profPassEl.value : "";
+if (!name) { loginMsg.textContent = "Escolha seu nome na lista."; return; }
+if (!password) { loginMsg.textContent = "Digite sua senha."; return; }
+loginBtn.disabled = true;
+loginMsg.textContent = "Entrando...";
+try {
+const res = await hubPost({ action: "profLogin", name, password });
+if (res && res.ok && res.token) {
+setSession({ token: res.token, name: (res.prof && (res.prof.fullName || res.prof.name)) || name });
+loginMsg.textContent = "";
+if (profPassEl) profPassEl.value = "";
+} else {
+loginMsg.textContent = (res && res.error) || "Não foi possível entrar. Tente novamente.";
+}
+} catch (err) {
+loginMsg.textContent = "Não foi possível entrar. Verifique sua conexão e tente novamente.";
+} finally {
+loginBtn.disabled = false;
+}
+}
+
+if (loginBtn) loginBtn.addEventListener("click", doLogin);
+if (profPassEl) profPassEl.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); doLogin(); } });
+if (logoutBtn) logoutBtn.addEventListener("click", () => setSession(null));
+
+// Sessão expirada no meio do uso (o token dura 6h): volta pro login com aviso.
+function sessionExpired() {
+setSession(null);
+if (loginMsg) loginMsg.textContent = "Sua sessão expirou. Entre novamente para continuar.";
+if (loginFields) loginFields.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+// Restaura a sessão salva: valida o token no servidor antes de confiar nela.
+updateAuthUI();
+loadProfList();
+if (profSession) {
+hubPost({ action: "profCheck", token: profSession.token })
+.then((res) => { if (!res || !res.ok) setSession(null); })
+.catch(() => {}); // rede fora do ar: mantém a sessão, o servidor revalida a cada geração
 }
 
 function setStatus(text, isError) {
@@ -101,6 +193,7 @@ body: JSON.stringify(payload),
 });
 const data = await response.json().catch(() => ({}));
 if (!response.ok) {
+if (response.status === 401) sessionExpired();
 throw new Error(data.error || `Erro ${response.status} ao gerar a aula.`);
 }
 return { lessons: data.lessons, resolvedVideoId: data.resolvedVideoId || null };
@@ -452,19 +545,20 @@ const response = await fetch("/api/regenerate-section", {
 method: "POST",
 headers: { "content-type": "application/json" },
 body: JSON.stringify({
-accessCode: accessCodeEl.value,
+profToken: profSession ? profSession.token : null,
 language: lesson.language,
 topic: lesson._genTopic || lesson.topic,
 level: lesson.levelKey,
 ageGroup: lesson._genAgeGroup,
 useWebSearch: lesson._genUseWebSearch,
 stages: lesson._genStages,
-teacherName: teacherNameEl ? teacherNameEl.value.trim() : "",
+teacherName: profSession ? profSession.name : "",
 section: sectionKey,
 }),
 });
 const data = await response.json().catch(() => ({}));
 if (!response.ok) {
+if (response.status === 401) sessionExpired();
 throw new Error(data.error || `Erro ${response.status} ao regenerar esta seção.`);
 }
 const field = SECTION_FIELD[sectionKey];
@@ -835,7 +929,9 @@ lesson._videoId = resolvedVideoId || null;
 async function generateForCombo(combo, extras) {
 const p = batch.params;
 const payload = {
-accessCode: p.accessCode,
+// Token lido na hora da chamada: se a sessão expirou e o professor
+// logou de novo no meio do lote, as próximas aulas já usam o token novo.
+profToken: profSession ? profSession.token : null,
 language: batch.language,
 topic: p.topic,
 levelChoice: combo.level,
@@ -1274,18 +1370,22 @@ fiskInitBeforeUnloadGuard(hasUnsavedWork);
 form.addEventListener("submit", async (e) => {
 e.preventDefault();
 
-const accessCode = accessCodeEl.value;
 const language = selectedValue(languageChoices);
 const topic = topicEl.value.trim();
 const webSearchEl = document.getElementById("webSearch");
 const useWebSearch = Boolean(webSearchEl && webSearchEl.checked);
-const teacherName = teacherNameEl ? teacherNameEl.value.trim() : "";
 const stages = language === "english" && stageChoices ? selectedValues(stageChoices) : [];
 const videoSearch = !!(youtubeLuckyEl && youtubeLuckyEl.checked && youtubeCheckEl && youtubeCheckEl.checked);
 const videoId = (youtubeCheckEl && youtubeCheckEl.checked && !videoSearch) ? extractVideoId(youtubeEl ? youtubeEl.value : "") : null;
 const extraActivity = (extraActivityCheckEl && extraActivityCheckEl.checked && extraActivityEl && extraActivityEl.value.trim()) ? extraActivityEl.value.trim() : null;
 
-if (!topic || !accessCode || !teacherName) return;
+if (!topic) return;
+
+if (!profSession) {
+setStatus("Faça login com seu usuário do Fisk Hub antes de gerar.", true);
+if (loginFields) loginFields.scrollIntoView({ behavior: "smooth", block: "center" });
+return;
+}
 
 if (selectedCombos.length === 0) {
 setStatus("Marque ao menos uma combinação de nível × faixa etária na tabela.", true);
@@ -1306,7 +1406,7 @@ try {
 batch = {
 language,
 videoId: null,
-params: { accessCode, topic, useWebSearch, teacherName, stages, extraActivity },
+params: { topic, useWebSearch, teacherName: profSession.name, stages, extraActivity },
 slots: combos.map((combo) => ({ combo, versions: [], active: 0, recreations: 0, busy: null, error: null, slideEl: null })),
 generatingRest: false,
 barEl: null,
@@ -1314,24 +1414,19 @@ barEl: null,
 
 const first = batch.slots[0];
 const payload = {
-accessCode,
+profToken: profSession.token,
 language,
 topic,
 levelChoice: first.combo.level,
 ageGroup: first.combo.age,
 useWebSearch,
-teacherName,
+teacherName: profSession.name,
 stages,
 videoId,
 videoSearch,
 extraActivity,
 };
 const { lessons, resolvedVideoId } = await fetchLessons(payload);
-
-// Só memoriza o código depois de uma geração bem-sucedida (ou seja,
-// um código que o servidor aceitou).
-rememberAccessCode(accessCode);
-if (teacherName) rememberTeacherName(teacherName);
 
 batch.videoId = resolvedVideoId || videoId || null;
 const lesson = lessons[0];

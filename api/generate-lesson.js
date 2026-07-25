@@ -36,6 +36,7 @@
 const { waitUntil } = require("@vercel/functions");
 const { recordTeacherActivity } = require("../canva-lib");
 const { appendActivityLog } = require("../activity-log");
+const { verifyProfToken } = require("../fisk-auth");
 const {
   LEVEL_GUIDANCE,
   AGE_GUIDANCE,
@@ -102,14 +103,26 @@ module.exports = async function handler(req, res) {
   // as demais combinações nível×faixa são geradas a partir dela.
   // previousLesson + feedback: recriação de UMA aula que o professor
   // rejeitou, com o texto do modal descrevendo o que mudar.
-  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity, referenceLesson, previousLesson, feedback } = req.body || {};
+  const { accessCode, profToken, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity, referenceLesson, previousLesson, feedback } = req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
 
-  if (!process.env.ACCESS_CODE || accessCode !== process.env.ACCESS_CODE) {
+  // Autenticação: sessão de professor do fisk-hub (profToken, validada
+  // server-side — o nome vem das credenciais, nunca digitado). O código
+  // compartilhado antigo segue aceito como fallback de transição.
+  let sessionTeacher = null;
+  if (profToken) {
+    const prof = await verifyProfToken(profToken);
+    if (!prof) {
+      res.status(401).json({ error: "Sessão expirada. Entre novamente." });
+      return;
+    }
+    sessionTeacher = prof.fullName || prof.name;
+  } else if (!process.env.ACCESS_CODE || accessCode !== process.env.ACCESS_CODE) {
     res.status(401).json({ error: "Código de acesso inválido." });
     return;
   }
+  const effectiveTeacher = sessionTeacher || teacherName;
 
   if (!language || !topic || !topic.trim()) {
     res.status(400).json({ error: "Preencha idioma e tópico." });
@@ -174,7 +187,7 @@ module.exports = async function handler(req, res) {
     // Contabiliza a atividade por professor (apenas estatística interna;
     // o nome não entra na aula nem no arquivo). Roda após a resposta.
     waitUntil(
-      recordTeacherActivity(teacherName, lessons.length).catch((err) =>
+      recordTeacherActivity(effectiveTeacher, lessons.length).catch((err) =>
         console.error("[stats] falha ao registrar:", err.message)
       )
     );
@@ -186,7 +199,7 @@ module.exports = async function handler(req, res) {
     const isRecreation = Boolean(feedback && String(feedback).trim());
     waitUntil(
       appendActivityLog({
-        teacherName,
+        teacherName: effectiveTeacher,
         language: language === "spanish" ? "espanhol" : "inglês",
         levels: levels.map((lv) => LEVEL_GUIDANCE[lv].label),
         ageGroups: [(AGE_GUIDANCE[resolvedAgeGroup] || {}).ptLabel || resolvedAgeGroup],

@@ -29,6 +29,7 @@
 
 const { waitUntil } = require("@vercel/functions");
 const { appendActivityLog } = require("../activity-log");
+const { verifyProfToken } = require("../fisk-auth");
 const {
   LEVEL_GUIDANCE,
   AGE_GUIDANCE,
@@ -43,15 +44,26 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { accessCode, language, topic, level, ageGroup, useWebSearch, stages, section, teacherName } =
+  const { accessCode, profToken, language, topic, level, ageGroup, useWebSearch, stages, section, teacherName } =
     req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
 
-  if (!process.env.ACCESS_CODE || accessCode !== process.env.ACCESS_CODE) {
+  // Mesma autenticação de generate-lesson: sessão do fisk-hub validada
+  // server-side, com o código compartilhado antigo como fallback.
+  let sessionTeacher = null;
+  if (profToken) {
+    const prof = await verifyProfToken(profToken);
+    if (!prof) {
+      res.status(401).json({ error: "Sessão expirada. Entre novamente." });
+      return;
+    }
+    sessionTeacher = prof.fullName || prof.name;
+  } else if (!process.env.ACCESS_CODE || accessCode !== process.env.ACCESS_CODE) {
     res.status(401).json({ error: "Código de acesso inválido." });
     return;
   }
+  const effectiveTeacher = sessionTeacher || teacherName;
 
   if (!language || !topic || !topic.trim()) {
     res.status(400).json({ error: "Faltam idioma e/ou tópico para regenerar a seção." });
@@ -85,7 +97,7 @@ module.exports = async function handler(req, res) {
     // recordTeacherActivity — isso é intencional, é só uma seção).
     waitUntil(
       appendActivityLog({
-        teacherName,
+        teacherName: effectiveTeacher,
         language: language === "spanish" ? "espanhol" : "inglês",
         levels: [LEVEL_GUIDANCE[level].label],
         topic: `${topic} — regenerou "${SECTION_LABELS[section]}"`,
