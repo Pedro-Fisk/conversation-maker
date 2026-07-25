@@ -21,6 +21,7 @@ const matrixTable = document.getElementById("matrixTable");
 const levelHintEnglish = document.getElementById("levelHintEnglish");
 const levelHintSpanish = document.getElementById("levelHintSpanish");
 const stagesField = document.getElementById("stagesField");
+const stagesAutoHint = document.getElementById("stagesAutoHint");
 const stageChoices = document.getElementById("stageChoices");
 const results = document.getElementById("results");
 const generateBtn = document.getElementById("generateBtn");
@@ -226,8 +227,49 @@ spanish: [
 ],
 };
 
+// Livros de cada nível, para quando o lote tem NÍVEIS DIFERENTES: aí não existe
+// uma escolha de estágio que sirva para todos (Basic e Advanced não viram os
+// mesmos livros), então o estágio é derivado do nível de cada aula.
+// Mapa da trilha de adultos: Essentials→básico, Transitions→intermediário,
+// Fluency/In Focus→avançado. Real Beginners e Teens ficam sem livro — o
+// primeiro porque a turma ainda não viu nenhum, o segundo porque a trilha
+// pré-adolescente não usa estes livros — e caem nas perguntas genéricas.
+const STAGES_BY_LEVEL = {
+real_beginners: [],
+teens: [],
+basic: ["essentials1", "essentials2"],
+intermediate: ["transitions1", "transitions2"],
+advanced: ["fluency1", "fluency2", "focus"],
+};
+
 // Combinações selecionadas, em ORDEM de clique: [{ level, age }].
 let selectedCombos = [];
+
+// A faixa etária não muda o livro — só o nível muda. Então marcar
+// Basic×Jovens e Basic×Adultos ainda é UM nível, e a escolha manual de
+// estágio continua valendo para as duas aulas.
+function niveisSelecionados() {
+const vistos = {};
+selectedCombos.forEach((c) => { vistos[c.level] = true; });
+return Object.keys(vistos);
+}
+
+function estagioEhAutomatico() {
+return niveisSelecionados().length > 1;
+}
+
+function stagesDoNivel(levelKey) {
+return (STAGES_BY_LEVEL[levelKey] || []).slice();
+}
+
+// O painel de estágio só aparece quando a escolha manual pode ser respeitada:
+// inglês (os livros são do curso de inglês) e no máximo um nível no lote.
+function syncStagesField() {
+if (!stagesField) return;
+const isSpanish = selectedValue(languageChoices) === "spanish";
+stagesField.classList.toggle("is-hidden", isSpanish || estagioEhAutomatico());
+if (stagesAutoHint) stagesAutoHint.classList.toggle("is-hidden", isSpanish || !estagioEhAutomatico());
+}
 
 function findCombo(level, age) {
 return selectedCombos.findIndex((c) => c.level === level && c.age === age);
@@ -253,6 +295,7 @@ const badge = cell.querySelector(".matrix-order");
 if (badge) badge.textContent = idx === -1 ? "" : String(idx + 1);
 });
 updateGenerateButton();
+syncStagesField();
 }
 
 function updateGenerateButton() {
@@ -330,14 +373,10 @@ function updateLanguageUI(language) {
 const isSpanish = language === "spanish";
 if (levelHintEnglish) levelHintEnglish.classList.toggle("is-hidden", isSpanish);
 if (levelHintSpanish) levelHintSpanish.classList.toggle("is-hidden", !isSpanish);
-// Estágios (Essentials/Transitions/Fluency/Focus) são do curso de
-// inglês da FISK, sem equivalente em espanhol — o painel só aparece
-// quando o idioma escolhido é inglês.
-if (stagesField) stagesField.classList.toggle("is-hidden", isSpanish);
 // Os níveis mudam por idioma, então a matriz é reconstruída e a
 // seleção anterior deixa de fazer sentido.
 selectedCombos = [];
-buildMatrix(language);
+buildMatrix(language);   // refreshMatrixBadges() no fim chama syncStagesField()
 }
 
 wireChoiceRow(languageChoices, updateLanguageUI);
@@ -898,6 +937,13 @@ lesson._genStages = params.stages;
 lesson._videoId = resolvedVideoId || null;
 }
 
+// Estágios que valem para UMA aula do lote: no lote de vários níveis cada aula
+// usa os livros do próprio nível; com um nível só, o que o professor marcou.
+function stagesDoCombo(combo) {
+const p = batch.params;
+return p.stagesAuto ? stagesDoNivel(combo.level) : p.stages;
+}
+
 async function generateForCombo(combo, extras) {
 const p = batch.params;
 const payload = {
@@ -910,7 +956,7 @@ levelChoice: combo.level,
 ageGroup: combo.age,
 useWebSearch: p.useWebSearch,
 teacherName: p.teacherName,
-stages: p.stages,
+stages: stagesDoCombo(combo),
 // O vídeo é resolvido UMA vez (na primeira aula) e reaproveitado
 // pelas demais — sem nova busca, todas apontam pro mesmo vídeo.
 videoId: batch.videoId,
@@ -920,7 +966,9 @@ extraActivity: p.extraActivity,
 if (extras) Object.assign(payload, extras);
 const { lessons, resolvedVideoId } = await fetchLessons(payload);
 const lesson = lessons[0];
-stampLesson(lesson, { ...p, ageGroup: combo.age }, resolvedVideoId || batch.videoId);
+// grava os estágios REALMENTE usados nesta aula (podem diferir entre aulas
+// do mesmo lote) — é o que vai para o histórico e para o log do diretor
+stampLesson(lesson, { ...p, ageGroup: combo.age, stages: stagesDoCombo(combo) }, resolvedVideoId || batch.videoId);
 return lesson;
 }
 
@@ -1186,20 +1234,20 @@ next.className = "car-arrow car-next";
 next.innerHTML = "&#10095;";
 next.setAttribute("aria-label", "Próxima aula");
 
+// Header destacado, em letras grandes: o professor identifica de imediato
+// qual aula está vendo (evita confundir uma atividade com outra na hora de
+// corrigir). Fica FORA do track porque a aula é comprida e a barra precisa
+// acompanhar o rolar da página — e `position: sticky` não funciona dentro de
+// um ancestral com overflow, que é o caso do .car-track.
+const badge = document.createElement("div");
+badge.className = "car-badge";
+
 const track = document.createElement("div");
 track.className = "car-track";
 
 batch.slots.forEach((slot) => {
 const slide = document.createElement("div");
 slide.className = "car-slide";
-
-// Header destacado, em letras grandes, ANTES de qualquer conteúdo:
-// o professor identifica de imediato qual aula está vendo (evita
-// confundir uma atividade com outra na hora de corrigir).
-const badge = document.createElement("div");
-badge.className = "car-badge";
-badge.textContent = slotLabel(slot);
-slide.appendChild(badge);
 
 const slideBody = document.createElement("div");
 slideBody.className = "car-slide-body";
@@ -1221,10 +1269,33 @@ return s ? s.getBoundingClientRect().width : track.clientWidth;
 prev.addEventListener("click", () => track.scrollBy({ left: -slideStep(), behavior: "smooth" }));
 next.addEventListener("click", () => track.scrollBy({ left: slideStep(), behavior: "smooth" }));
 
+// Qual slide está visível: o de centro mais próximo do centro do track.
+// Medido pelas posições renderizadas, então não depende do gap entre slides.
+function slotVisivel() {
+const slides = Array.prototype.slice.call(track.querySelectorAll(".car-slide"));
+if (!slides.length) return null;
+const r = track.getBoundingClientRect();
+const centro = r.left + r.width / 2;
+let melhor = 0, menorDist = Infinity;
+slides.forEach((s, i) => {
+const sr = s.getBoundingClientRect();
+const d = Math.abs(sr.left + sr.width / 2 - centro);
+if (d < menorDist) { menorDist = d; melhor = i; }
+});
+return batch.slots[melhor] || null;
+}
+function atualizarBadge() {
+const slot = slotVisivel();
+if (slot) badge.textContent = slotLabel(slot);
+}
+track.addEventListener("scroll", atualizarBadge, { passive: true });
+
+carousel.appendChild(badge);
 carousel.appendChild(prev);
 carousel.appendChild(track);
 carousel.appendChild(next);
 results.appendChild(carousel);
+atualizarBadge();
 
 // Barra global FIXA abaixo do carrossel — não muda ao deslizar slides.
 const bar = document.createElement("div");
@@ -1377,16 +1448,22 @@ try {
 // Etapa 1: gera SÓ a primeira combinação. O professor revisa/edita e
 // depois clica em "Gerar as demais" — que usam a primeira aula editada
 // como referência estrutural.
+// Lote com níveis diferentes: não existe escolha de estágio que sirva para
+// todos, então cada aula usa os livros do próprio nível (o painel manual
+// está escondido nesse caso).
+const stagesAuto = estagioEhAutomatico();
+
 batch = {
 language,
 videoId: null,
-params: { topic, useWebSearch, teacherName: profSession.name, stages, extraActivity },
+params: { topic, useWebSearch, teacherName: profSession.name, stages, stagesAuto, extraActivity },
 slots: combos.map((combo) => ({ combo, versions: [], active: 0, recreations: 0, busy: null, error: null, slideEl: null })),
 generatingRest: false,
 barEl: null,
 };
 
 const first = batch.slots[0];
+const stagesPrimeira = stagesDoCombo(first.combo);
 const payload = {
 profToken: profSession.token,
 language,
@@ -1395,7 +1472,7 @@ levelChoice: first.combo.level,
 ageGroup: first.combo.age,
 useWebSearch,
 teacherName: profSession.name,
-stages,
+stages: stagesPrimeira,
 videoId,
 videoSearch,
 extraActivity,
@@ -1404,7 +1481,7 @@ const { lessons, resolvedVideoId } = await fetchLessons(payload);
 
 batch.videoId = resolvedVideoId || videoId || null;
 const lesson = lessons[0];
-stampLesson(lesson, { topic, ageGroup: first.combo.age, useWebSearch, stages }, batch.videoId);
+stampLesson(lesson, { topic, ageGroup: first.combo.age, useWebSearch, stages: stagesPrimeira }, batch.videoId);
 first.versions.push(lesson);
 first.active = 0;
 

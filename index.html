@@ -174,6 +174,8 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <p class="hint">Sem nenhum estágio marcado, a IA gera perguntas genéricas adequadas ao nível, sem referenciar o conteúdo de nenhum livro específico.</p>
 </div>
 
+<p class="hint is-hidden" id="stagesAutoHint">📚 <strong>Estágio do curso:</strong> como você marcou níveis diferentes, cada aula usa os livros do próprio nível — <strong>Basic</strong> → Essentials 1 e 2, <strong>Intermediate</strong> → Transitions 1 e 2, <strong>Advanced</strong> → Fluency 1, 2 e In Focus. Não há como escolher um estágio só que sirva para todos. <strong>Real Beginners</strong> e <strong>Teens</strong> saem com perguntas genéricas. Para escolher os livros na mão, marque combinações de um único nível.</p>
+
 <div class="actions">
 <button type="submit" class="btn btn-generate" id="generateBtn">Gerar roteiro →</button>
 <span id="spinner" class="spinner is-hidden" aria-hidden="true"></span>
