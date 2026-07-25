@@ -595,7 +595,7 @@ sections.className = "slide-list";
 
 const note = document.createElement("p");
 note.className = "edit-note";
-note.textContent = "✏️ Revise e corrija o texto abaixo à vontade. As alterações entram no .pptx ao baixar. Não gostou de uma seção inteira? Use \"🔄 Gerar de novo\" para pedir só aquela parte de novo pra IA, sem mexer no resto.";
+note.textContent = "✏️ Os blocos começam recolhidos — clique no título de um deles (ou em \"Expandir tudo\") para revisar e corrigir o texto à vontade. As alterações entram no .pptx ao baixar. Não gostou de uma seção inteira? Use \"🔄 Gerar de novo\" para pedir só aquela parte de novo pra IA, sem mexer no resto.";
 sections.appendChild(note);
 
 // Cada bloco já colapsa sozinho (clique na faixa do rótulo), mas são 8 blocos
@@ -634,7 +634,10 @@ sincronizarAlternarTudo();
 function addSection(label, buildBody, opts) {
 opts = opts || {};
 const el = document.createElement("div");
-el.className = "slide";
+// Começa RECOLHIDO: a aula tem 8 blocos e abria como uma coluna quilométrica.
+// Assim a primeira coisa que o professor vê é a estrutura da aula, e ele abre
+// o bloco que quer revisar (ou "Expandir tudo").
+el.className = "slide is-collapsed";
 
 const tagRow = document.createElement("div");
 tagRow.className = "slide-tag-row";
@@ -1306,6 +1309,16 @@ return s ? s.getBoundingClientRect().width : track.clientWidth;
 prev.addEventListener("click", () => track.scrollBy({ left: -slideStep(), behavior: "smooth" }));
 next.addEventListener("click", () => track.scrollBy({ left: slideStep(), behavior: "smooth" }));
 
+// Setas desabilitadas nas pontas: no começo não há "anterior", no fim não há
+// "próxima". Medido pelo scroll real (com folga de subpixel, senão a última
+// posição nunca fecha a conta e a seta fica habilitada sem ter para onde ir).
+function atualizarSetas() {
+const maximo = track.scrollWidth - track.clientWidth;
+const folga = 2;
+prev.disabled = track.scrollLeft <= folga;
+next.disabled = track.scrollLeft >= maximo - folga;
+}
+
 // Qual slide está visível: o de centro mais próximo do centro do track.
 // Medido pelas posições renderizadas, então não depende do gap entre slides.
 function slotVisivel() {
@@ -1321,18 +1334,29 @@ if (d < menorDist) { menorDist = d; melhor = i; }
 });
 return batch.slots[melhor] || null;
 }
-function atualizarBadge() {
+function atualizarCarrossel() {
 const slot = slotVisivel();
 if (slot) badge.textContent = slotLabel(slot);
+atualizarSetas();
 }
-track.addEventListener("scroll", atualizarBadge, { passive: true });
+track.addEventListener("scroll", atualizarCarrossel, { passive: true });
+// redimensionar muda a largura dos slides e, com ela, o fim do carrossel
+window.addEventListener("resize", atualizarCarrossel);
+
+// As setas ficam numa "trilha" grudada na metade da tela: sem isso elas são
+// absolutas dentro do carrossel (top: 50%) e, numa aula comprida, param a
+// milhares de pixels do campo de visão. A trilha tem altura 0 e z-index
+// menor que o do cabeçalho, para as setas não passarem por cima dele.
+const trilha = document.createElement("div");
+trilha.className = "car-rail";
+trilha.appendChild(prev);
+trilha.appendChild(next);
 
 carousel.appendChild(badge);
-carousel.appendChild(prev);
+carousel.appendChild(trilha);
 carousel.appendChild(track);
-carousel.appendChild(next);
 results.appendChild(carousel);
-atualizarBadge();
+atualizarCarrossel();
 
 // Barra global FIXA abaixo do carrossel — não muda ao deslizar slides.
 const bar = document.createElement("div");

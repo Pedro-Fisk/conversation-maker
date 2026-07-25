@@ -752,11 +752,23 @@ gap: 1rem;
 .car-slide-msg.is-error{ color: var(--red-dark); }
 .car-slide-msg p{ margin: 0; }
 
+/* Trilha das setas: bloco de altura 0 grudado na metade da tela. As setas são
+   absolutas DENTRO dela, então mantêm a posição nas laterais do carrossel e ao
+   mesmo tempo acompanham o rolar da página — antes eram absolutas no carrossel
+   inteiro (top: 50%), e numa aula comprida ficavam longe do campo de visão.
+   z-index abaixo do .car-badge (5) para não cobrir o cabeçalho grudado. */
+.car-rail{
+position: sticky;
+top: 50vh;
+height: 0;
+z-index: 4;
+}
+
 .car-arrow{
 position: absolute;
-top: 50%;
+top: 0;              /* centro da trilha (que tem altura 0) */
 transform: translateY(-50%);
-z-index: 5;
+z-index: 4;
 width: 2.6rem;
 height: 2.6rem;
 border-radius: 999px;
@@ -768,7 +780,13 @@ cursor: pointer;
 box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 transition: all 0.12s ease;
 }
-.car-arrow:hover{ border-color: var(--red); color: var(--red); }
+.car-arrow:hover:not(:disabled){ border-color: var(--red); color: var(--red); }
+/* Ponta do carrossel: não há para onde ir, então a seta apaga e não clica. */
+.car-arrow:disabled{
+opacity: 0.3;
+cursor: default;
+box-shadow: none;
+}
 .car-prev{ left: -1.1rem; }
 .car-next{ right: -1.1rem; }
 .car-arrow.is-hidden{ display: none; }
