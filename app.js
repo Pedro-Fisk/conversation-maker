@@ -232,8 +232,10 @@ spanish: [
 // mesmos livros), então o estágio é derivado do nível de cada aula.
 // Mapa da trilha de adultos: Essentials→básico, Transitions→intermediário,
 // Fluency/In Focus→avançado. Real Beginners e Teens ficam sem livro — o
-// primeiro porque a turma ainda não viu nenhum, o segundo porque a trilha
-// pré-adolescente não usa estes livros — e caem nas perguntas genéricas.
+// primeiro porque a turma ainda não viu nenhum, o segundo porque o curso Teens
+// tem apostila própria, ainda não catalogada aqui. Nesses dois a IA se guia
+// pelo descritor CEFR pré-A1/A1 que está no LEVEL_GUIDANCE do gerador, não por
+// livro (os dois níveis compartilham a mesma faixa linguística).
 const STAGES_BY_LEVEL = {
 real_beginners: [],
 teens: [],
