@@ -35,4 +35,27 @@ async function verifyProfToken(token) {
   }
 }
 
-module.exports = { verifyProfToken, FISK_HUB_API };
+// Registra um evento do Conversation Maker (geração/recriação) na aba
+// cm_eventos do fisk-hub-backend — a fonte estruturada dos indicadores e
+// alertas do Painel da Direção. O evento de download é registrado pelo
+// próprio salvarPptx no backend, junto do backup no Drive.
+async function logCmEvent({ profToken, event, topic, language, level, ageLabel, detail }) {
+  const res = await fetch(FISK_HUB_API, {
+    method: "POST",
+    headers: { "content-type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
+      action: "cmLogEvent",
+      token: profToken,
+      event,
+      topic,
+      language,
+      level,
+      ageLabel,
+      detail: detail || "",
+    }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!data || !data.ok) throw new Error((data && data.error) || "cmLogEvent falhou");
+}
+
+module.exports = { verifyProfToken, logCmEvent, FISK_HUB_API };

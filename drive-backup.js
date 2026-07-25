@@ -14,7 +14,7 @@
 
 const { FISK_HUB_API } = require("./fisk-auth");
 
-async function backupPptxToDrive({ buffer, fileName, profToken, lesson }) {
+async function backupPptxToDrive({ buffer, fileName, profToken, lesson, detail }) {
   const res = await fetch(FISK_HUB_API, {
     method: "POST",
     headers: { "content-type": "text/plain;charset=utf-8" },
@@ -27,6 +27,9 @@ async function backupPptxToDrive({ buffer, fileName, profToken, lesson }) {
       language: lesson.language === "spanish" ? "espanhol" : "inglês",
       level: lesson.coverLevel || "",
       ageLabel: lesson.ageLabel || "",
+      // vira o "Detalhe" do evento de download no log do diretor
+      // (ex.: "versão final: 2/3 (2 recriações)")
+      detail: detail || "",
     }),
   });
   if (!res.ok) throw new Error(`salvarPptx respondeu ${res.status}`);

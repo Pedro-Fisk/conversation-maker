@@ -76,7 +76,7 @@ module.exports = async function handler(req, res) {
     // nunca atrasa o download; falhas só vão para o log do Vercel.
     if (meta && meta.profToken) {
       waitUntil(
-        backupPptxToDrive({ buffer, fileName, profToken: meta.profToken, lesson }).catch((err) =>
+        backupPptxToDrive({ buffer, fileName, profToken: meta.profToken, lesson, detail: meta.versionInfo || "" }).catch((err) =>
           console.error("[drive] backup falhou:", err.message)
         )
       );

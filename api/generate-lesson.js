@@ -36,7 +36,7 @@
 const { waitUntil } = require("@vercel/functions");
 const { recordTeacherActivity } = require("../canva-lib");
 const { appendActivityLog } = require("../activity-log");
-const { verifyProfToken } = require("../fisk-auth");
+const { verifyProfToken, logCmEvent } = require("../fisk-auth");
 const {
   LEVEL_GUIDANCE,
   AGE_GUIDANCE,
@@ -208,6 +208,23 @@ module.exports = async function handler(req, res) {
         detail: isRecreation ? `feedback: ${String(feedback).trim()}` : "",
       }).catch((err) => console.error("[log] falha ao gravar:", err.message))
     );
+
+    // Log estruturado (aba cm_eventos): alimenta os indicadores e alertas
+    // do Painel da Direção. Só com sessão SSO (o fallback de código de
+    // acesso continua indo apenas ao log GitHub acima).
+    if (profToken) {
+      waitUntil(
+        logCmEvent({
+          profToken,
+          event: isRecreation ? "recriação" : "geração",
+          topic,
+          language: language === "spanish" ? "espanhol" : "inglês",
+          level: levels.map((lv) => LEVEL_GUIDANCE[lv].label).join(", "),
+          ageLabel: (AGE_GUIDANCE[resolvedAgeGroup] || {}).ptLabel || resolvedAgeGroup,
+          detail: isRecreation ? `feedback: ${String(feedback).trim()}` : "",
+        }).catch((err) => console.error("[cm_eventos] falha ao gravar:", err.message))
+      );
+    }
   } catch (err) {
     console.error(err);
     res.status(502).json({ error: "Falha ao gerar a aula. Tente novamente em instantes." });
