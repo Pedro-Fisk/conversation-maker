@@ -1,5 +1,5 @@
 // Local test: build a .pptx from the shared mock lesson (test-render-lesson.js,
-// the same one used to QA the HTML/PDF renderer) using the real Canva
+// the same one used to QA the HTML preview renderer) using the real Canva
 // template backgrounds + slide-layouts.js coordinate map.
 const fs = require("fs");
 const path = require("path");

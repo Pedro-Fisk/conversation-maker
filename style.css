@@ -554,6 +554,222 @@ background: var(--gray-light);
 color: var(--gray);
 }
 
+/* ---- Matriz nível × faixa etária ---- */
+.matrix-scroll{
+overflow-x: auto;
+-webkit-overflow-scrolling: touch;
+}
+
+.matrix{
+width: 100%;
+border-collapse: separate;
+border-spacing: 0.35rem;
+min-width: 430px; /* em telas estreitas a tabela rola dentro de .matrix-scroll */
+}
+
+.matrix th{
+font-size: 0.78rem;
+font-weight: 800;
+color: var(--gray);
+text-transform: uppercase;
+letter-spacing: 0.02em;
+padding: 0.25rem 0.3rem;
+text-align: center;
+}
+.matrix tbody th{
+text-align: left;
+white-space: nowrap;
+color: var(--black);
+}
+
+.matrix td{ text-align: center; padding: 0; }
+
+.matrix-cell{
+position: relative;
+width: 100%;
+min-height: 2.9rem; /* área de toque confortável no celular */
+border: 1.5px solid var(--gray-light);
+border-radius: 10px;
+background: var(--white);
+cursor: pointer;
+transition: all 0.12s ease;
+display: inline-flex;
+align-items: center;
+justify-content: center;
+}
+.matrix-cell:hover{ border-color: var(--red); }
+
+.matrix-cell .matrix-check{
+color: var(--gray-light);
+font-size: 1.05rem;
+font-weight: 800;
+}
+.matrix-cell.is-active{
+background: var(--black);
+border-color: var(--black);
+}
+.matrix-cell.is-active .matrix-check{ color: var(--white); }
+
+/* Badge com a ordem de seleção (1 = aula-guia gerada primeiro) */
+.matrix-order{
+position: absolute;
+top: -0.45rem;
+right: -0.45rem;
+min-width: 1.25rem;
+height: 1.25rem;
+padding: 0 0.25rem;
+border-radius: 999px;
+background: var(--red);
+color: var(--white);
+font-size: 0.72rem;
+font-weight: 800;
+line-height: 1.25rem;
+}
+.matrix-order:empty{ display: none; }
+
+.matrix-na{
+color: var(--gray-light);
+font-weight: 700;
+user-select: none;
+}
+
+/* ---- Carrossel de aulas geradas ---- */
+.carousel{
+position: relative;
+}
+
+.car-track{
+display: flex;
+gap: 1rem;
+overflow-x: auto;
+scroll-snap-type: x mandatory;
+-webkit-overflow-scrolling: touch;
+scroll-behavior: smooth;
+padding-bottom: 0.75rem;
+}
+
+.car-slide{
+flex: 0 0 100%;
+min-width: 0;
+scroll-snap-align: center;
+}
+
+/* Header destacado, letras grandes: o professor identifica de imediato
+* qual aula está vendo (ex.: "BÁSICO · JOVENS"). */
+.car-badge{
+background: var(--red);
+color: #ffffff;
+border-radius: 14px 14px 0 0;
+padding: 0.85rem 1.25rem;
+font-size: 1.35rem;
+font-weight: 800;
+letter-spacing: 0.04em;
+text-align: center;
+text-transform: uppercase;
+}
+
+.car-slide .deck{
+border-radius: 0 0 18px 18px;
+border-top: none;
+margin-bottom: 0;
+}
+
+.car-slide-msg{
+border: 2px dashed var(--gray-light);
+border-top: none;
+border-radius: 0 0 18px 18px;
+padding: 2.5rem 1.5rem;
+text-align: center;
+color: var(--gray);
+font-weight: 600;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 1rem;
+}
+.car-slide-msg.is-error{ color: var(--red-dark); }
+.car-slide-msg p{ margin: 0; }
+
+.car-arrow{
+position: absolute;
+top: 50%;
+transform: translateY(-50%);
+z-index: 5;
+width: 2.6rem;
+height: 2.6rem;
+border-radius: 999px;
+border: 1.5px solid var(--gray-light);
+background: var(--white);
+color: var(--black);
+font-size: 1.1rem;
+cursor: pointer;
+box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+transition: all 0.12s ease;
+}
+.car-arrow:hover{ border-color: var(--red); color: var(--red); }
+.car-prev{ left: -1.1rem; }
+.car-next{ right: -1.1rem; }
+.car-arrow.is-hidden{ display: none; }
+
+@media (max-width: 700px){
+.car-prev{ left: 0.2rem; }
+.car-next{ right: 0.2rem; }
+.car-badge{ font-size: 1.05rem; padding: 0.7rem 0.9rem; }
+}
+
+/* Barra global fixa abaixo do carrossel — não desliza com os slides. */
+.batch-bar{
+display: flex;
+align-items: center;
+justify-content: flex-end;
+flex-wrap: wrap;
+gap: 0.75rem 1rem;
+margin-top: 1.1rem;
+padding: 1rem 1.25rem;
+border: 1.5px solid var(--gray-light);
+border-radius: 14px;
+background: var(--white);
+}
+.batch-bar:empty{ display: none; }
+
+.batch-bar-note{
+font-size: 0.85rem;
+font-weight: 600;
+color: var(--gray);
+margin-right: auto;
+}
+
+.btn-recreate, .btn-revert{ flex: 0 0 auto; }
+
+/* Botões de ação por aula: área de toque adequada no celular */
+@media (max-width: 560px){
+.deck-foot{ padding: 1rem; }
+.deck-foot .btn{ flex: 1 1 auto; min-height: 2.75rem; }
+.deck-foot-label{ flex: 1 1 100%; margin-right: 0; }
+.batch-bar .btn{ flex: 1 1 auto; min-height: 2.75rem; }
+.batch-bar-note{ flex: 1 1 100%; margin-right: 0; }
+}
+
+/* Modal de recriação: campo de feedback adaptado ao viewport */
+#recreateModal textarea{
+width: 100%;
+resize: vertical;
+min-height: 5.5rem;
+margin: 0.5rem 0 0;
+line-height: 1.4;
+}
+
+.modal-actions-stack{
+flex-wrap: wrap;
+}
+@media (max-width: 480px){
+.modal-actions-stack{ flex-direction: column; align-items: stretch; }
+.modal-actions-stack .btn{ min-height: 2.75rem; }
+}
+
+body.theme-dark .car-arrow{ box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+body.theme-dark .car-badge{ background: var(--red-dark); }
+
 /* Transição suave entre modo claro e escuro. Fica por último no arquivo
 * para vencer transições mais curtas declaradas acima (ex.: .choice). */
 body, .hero, .panel, .deck, .deck-head, .deck-foot, .slide, .edit-qa,

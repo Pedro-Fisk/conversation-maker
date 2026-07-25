@@ -3,18 +3,23 @@
 * /api/generate-lesson already returns the canonical `lesson` shape (see
 * the contract at the top of render-slides-html.js) — no client-side
 * pagination/slide-plan step needed anymore. Each lesson downloads as a
-* real PDF (/api/export-pdf) and/or PPTX (/api/export-pptx), rendered
-* server-side onto the real Canva template backgrounds. */
+* real PPTX (/api/export-pptx), rendered server-side onto the real Canva
+* template backgrounds.
+*
+* Geração em lote (nível × faixa etária): o professor marca combinações
+* numa matriz, gera a PRIMEIRA, revisa/edita à mão, e então gera as
+* demais (sequencial ou em paralelo, escolha dele) usando a primeira aula
+* editada como referência estrutural. As aulas aparecem num carrossel
+* horizontal, cada uma com seu header "NÍVEL · FAIXA", botões próprios de
+* Baixar e Recriar (com feedback livre para a IA), e versionamento local
+* com "Reverter para versão anterior". */
 
 (function () {
 const form = document.getElementById("form");
 const languageChoices = document.getElementById("languageChoices");
-const levelChoicesEnglish = document.getElementById("levelChoicesEnglish");
-const levelChoicesSpanish = document.getElementById("levelChoicesSpanish");
+const matrixTable = document.getElementById("matrixTable");
 const levelHintEnglish = document.getElementById("levelHintEnglish");
 const levelHintSpanish = document.getElementById("levelHintSpanish");
-const levelField = document.getElementById("levelField");
-const ageChoices = document.getElementById("ageChoices");
 const stagesField = document.getElementById("stagesField");
 const stageChoices = document.getElementById("stageChoices");
 const results = document.getElementById("results");
@@ -32,6 +37,16 @@ const youtubeLuckyEl = document.getElementById("youtubeLucky");
 const extraActivityCheckEl = document.getElementById("extraActivityCheck");
 const extraActivityWrapEl = document.getElementById("extraActivityWrap");
 const extraActivityEl = document.getElementById("extraActivity");
+
+// Modais da geração em lote
+const recreateModal = document.getElementById("recreateModal");
+const recreateFeedbackEl = document.getElementById("recreateFeedback");
+const cancelRecreateBtn = document.getElementById("cancelRecreate");
+const confirmRecreateBtn = document.getElementById("confirmRecreateBtn");
+const batchModeModal = document.getElementById("batchModeModal");
+const batchSequentialBtn = document.getElementById("batchSequentialBtn");
+const batchParallelBtn = document.getElementById("batchParallelBtn");
+const cancelBatchModeBtn = document.getElementById("cancelBatchMode");
 
 function extractVideoId(url) {
 if (!url) return null;
@@ -76,11 +91,13 @@ statusEl.textContent = text || "";
 statusEl.classList.toggle("is-error", Boolean(isError));
 }
 
-async function fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity }) {
+// generateOptions: campos extras opcionais — referenceLesson (aula-guia do
+// lote), previousLesson + feedback (recriação de uma aula rejeitada).
+async function fetchLessons(payload) {
 const response = await fetch("/api/generate-lesson", {
 method: "POST",
 headers: { "content-type": "application/json" },
-body: JSON.stringify({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity }),
+body: JSON.stringify(payload),
 });
 const data = await response.json().catch(() => ({}));
 if (!response.ok) {
@@ -119,44 +136,148 @@ btn.classList.toggle("is-active");
 });
 }
 
-// Retorna a linha de níveis (botões) que está ativa para o idioma atual.
-// Inglês e espanhol têm conjuntos de níveis diferentes (Basic/Intermediate/
-// Advanced vs. Básico B1/Avançado C1), então cada um tem sua própria
-// .choice-row — só uma fica visível por vez.
-function activeLevelRow(language) {
-return language === "spanish" ? levelChoicesSpanish : levelChoicesEnglish;
+// ---- Matriz nível × faixa etária ----
+// O professor marca quais combinações quer gerar. A ORDEM dos cliques
+// importa: a primeira combinação marcada é a que vira a "aula-guia" do
+// lote (gerada primeiro, revisada à mão, referência das demais).
+const AGE_COLS = [
+{ key: "preteens", label: "Pré-adolescentes" },
+{ key: "teens", label: "Jovens" },
+{ key: "adults", label: "Adultos" },
+];
+
+const LEVELS_BY_LANG = {
+english: [
+{ key: "real_beginners", label: "Real Beginners" },
+{ key: "teens", label: "Teens", onlyAge: "preteens" },
+{ key: "basic", label: "Basic" },
+{ key: "intermediate", label: "Intermediate" },
+{ key: "advanced", label: "Advanced" },
+],
+spanish: [
+{ key: "spanish_basic", label: "Básico" },
+{ key: "spanish_intermediate", label: "Intermediário" },
+{ key: "spanish_advanced", label: "Avançado" },
+],
+};
+
+// Combinações selecionadas, em ORDEM de clique: [{ level, age }].
+let selectedCombos = [];
+
+function findCombo(level, age) {
+return selectedCombos.findIndex((c) => c.level === level && c.age === age);
 }
 
-function updateLevelVisibility(language) {
-// O campo de nível agora é sempre necessário (inglês e espanhol têm
-// níveis), então fica sempre visível — só o conjunto de botões muda.
-levelField.classList.add("is-visible");
+function ageLabelOf(ageKey) {
+const col = AGE_COLS.find((a) => a.key === ageKey);
+return col ? col.label : ageKey;
+}
+
+function levelLabelOf(language, levelKey) {
+const row = (LEVELS_BY_LANG[language] || []).find((l) => l.key === levelKey);
+return row ? row.label : levelKey;
+}
+
+// Redesenha os badges de ordem (1, 2, 3...) em todas as células marcadas.
+function refreshMatrixBadges() {
+if (!matrixTable) return;
+matrixTable.querySelectorAll(".matrix-cell").forEach((cell) => {
+const idx = findCombo(cell.dataset.level, cell.dataset.age);
+cell.classList.toggle("is-active", idx !== -1);
+const badge = cell.querySelector(".matrix-order");
+if (badge) badge.textContent = idx === -1 ? "" : String(idx + 1);
+});
+updateGenerateButton();
+}
+
+function updateGenerateButton() {
+const n = selectedCombos.length;
+if (n > 1) {
+generateBtn.textContent = `Gerar primeira aula (1 de ${n}) →`;
+} else {
+generateBtn.textContent = "Gerar roteiro →";
+}
+}
+
+function buildMatrix(language) {
+if (!matrixTable) return;
+matrixTable.innerHTML = "";
+
+const thead = document.createElement("thead");
+const headRow = document.createElement("tr");
+const corner = document.createElement("th");
+corner.className = "matrix-corner";
+headRow.appendChild(corner);
+AGE_COLS.forEach((age) => {
+const th = document.createElement("th");
+th.textContent = age.label;
+headRow.appendChild(th);
+});
+thead.appendChild(headRow);
+matrixTable.appendChild(thead);
+
+const tbody = document.createElement("tbody");
+(LEVELS_BY_LANG[language] || []).forEach((level) => {
+const tr = document.createElement("tr");
+const th = document.createElement("th");
+th.scope = "row";
+th.textContent = level.label;
+tr.appendChild(th);
+
+AGE_COLS.forEach((age) => {
+const td = document.createElement("td");
+if (level.onlyAge && level.onlyAge !== age.key) {
+// Combinação inexistente no curso (ex.: Teens só existe para
+// Pré-adolescentes) — célula desabilitada.
+td.className = "matrix-na";
+td.textContent = "—";
+} else {
+const btn = document.createElement("button");
+btn.type = "button";
+btn.className = "matrix-cell";
+btn.dataset.level = level.key;
+btn.dataset.age = age.key;
+btn.setAttribute("aria-label", `${level.label} · ${age.label}`);
+const badge = document.createElement("span");
+badge.className = "matrix-order";
+btn.appendChild(badge);
+const check = document.createElement("span");
+check.className = "matrix-check";
+check.textContent = "✓";
+btn.appendChild(check);
+btn.addEventListener("click", () => {
+const idx = findCombo(level.key, age.key);
+if (idx === -1) selectedCombos.push({ level: level.key, age: age.key });
+else selectedCombos.splice(idx, 1);
+refreshMatrixBadges();
+});
+td.appendChild(btn);
+}
+tr.appendChild(td);
+});
+tbody.appendChild(tr);
+});
+matrixTable.appendChild(tbody);
+refreshMatrixBadges();
+}
+
+function updateLanguageUI(language) {
 const isSpanish = language === "spanish";
-levelChoicesEnglish.classList.toggle("is-hidden", isSpanish);
-levelChoicesSpanish.classList.toggle("is-hidden", !isSpanish);
 if (levelHintEnglish) levelHintEnglish.classList.toggle("is-hidden", isSpanish);
 if (levelHintSpanish) levelHintSpanish.classList.toggle("is-hidden", !isSpanish);
 // Estágios (Essentials/Transitions/Fluency/Focus) são do curso de
 // inglês da FISK, sem equivalente em espanhol — o painel só aparece
 // quando o idioma escolhido é inglês.
 if (stagesField) stagesField.classList.toggle("is-hidden", isSpanish);
+// Os níveis mudam por idioma, então a matriz é reconstruída e a
+// seleção anterior deixa de fazer sentido.
+selectedCombos = [];
+buildMatrix(language);
 }
 
-wireChoiceRow(languageChoices, updateLevelVisibility);
-wireChoiceRow(levelChoicesEnglish, (level) => {
-  if (level === "teens") {
-    // Teens → trava faixa etária em Pré-adolescentes
-    const preBtn = ageChoices.querySelector('.choice[data-value="preteens"]');
-    if (preBtn && !preBtn.classList.contains("is-active")) preBtn.click();
-    ageChoices.querySelectorAll(".choice").forEach((b) => { b.disabled = true; b.style.opacity = "0.5"; b.style.cursor = "default"; });
-  } else {
-    ageChoices.querySelectorAll(".choice").forEach((b) => { b.disabled = false; b.style.opacity = ""; b.style.cursor = ""; });
-  }
-});
-wireChoiceRow(levelChoicesSpanish, () => {});
-wireChoiceRow(ageChoices, () => {});
+wireChoiceRow(languageChoices, updateLanguageUI);
 if (stageChoices) wireMultiChoiceRow(stageChoices);
-updateLevelVisibility(selectedValue(languageChoices));
+updateLanguageUI(selectedValue(languageChoices));
 
 // YouTube checkbox toggle
 if (youtubeCheckEl && youtubeWrapEl) {
@@ -275,7 +396,7 @@ return div.innerHTML;
 }
 
 // Editable read-out of the lesson content. This is NOT a slide-by-slide
-// preview (the real layout only exists in the generated PDF/PPTX, which
+// preview (the real layout only exists in the generated PPTX, which
 // reuses the actual Canva template) — but every field is editable and
 // writes straight back into the `lesson` object. Because renderDeck and
 // downloadFile share that same object reference, any correction the
@@ -459,9 +580,6 @@ editField(lesson.introText, (v) => { lesson.introText = v; }, { multiline: true,
 // Slide de atividade extra (só aparece quando o professor preencheu o campo)
 if (lesson.extraActivityTitle) {
 addSection("Atividade Extra", (body) => {
-const titleEl = document.createElement("p");
-titleEl.style.cssText = "font-weight:800;font-size:1rem;margin:0 0 0.5rem;";
-titleEl.textContent = lesson.extraActivityTitle;
 body.appendChild(
 editField(lesson.extraActivityTitle, (v) => { lesson.extraActivityTitle = v; }, { placeholder: "título da atividade" })
 );
@@ -638,15 +756,17 @@ addQASection("Avaliação", lesson.evaluation, "evaluation");
 return sections;
 }
 
-async function downloadFile({ endpoint, lesson, extension, btn, busyLabel }) {
-const originalLabel = btn.textContent;
+async function downloadFile({ endpoint, lesson, extension, btn, busyLabel, meta }) {
+const originalLabel = btn ? btn.textContent : "";
+if (btn) {
 btn.disabled = true;
 btn.textContent = busyLabel;
+}
 try {
 const response = await fetch(endpoint, {
 method: "POST",
 headers: { "content-type": "application/json" },
-body: JSON.stringify({ lesson }),
+body: JSON.stringify({ lesson, meta: meta || undefined }),
 });
 if (!response.ok) {
 const data = await response.json().catch(() => ({}));
@@ -665,42 +785,299 @@ a.remove();
 URL.revokeObjectURL(url);
 } catch (err) {
 alert(err.message || `Não foi possível gerar o .${extension}.`);
+throw err;
 } finally {
+if (btn) {
 btn.disabled = false;
 btn.textContent = originalLabel;
 }
 }
+}
 
-function renderDeck(lesson) {
+// ---- Estado do lote (carrossel) ----
+// batch.slots: um slot por combinação nível×faixa, na ordem de seleção.
+// Cada slot guarda TODAS as versões da aula (versioning local): recriar
+// empilha uma versão nova; "Reverter" volta o ponteiro `active` — só a
+// versão ativa é exibida, editada e exportada. No download, o log do
+// diretor registra qual versão virou a definitiva.
+let batch = null;
+
+function slotLabel(slot) {
+return `${levelLabelOf(batch.language, slot.combo.level).toUpperCase()} · ${ageLabelOf(slot.combo.age).toUpperCase()}`;
+}
+
+function activeLesson(slot) {
+return slot.versions[slot.active] || null;
+}
+
+// Cópia da aula sem as chaves internas (_gen*, _videoId) para viajar no
+// corpo da requisição como referência/versão anterior.
+function lessonForPrompt(lesson) {
+if (!lesson) return null;
+const out = {};
+Object.keys(lesson).forEach((k) => {
+if (k.charAt(0) !== "_") out[k] = lesson[k];
+});
+return JSON.parse(JSON.stringify(out));
+}
+
+// Parâmetros comuns do formulário congelados no momento da primeira
+// geração — as aulas seguintes do lote usam exatamente estes, mesmo que o
+// professor mexa no formulário nesse meio tempo.
+function stampLesson(lesson, params, resolvedVideoId) {
+lesson._genTopic = params.topic;
+lesson._genAgeGroup = lesson.ageKey || params.ageGroup;
+lesson._genUseWebSearch = params.useWebSearch;
+lesson._genStages = params.stages;
+lesson._videoId = resolvedVideoId || null;
+}
+
+async function generateForCombo(combo, extras) {
+const p = batch.params;
+const payload = {
+accessCode: p.accessCode,
+language: batch.language,
+topic: p.topic,
+levelChoice: combo.level,
+ageGroup: combo.age,
+useWebSearch: p.useWebSearch,
+teacherName: p.teacherName,
+stages: p.stages,
+// O vídeo é resolvido UMA vez (na primeira aula) e reaproveitado
+// pelas demais — sem nova busca, todas apontam pro mesmo vídeo.
+videoId: batch.videoId,
+videoSearch: false,
+extraActivity: p.extraActivity,
+};
+if (extras) Object.assign(payload, extras);
+const { lessons, resolvedVideoId } = await fetchLessons(payload);
+const lesson = lessons[0];
+stampLesson(lesson, { ...p, ageGroup: combo.age }, resolvedVideoId || batch.videoId);
+return lesson;
+}
+
+// ---- Modal de recriação (feedback livre) ----
+let recreateTarget = null;
+
+function openRecreateModal(slot) {
+recreateTarget = slot;
+if (recreateFeedbackEl) recreateFeedbackEl.value = "";
+if (recreateModal) recreateModal.classList.add("open");
+if (recreateFeedbackEl) setTimeout(() => recreateFeedbackEl.focus(), 50);
+}
+
+function closeRecreateModal() {
+recreateTarget = null;
+if (recreateModal) recreateModal.classList.remove("open");
+}
+
+if (cancelRecreateBtn) cancelRecreateBtn.addEventListener("click", closeRecreateModal);
+if (recreateModal) recreateModal.addEventListener("click", (e) => {
+if (e.target === recreateModal) closeRecreateModal();
+});
+
+if (confirmRecreateBtn) confirmRecreateBtn.addEventListener("click", async () => {
+const slot = recreateTarget;
+const feedback = recreateFeedbackEl ? recreateFeedbackEl.value.trim() : "";
+if (!slot) return;
+if (!feedback) {
+recreateFeedbackEl.placeholder = "Escreva o que você quer mudar antes de recriar...";
+recreateFeedbackEl.focus();
+return;
+}
+closeRecreateModal();
+setSlotBusy(slot, "Recriando esta aula...");
+try {
+const lesson = await generateForCombo(slot.combo, {
+previousLesson: lessonForPrompt(activeLesson(slot)),
+feedback,
+});
+slot.versions.push(lesson);
+slot.active = slot.versions.length - 1;
+slot.recreations += 1;
+} catch (err) {
+alert(err.message || "Não foi possível recriar esta aula. Tente novamente.");
+} finally {
+setSlotBusy(slot, null);
+renderSlot(slot);
+}
+});
+
+// ---- Modal de modo do lote (sequencial × simultâneo) ----
+function openBatchModeModal() {
+if (batchModeModal) batchModeModal.classList.add("open");
+}
+function closeBatchModeModal() {
+if (batchModeModal) batchModeModal.classList.remove("open");
+}
+if (cancelBatchModeBtn) cancelBatchModeBtn.addEventListener("click", closeBatchModeModal);
+if (batchModeModal) batchModeModal.addEventListener("click", (e) => {
+if (e.target === batchModeModal) closeBatchModeModal();
+});
+if (batchSequentialBtn) batchSequentialBtn.addEventListener("click", () => { closeBatchModeModal(); generateRemaining("sequential"); });
+if (batchParallelBtn) batchParallelBtn.addEventListener("click", () => { closeBatchModeModal(); generateRemaining("parallel"); });
+
+async function generateRemaining(mode) {
+if (!batch || batch.generatingRest) return;
+batch.generatingRest = true;
+// A aula-guia é a versão ATIVA da primeira aula no momento do clique —
+// com todas as edições manuais do professor.
+const reference = lessonForPrompt(activeLesson(batch.slots[0]));
+const pendingSlots = batch.slots.filter((s) => s.versions.length === 0);
+renderBatchBar();
+setGenerating(true);
+
+async function generateSlot(slot) {
+setSlotBusy(slot, "Gerando esta aula...");
+try {
+const lesson = await generateForCombo(slot.combo, { referenceLesson: reference });
+slot.versions.push(lesson);
+slot.active = 0;
+slot.error = null;
+} catch (err) {
+slot.error = err.message || "Não foi possível gerar esta aula.";
+} finally {
+setSlotBusy(slot, null);
+renderSlot(slot);
+renderBatchBar();
+}
+}
+
+if (mode === "sequential") {
+for (const slot of pendingSlots) {
+await generateSlot(slot);
+}
+} else {
+await Promise.all(pendingSlots.map((slot) => generateSlot(slot)));
+}
+
+batch.generatingRest = false;
+setGenerating(false);
+renderBatchBar();
+}
+
+// ---- Renderização do carrossel ----
+function setSlotBusy(slot, message) {
+slot.busy = message || null;
+renderSlot(slot);
+}
+
+function renderSlot(slot) {
+if (!slot.slideEl) return;
+const body = slot.slideEl.querySelector(".car-slide-body");
+body.innerHTML = "";
+
+if (slot.busy) {
+body.appendChild(slotMessage("⏳ " + slot.busy, false));
+return;
+}
+
+const lesson = activeLesson(slot);
+if (!lesson) {
+if (slot.error) {
+const msg = slotMessage("⚠️ " + slot.error, true);
+const retry = document.createElement("button");
+retry.type = "button";
+retry.className = "btn btn-gold btn-sm";
+retry.textContent = "Tentar de novo";
+retry.addEventListener("click", async () => {
+slot.error = null;
+setSlotBusy(slot, "Gerando esta aula...");
+try {
+const reference = lessonForPrompt(activeLesson(batch.slots[0]));
+const l = await generateForCombo(slot.combo, { referenceLesson: reference });
+slot.versions.push(l);
+slot.active = 0;
+} catch (err) {
+slot.error = err.message || "Não foi possível gerar esta aula.";
+} finally {
+setSlotBusy(slot, null);
+renderBatchBar();
+}
+});
+msg.appendChild(retry);
+body.appendChild(msg);
+} else {
+body.appendChild(slotMessage("🕐 Aguardando geração — clique em \"Gerar as demais\" abaixo do carrossel.", false));
+}
+return;
+}
+
+body.appendChild(renderDeck(slot, lesson));
+}
+
+function slotMessage(text, isError) {
+const div = document.createElement("div");
+div.className = "car-slide-msg" + (isError ? " is-error" : "");
+const p = document.createElement("p");
+p.textContent = text;
+div.appendChild(p);
+return div;
+}
+
+function renderDeck(slot, lesson) {
 const deck = document.createElement("div");
 deck.className = "deck";
 
 const head = document.createElement("div");
 head.className = "deck-head";
-head.innerHTML = `<h3>${escapeHtml(lesson.coverTitle)}</h3><span>${escapeHtml(lesson.coverLevel)}</span>`;
+head.innerHTML = `<h3>${escapeHtml(lesson.coverTitle)}</h3><span>${escapeHtml(lesson.coverLevel)}${lesson.ageLabel ? " · " + escapeHtml(lesson.ageLabel) : ""}</span>`;
+
+const foot = document.createElement("div");
+foot.className = "deck-foot";
+
+const footLabel = document.createElement("span");
+footLabel.className = "deck-foot-label";
+footLabel.textContent = "Tudo revisado? Ações desta aula:";
+foot.appendChild(footLabel);
+
+// "Reverter": só aparece depois de pelo menos uma recriação. Alterna
+// entre a versão anterior e a mais recente — só a versão ativa é
+// exportada no download (individual ou "Baixar Tudo").
+if (slot.versions.length > 1) {
+const revertBtn = document.createElement("button");
+revertBtn.type = "button";
+revertBtn.className = "btn btn-ghost btn-sm btn-revert";
+if (slot.active === slot.versions.length - 1) {
+revertBtn.textContent = "↩️ Reverter para versão anterior";
+revertBtn.addEventListener("click", () => {
+slot.active = Math.max(0, slot.active - 1);
+renderSlot(slot);
+});
+} else {
+revertBtn.textContent = "↪️ Voltar para a versão mais recente";
+revertBtn.addEventListener("click", () => {
+slot.active = slot.versions.length - 1;
+renderSlot(slot);
+});
+}
+foot.appendChild(revertBtn);
+}
+
+// "Recriar": regenera SÓ esta aula, nunca as demais — sempre passando
+// pelo modal de feedback (o texto do professor entra no prompt da IA).
+const recreateBtn = document.createElement("button");
+recreateBtn.type = "button";
+recreateBtn.className = "btn btn-ghost btn-sm btn-recreate";
+recreateBtn.textContent = "🔄 Recriar";
+recreateBtn.title = "Não gostou? A IA gera esta aula de novo levando seu feedback em conta.";
+recreateBtn.addEventListener("click", () => openRecreateModal(slot));
+foot.appendChild(recreateBtn);
 
 const pptxBtn = document.createElement("button");
 pptxBtn.type = "button";
 pptxBtn.className = "btn btn-download btn-pptx";
-pptxBtn.textContent = "Baixar .pptx";
+pptxBtn.textContent = "⬇️ Baixar";
 pptxBtn.addEventListener("click", () =>
 downloadFile({
 endpoint: "/api/export-pptx",
-lesson,
+lesson: activeLesson(slot),
 extension: "pptx",
 btn: pptxBtn,
 busyLabel: "Gerando .pptx...",
-})
+meta: downloadMeta(slot),
+}).catch(() => {})
 );
-
-// Botões de download ficam no rodapé do deck: o professor revisa o
-// conteúdo primeiro e encontra os botões no fim, depois de editar.
-const foot = document.createElement("div");
-foot.className = "deck-foot";
-const footLabel = document.createElement("span");
-footLabel.className = "deck-foot-label";
-footLabel.textContent = "Tudo revisado? Baixe a versão final:";
-foot.appendChild(footLabel);
 foot.appendChild(pptxBtn);
 
 deck.appendChild(head);
@@ -708,6 +1085,146 @@ deck.appendChild(renderLessonPreview(lesson));
 deck.appendChild(foot);
 
 return deck;
+}
+
+function downloadMeta(slot) {
+return {
+teacherName: batch.params.teacherName,
+event: "download",
+recreations: slot.recreations,
+versionInfo: slot.versions.length > 1
+? `versão final: ${slot.active + 1}/${slot.versions.length} (${slot.recreations} recriação(ões))`
+: "",
+};
+}
+
+function renderBatch() {
+results.innerHTML = "";
+
+const carousel = document.createElement("div");
+carousel.className = "carousel";
+
+const prev = document.createElement("button");
+prev.type = "button";
+prev.className = "car-arrow car-prev";
+prev.innerHTML = "&#10094;";
+prev.setAttribute("aria-label", "Aula anterior");
+
+const next = document.createElement("button");
+next.type = "button";
+next.className = "car-arrow car-next";
+next.innerHTML = "&#10095;";
+next.setAttribute("aria-label", "Próxima aula");
+
+const track = document.createElement("div");
+track.className = "car-track";
+
+batch.slots.forEach((slot) => {
+const slide = document.createElement("div");
+slide.className = "car-slide";
+
+// Header destacado, em letras grandes, ANTES de qualquer conteúdo:
+// o professor identifica de imediato qual aula está vendo (evita
+// confundir uma atividade com outra na hora de corrigir).
+const badge = document.createElement("div");
+badge.className = "car-badge";
+badge.textContent = slotLabel(slot);
+slide.appendChild(badge);
+
+const slideBody = document.createElement("div");
+slideBody.className = "car-slide-body";
+slide.appendChild(slideBody);
+
+track.appendChild(slide);
+slot.slideEl = slide;
+renderSlot(slot);
+});
+
+const single = batch.slots.length === 1;
+prev.classList.toggle("is-hidden", single);
+next.classList.toggle("is-hidden", single);
+
+function slideStep() {
+const s = track.querySelector(".car-slide");
+return s ? s.getBoundingClientRect().width : track.clientWidth;
+}
+prev.addEventListener("click", () => track.scrollBy({ left: -slideStep(), behavior: "smooth" }));
+next.addEventListener("click", () => track.scrollBy({ left: slideStep(), behavior: "smooth" }));
+
+carousel.appendChild(prev);
+carousel.appendChild(track);
+carousel.appendChild(next);
+results.appendChild(carousel);
+
+// Barra global FIXA abaixo do carrossel — não muda ao deslizar slides.
+const bar = document.createElement("div");
+bar.className = "batch-bar";
+results.appendChild(bar);
+batch.barEl = bar;
+renderBatchBar();
+
+results.classList.add("is-visible");
+results.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderBatchBar() {
+if (!batch || !batch.barEl) return;
+const bar = batch.barEl;
+bar.innerHTML = "";
+
+const pending = batch.slots.filter((s) => s.versions.length === 0 && !s.busy);
+const ready = batch.slots.filter((s) => s.versions.length > 0);
+
+if (pending.length > 0 && !batch.generatingRest) {
+const note = document.createElement("span");
+note.className = "batch-bar-note";
+note.textContent = "Revise e edite a primeira aula à vontade — as demais vão seguir a estrutura dela.";
+bar.appendChild(note);
+
+const genRestBtn = document.createElement("button");
+genRestBtn.type = "button";
+genRestBtn.className = "btn btn-gold";
+genRestBtn.textContent = `✨ Gerar as demais (${pending.length})`;
+genRestBtn.addEventListener("click", openBatchModeModal);
+bar.appendChild(genRestBtn);
+} else if (batch.generatingRest) {
+const note = document.createElement("span");
+note.className = "batch-bar-note";
+note.textContent = "⏳ Gerando as demais aulas... pode acompanhar no carrossel.";
+bar.appendChild(note);
+}
+
+// "Baixar Tudo (N)": todas de uma vez, sempre a versão ATIVA de cada
+// aula. Só faz sentido com mais de uma aula gerada.
+if (ready.length > 1) {
+const allBtn = document.createElement("button");
+allBtn.type = "button";
+allBtn.className = "btn btn-download btn-pptx";
+allBtn.textContent = `⬇️ Baixar Tudo (${ready.length})`;
+allBtn.addEventListener("click", async () => {
+allBtn.disabled = true;
+const original = allBtn.textContent;
+try {
+for (let i = 0; i < ready.length; i++) {
+allBtn.textContent = `Gerando ${i + 1}/${ready.length}...`;
+await downloadFile({
+endpoint: "/api/export-pptx",
+lesson: activeLesson(ready[i]),
+extension: "pptx",
+btn: null,
+busyLabel: "",
+meta: downloadMeta(ready[i]),
+});
+}
+} catch (err) {
+// downloadFile já alertou; interrompe a sequência.
+} finally {
+allBtn.disabled = false;
+allBtn.textContent = original;
+}
+});
+bar.appendChild(allBtn);
+}
 }
 
 // ---- Modo escuro ----
@@ -731,11 +1248,11 @@ if (extraActivityCheckEl) { extraActivityCheckEl.checked = false; }
 if (extraActivityWrapEl) extraActivityWrapEl.classList.add("is-hidden");
 if (extraActivityEl) extraActivityEl.value = "";
 selectChoice(languageChoices, "english");
-selectChoice(levelChoicesEnglish, "basic");
-selectChoice(levelChoicesSpanish, "spanish_basic");
-selectChoice(ageChoices, "adults");
 if (stageChoices) stageChoices.querySelectorAll(".choice.is-active").forEach((b) => b.classList.remove("is-active"));
-results.classList.remove("is-visible", "multi");
+selectedCombos = [];
+refreshMatrixBadges();
+batch = null;
+results.classList.remove("is-visible");
 results.innerHTML = "";
 setStatus("");
 }
@@ -760,8 +1277,6 @@ e.preventDefault();
 const accessCode = accessCodeEl.value;
 const language = selectedValue(languageChoices);
 const topic = topicEl.value.trim();
-const levelChoice = selectedValue(activeLevelRow(language));
-const ageGroup = selectedValue(ageChoices);
 const webSearchEl = document.getElementById("webSearch");
 const useWebSearch = Boolean(webSearchEl && webSearchEl.checked);
 const teacherName = teacherNameEl ? teacherNameEl.value.trim() : "";
@@ -772,42 +1287,62 @@ const extraActivity = (extraActivityCheckEl && extraActivityCheckEl.checked && e
 
 if (!topic || !accessCode || !teacherName) return;
 
+if (selectedCombos.length === 0) {
+setStatus("Marque ao menos uma combinação de nível × faixa etária na tabela.", true);
+return;
+}
+
+const combos = selectedCombos.slice();
+
 generateBtn.disabled = true;
 setStatus(language === "spanish" ? "Creando magia de conversación..." : "Making conversation magic...");
 setGenerating(true);
 results.classList.remove("is-visible");
 
 try {
-const { lessons, resolvedVideoId } = await fetchLessons({ accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity });
+// Etapa 1: gera SÓ a primeira combinação. O professor revisa/edita e
+// depois clica em "Gerar as demais" — que usam a primeira aula editada
+// como referência estrutural.
+batch = {
+language,
+videoId: null,
+params: { accessCode, topic, useWebSearch, teacherName, stages, extraActivity },
+slots: combos.map((combo) => ({ combo, versions: [], active: 0, recreations: 0, busy: null, error: null, slideEl: null })),
+generatingRest: false,
+barEl: null,
+};
+
+const first = batch.slots[0];
+const payload = {
+accessCode,
+language,
+topic,
+levelChoice: first.combo.level,
+ageGroup: first.combo.age,
+useWebSearch,
+teacherName,
+stages,
+videoId,
+videoSearch,
+extraActivity,
+};
+const { lessons, resolvedVideoId } = await fetchLessons(payload);
 
 // Só memoriza o código depois de uma geração bem-sucedida (ou seja,
 // um código que o servidor aceitou).
 rememberAccessCode(accessCode);
 if (teacherName) rememberTeacherName(teacherName);
 
-// Guarda os parâmetros exatos usados nesta geração em cada lesson — o
-// botão "🔄 Gerar de novo" de cada seção precisa deles depois para
-// chamar /api/regenerate-section com o mesmo tópico/nível/idade/estágios,
-// mesmo que o professor já tenha mudado algo no formulário nesse meio
-// tempo. lesson.topic pode ter sido encurtado pela IA (ex.: "Japan"), por
-// isso guardamos o texto ORIGINAL digitado em _genTopic separadamente.
-const finalVideoId = resolvedVideoId || videoId || null;
-lessons.forEach((lesson) => {
-lesson._genTopic = topic;
-lesson._genAgeGroup = ageGroup;
-lesson._genUseWebSearch = useWebSearch;
-lesson._genStages = stages;
-lesson._videoId = finalVideoId;
-});
+batch.videoId = resolvedVideoId || videoId || null;
+const lesson = lessons[0];
+stampLesson(lesson, { topic, ageGroup: first.combo.age, useWebSearch, stages }, batch.videoId);
+first.versions.push(lesson);
+first.active = 0;
 
-results.innerHTML = "";
-lessons.forEach((lesson) => results.appendChild(renderDeck(lesson)));
-// Mais de um nível: decks lado a lado (desktop) / carrossel (mobile).
-results.classList.toggle("multi", lessons.length > 1);
-results.classList.add("is-visible");
-results.scrollIntoView({ behavior: "smooth", block: "start" });
+renderBatch();
 setStatus("");
 } catch (err) {
+batch = null;
 setStatus(err.message || "Não foi possível gerar a aula.", true);
 } finally {
 generateBtn.disabled = false;

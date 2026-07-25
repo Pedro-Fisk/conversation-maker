@@ -6,8 +6,8 @@
  * a different lesson shape per level). It's been superseded by the
  * fixed 18-page Canva-template pipeline: every level/language now shares
  * ONE lesson shape (see the contract at the top of render-slides-html.js)
- * and ONE slide layout (slide-layouts.js), rendered via render-slides-html.js
- * (PDF) and pptx-builder.js (PPTX). api/generate-lesson.js now builds that
+ * and ONE slide layout (slide-layouts.js), rendered via pptx-builder.js
+ * (PPTX). api/generate-lesson.js now builds that
  * canonical shape directly — this file's generateMock/buildSlidePlan/
  * runRequest are unused. Left in place only for reference; safe to delete.
  */

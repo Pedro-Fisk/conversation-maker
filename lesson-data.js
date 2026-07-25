@@ -3,8 +3,9 @@
  *
  * Small shared helpers for pulling values out of the canonical `lesson`
  * object (see the contract documented at the top of render-slides-html.js).
- * Used by both the HTML/PDF renderer and the PPTX builder so the two
- * outputs never drift out of sync on how a field key maps to lesson data.
+ * Used by both the local HTML preview renderer and the PPTX builder so
+ * the two outputs never drift out of sync on how a field key maps to
+ * lesson data.
  */
 
 function getQaItems(lesson, group, startIndex, count) {

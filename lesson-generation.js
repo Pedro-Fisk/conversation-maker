@@ -110,9 +110,9 @@ const LANGUAGE_GAME_GUIDANCE = `LANGUAGE GAME — always multiple choice, never 
 // contexto leve: a IA NÃO deve trocar os temas nem infantilizar o conteúdo
 // por causa da idade — o tópico do professor manda.
 const AGE_GUIDANCE = {
-  preteens: { label: "pre-teens" },
-  teens: { label: "teenagers" },
-  adults: { label: "adults" },
+  preteens: { label: "pre-teens", ptLabel: "Pré-adolescentes" },
+  teens: { label: "teenagers", ptLabel: "Jovens" },
+  adults: { label: "adults", ptLabel: "Adultos" },
 };
 const DEFAULT_AGE_GROUP = "adults";
 
@@ -206,7 +206,36 @@ ${lines}
 Each language game question must specifically test the grammar focus listed for its source — do not mix sources between items, and do not invent a different grammar point. You do NOT need to mention the book or lesson in the question text itself; just write a natural language-focused multiple-choice question that exercises that exact grammar point.\n`;
 }
 
-function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity }) {
+// Versão compacta de uma aula já existente, para entrar no prompt como
+// referência (aula-guia do lote) ou como versão anterior (recriação com
+// feedback). Só os campos de conteúdo — nada de chaves internas (_gen*).
+function compactLessonForPrompt(lesson) {
+  if (!lesson) return null;
+  return {
+    coverTitle: lesson.coverTitle,
+    topic: lesson.topic,
+    objectives: lesson.objectives,
+    vocabulary: lesson.vocabulary,
+    introText: lesson.introText,
+    conversation: (lesson.conversation || []).map((q) => ({
+      question: q.question,
+      modelAnswers: q.modelAnswers,
+    })),
+    languageGame: (lesson.languageGame || []).map((q) => ({
+      question: q.question,
+      options: q.options,
+      correctIndex: q.correctIndex,
+    })),
+    evaluation: (lesson.evaluation || []).map((q) => ({
+      question: q.question,
+      modelAnswers: q.modelAnswers,
+    })),
+    extraActivityTitle: lesson.extraActivityTitle || undefined,
+    extraActivityInstructions: lesson.extraActivityInstructions || undefined,
+  };
+}
+
+function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback }) {
   const guidance = LEVEL_GUIDANCE[level];
   const age = AGE_GUIDANCE[ageGroup] || AGE_GUIDANCE[DEFAULT_AGE_GROUP];
   const answerGuidance = ANSWER_GUIDANCE[ANSWER_STYLE_TIER[level]] || ANSWER_GUIDANCE.intermediate;
@@ -228,7 +257,21 @@ function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sourc
     ? `,\n  "extraActivityTitle": string,         // short creative title for the activity (2–5 words)\n  "extraActivityInstructions": string   // step-by-step instructions, 3–6 sentences`
     : "";
 
-  return `${searchNote}${transcriptNote}${extraActivityNote}Topic: ${topic}
+  // Geração em lote: o professor gera primeiro UMA combinação nível×faixa,
+  // revisa/edita à mão, e as demais são geradas usando essa primeira aula
+  // (já editada) como referência estrutural — mesma identidade de aula,
+  // profundidade adaptada ao novo nível/faixa.
+  const referenceNote = referenceLesson
+    ? `\nREFERENCE LESSON — The teacher already generated (and hand-edited) this SAME lesson for a different level/age group, and is now generating it for the level and age group requested above. Use the reference below as the structural and thematic guide: keep the same lesson identity — same subject angle, same flow of subtopics, and preserve the spirit of any question or content the teacher added by hand (e.g. questions about specific characters or a monthly cross-cutting theme). Adapt depth, vocabulary, grammar and register to the level and age group requested above — do NOT copy sentences verbatim when the level differs; rewrite them at the right depth.\n\nReference lesson JSON:\n${JSON.stringify(compactLessonForPrompt(referenceLesson))}\n`
+    : "";
+
+  // Recriação: o professor rejeitou a versão anterior e descreveu no modal
+  // o que quer mudar. A versão anterior + o feedback entram no prompt.
+  const feedbackNote = feedback && previousLesson
+    ? `\nTEACHER FEEDBACK — The teacher was NOT satisfied with the previous version of this lesson and asked for a new one. Their feedback (in Portuguese): "${feedback}". Write a completely fresh version of the lesson that clearly applies this feedback — keep what the feedback doesn't complain about, change what it does.\n\nPrevious version JSON (for reference of what to change):\n${JSON.stringify(compactLessonForPrompt(previousLesson))}\n`
+    : "";
+
+  return `${searchNote}${transcriptNote}${extraActivityNote}${referenceNote}${feedbackNote}Topic: ${topic}
 Level: ${guidance.label}
 ${guidance.prompt}
 
@@ -411,7 +454,7 @@ async function callAnthropicRaw(body) {
   return extractJson(text, debugInfo);
 }
 
-async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, stages, transcript, extraActivity }) {
+async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, stages, transcript, extraActivity, referenceLesson, previousLesson, feedback }) {
   const sources = language === "english" ? pickGrammarSources(level, stages, 6) : null;
 
   const body = {
@@ -419,7 +462,7 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
     max_tokens: 8000,
     system: SYSTEM_PROMPT,
     messages: [
-      { role: "user", content: buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity }) },
+      { role: "user", content: buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback }) },
     ],
   };
   if (useWebSearch) {
@@ -434,6 +477,11 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
     // Chave "crua" do nível (ex.: "basic"), diferente do rótulo bonito
     // acima — precisa viajar de volta ao regenerar uma seção depois.
     levelKey: level,
+    // Faixa etária: chave crua + rótulo pt-BR. O rótulo aparece no header
+    // do carrossel ("BÁSICO · JOVENS") e no nome do arquivo exportado
+    // (Conversation_Lesson_Basico_Jovens.pptx).
+    ageKey: AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP,
+    ageLabel: (AGE_GUIDANCE[ageGroup] || AGE_GUIDANCE[DEFAULT_AGE_GROUP]).ptLabel,
     language,
     topic: parsed.topic || topic,
     objectives: clampArray(parsed.objectives, 3),

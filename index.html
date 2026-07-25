@@ -27,6 +27,30 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </div>
 </div>
 
+<div id="recreateModal" class="modal-overlay">
+<div class="modal-card">
+<div class="modal-title">Recriar esta aula</div>
+<p class="modal-text">Descreva o que você quer mudar nesta aula. A IA vai gerar uma nova versão levando seu feedback em conta — só desta aula, as demais não mudam.</p>
+<textarea id="recreateFeedback" rows="4" placeholder="ex.: achei muito infantil, deixe mais adulta / foque menos nesse assunto e mais no outro..."></textarea>
+<div class="modal-actions">
+<button type="button" class="btn btn-ghost btn-sm" id="cancelRecreate">Cancelar</button>
+<button type="button" class="btn btn-gold btn-sm" id="confirmRecreateBtn">Recriar aula</button>
+</div>
+</div>
+</div>
+
+<div id="batchModeModal" class="modal-overlay">
+<div class="modal-card">
+<div class="modal-title">Gerar as demais aulas</div>
+<p class="modal-text">Como você prefere gerar as aulas restantes? Todas vão usar a primeira aula (já revisada por você) como referência de estrutura.</p>
+<div class="modal-actions modal-actions-stack">
+<button type="button" class="btn btn-gold btn-sm" id="batchSequentialBtn">Uma por vez (sequencial)</button>
+<button type="button" class="btn btn-gold btn-sm" id="batchParallelBtn">Todas ao mesmo tempo</button>
+<button type="button" class="btn btn-ghost btn-sm" id="cancelBatchMode">Cancelar</button>
+</div>
+</div>
+</div>
+
 <header class="hero">
 <a class="back-link" href="https://pedro-fisk.github.io/fisk-hub/">&larr; Voltar aos recursos</a>
 <button type="button" class="theme-toggle" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar modo escuro">🌙</button>
@@ -121,34 +145,14 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </div>
 </div>
 
-<div class="panel">
-<h2>👥 Faixa etária dos alunos</h2>
-<div class="choice-row" id="ageChoices" data-field="ageGroup">
-<button type="button" class="choice" data-value="preteens">Pré-adolescentes</button>
-<button type="button" class="choice" data-value="teens">Jovens</button>
-<button type="button" class="choice is-active" data-value="adults">Adultos</button>
+<div class="panel" id="matrixField">
+<h2>📊 Nível × Faixa etária</h2>
+<p class="hint hint-lead">Marque na tabela quais combinações de nível e faixa etária você quer gerar. Uma só combinação gera uma aula única, como sempre. Marcando várias, você gera a <strong>primeira</strong> combinação, revisa e edita à vontade, e depois manda gerar as demais — elas seguem a estrutura da primeira aula já revisada.</p>
+<div class="matrix-scroll">
+<table class="matrix" id="matrixTable" aria-label="Seleção de combinações de nível e faixa etária"></table>
 </div>
-<p class="hint">Informação de contexto para a IA. O tema da atividade continua sendo exatamente o que você escrever no tópico — a faixa etária não muda os temas nem simplifica o conteúdo.</p>
-</div>
-
-<div class="panel" id="levelField">
-<h2>📊 Nível</h2>
-<div class="choice-row" id="levelChoicesEnglish" data-field="level">
-<button type="button" class="choice" data-value="real_beginners">Real Beginners</button>
-<button type="button" class="choice" data-value="teens">Teens</button>
-<button type="button" class="choice is-active" data-value="basic">Basic</button>
-<button type="button" class="choice" data-value="intermediate">Intermediate</button>
-<button type="button" class="choice" data-value="advanced">Advanced</button>
-<button type="button" class="choice" data-value="all_levels">Todos os níveis</button>
-</div>
-<div class="choice-row is-hidden" id="levelChoicesSpanish" data-field="level">
-<button type="button" class="choice is-active" data-value="spanish_basic">Básico</button>
-<button type="button" class="choice" data-value="spanish_intermediate">Intermediário</button>
-<button type="button" class="choice" data-value="spanish_advanced">Avançado</button>
-<button type="button" class="choice" data-value="all_levels">Todos os níveis</button>
-</div>
-<p class="hint" id="levelHintEnglish">"Todos os níveis" gera cinco roteiros separados (Real Beginners → Advanced) — nunca um só mesclado. <strong>Teens</strong> seleciona automaticamente a faixa etária Pré-adolescentes.</p>
-<p class="hint is-hidden" id="levelHintSpanish">Os níveis Básico, Intermediário e Avançado correspondem aos estágios do curso: Inmediato 1, 2 e 3. "Todos os níveis" gera os três roteiros separados.</p>
+<p class="hint" id="levelHintEnglish">A faixa etária é contexto para a IA: o tema continua sendo exatamente o que você escreveu no tópico. O nível <strong>Teens</strong> é exclusivo da faixa Pré-adolescentes.</p>
+<p class="hint is-hidden" id="levelHintSpanish">Os níveis Básico, Intermediário e Avançado correspondem aos estágios do curso: Inmediato 1, 2 e 3.</p>
 </div>
 
 <div class="panel" id="stagesField">

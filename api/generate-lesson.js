@@ -98,7 +98,11 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity } = req.body || {};
+  // referenceLesson: aula-guia do lote (a primeira, já editada à mão) —
+  // as demais combinações nível×faixa são geradas a partir dela.
+  // previousLesson + feedback: recriação de UMA aula que o professor
+  // rejeitou, com o texto do modal descrevendo o que mudar.
+  const { accessCode, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity, referenceLesson, previousLesson, feedback } = req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
 
@@ -141,7 +145,19 @@ module.exports = async function handler(req, res) {
     // 504. Em paralelo, o tempo total é o da chamada mais lenta.
     const lessons = await Promise.all(
       levels.map((level) =>
-        generateFullLesson({ language, topic, level, ageGroup: resolvedAgeGroup, useWebSearch: searchEnabled, stages, transcript, extraActivity: extraActivity || null })
+        generateFullLesson({
+          language,
+          topic,
+          level,
+          ageGroup: resolvedAgeGroup,
+          useWebSearch: searchEnabled,
+          stages,
+          transcript,
+          extraActivity: extraActivity || null,
+          referenceLesson: referenceLesson || null,
+          previousLesson: previousLesson || null,
+          feedback: (feedback && String(feedback).trim()) || null,
+        })
       )
     );
 
@@ -163,13 +179,20 @@ module.exports = async function handler(req, res) {
       )
     );
 
-    // Log persistente (GitHub): quem gerou o quê e quando.
+    // Log persistente (GitHub): quem gerou o quê e quando. Recriações são
+    // registradas como evento próprio, com o feedback do professor no
+    // campo "detalhe" — é isso que permite ao diretor ver quantas
+    // recriações cada aula levou e por quê (análise de tendências).
+    const isRecreation = Boolean(feedback && String(feedback).trim());
     waitUntil(
       appendActivityLog({
         teacherName,
         language: language === "spanish" ? "espanhol" : "inglês",
         levels: levels.map((lv) => LEVEL_GUIDANCE[lv].label),
+        ageGroups: [(AGE_GUIDANCE[resolvedAgeGroup] || {}).ptLabel || resolvedAgeGroup],
+        event: isRecreation ? "recriação" : "geração",
         topic,
+        detail: isRecreation ? `feedback: ${String(feedback).trim()}` : "",
       }).catch((err) => console.error("[log] falha ao gravar:", err.message))
     );
   } catch (err) {

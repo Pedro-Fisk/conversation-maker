@@ -2,13 +2,11 @@
   "name": "conversation-maker-web",
   "version": "1.0.0",
   "private": true,
-  "description": "Conversation Maker — FISK. Static frontend + Vercel serverless functions (generate-lesson, export-pdf, export-pptx).",
+  "description": "Conversation Maker — FISK. Static frontend + Vercel serverless functions (generate-lesson, export-pptx).",
   "dependencies": {
-    "@vercel/functions": "^2.0.0",
     "@fontsource/permanent-marker": "^5.3.0",
     "@fontsource/poppins": "^5.3.0",
-    "@sparticuz/chromium": "^131.0.1",
-    "pptxgenjs": "^4.0.1",
-    "puppeteer-core": "^23.9.0"
+    "@vercel/functions": "^2.0.0",
+    "pptxgenjs": "^4.0.1"
   }
 }

@@ -3,8 +3,8 @@
  *
  * Builds a real .pptx using the same real Canva template background PNGs
  * (assets/bg/*.png) and the same exact coordinate map (slide-layouts.js)
- * that drives the HTML/PDF renderer (render-slides-html.js) — so the two
- * exports stay visually consistent and both stay faithful to the original
+ * that drives the local HTML preview (render-slides-html.js) — so the two
+ * outputs stay visually consistent and both stay faithful to the original
  * Canva template. This replaces the old generic-shapes pptxgenjs approach
  * (banner bars, plain ellipses) that didn't match the real template.
  *

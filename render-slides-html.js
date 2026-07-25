@@ -3,10 +3,10 @@
  *
  * Turns a `lesson` object into a single self-contained HTML document (one
  * page per Canva template slide, 20 pages total) using slide-layouts.js for exact
- * positioning over the real exported backgrounds. This HTML is what both
- * the PDF renderer (api/export-pdf.js, via headless Chromium) and, in
- * spirit, the pptx builder (pptx-builder.js) are driven from — the layout
- * numbers are shared so the two outputs stay in sync.
+ * positioning over the real exported backgrounds. This HTML powers the
+ * local QA preview (test-render.js) and, in spirit, the pptx builder
+ * (pptx-builder.js) is driven from the same layout numbers, so the two
+ * outputs stay in sync.
  *
  * Canonical `lesson` shape this module expects (this is the contract
  * api/generate-lesson.js must produce — see task to update its prompt):
@@ -71,8 +71,8 @@ function bgDataUri(relPath) {
  * fetch) rather than pulled from Google Fonts via @import at render time.
  * A first version used `@import url('https://fonts.googleapis.com/...')`
  * and it silently fell back to a system font (Calibri) in production —
- * headless Chromium on Vercel isn't guaranteed to finish an external font
- * fetch before the page is rasterized to PDF, so any runtime network
+ * a headless browser isn't guaranteed to finish an external font fetch
+ * before the page is rasterized, so any runtime network
  * dependency for fonts is fragile. Embedding removes that dependency
  * entirely, the same fix already applied to the background images.
  *
@@ -112,8 +112,8 @@ function buildFontFaceCss() {
     .join("\n");
 
   // Section headings use "Aptos" with a Poppins ExtraBold fallback. Aptos
-  // is a Microsoft font (not freely embeddable), so the headless-Chromium
-  // PDF path simply falls back to the embedded Poppins 800 — visually very
+  // is a Microsoft font (not freely embeddable), so the browser preview
+  // simply falls back to the embedded Poppins 800 — visually very
   // close to Aptos bold. The .pptx keeps the real "Aptos" fontFace, which
   // modern Office installs ship with.
   return poppinsFaces;

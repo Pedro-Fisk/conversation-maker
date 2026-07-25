@@ -6,8 +6,12 @@
  * Pedro-Fisk/conversation-maker-logs, já que os nomes dos professores não
  * devem ficar públicos).
  *
- * Um arquivo Markdown por mês (logs/2026-07.md), uma linha por geração:
- *   | 20/07/2026 14:32 | Teacher Ana | inglês | Intermediate | Viagem ao Japão |
+ * Um arquivo Markdown por mês (logs/2026-07.md), uma linha por evento.
+ * Além da geração inicial, também registra recriações (com o feedback que
+ * o professor escreveu no modal) e downloads (com qual versão virou a
+ * final) — é essa granularidade que permite ao diretor analisar
+ * tendências: temas populares, quantas recriações por aula, etc.
+ *   | 20/07/2026 14:32 | Teacher Ana | inglês | Intermediate | Adultos | geração | Viagem ao Japão | |
  *
  * Env vars (Vercel → Settings → Environment Variables):
  *   GITHUB_LOG_REPO   — ex.: "Pedro-Fisk/conversation-maker-logs"
@@ -40,7 +44,7 @@ function sanitizeCell(s, max) {
     .slice(0, max);
 }
 
-async function appendActivityLog({ teacherName, language, levels, topic }) {
+async function appendActivityLog({ teacherName, language, levels, ageGroups, event, topic, detail }) {
   const now = new Date();
   const stamp = now.toLocaleString("pt-BR", {
     timeZone: "America/Sao_Paulo",
@@ -54,7 +58,10 @@ async function appendActivityLog({ teacherName, language, levels, topic }) {
   const line = `| ${stamp} | ${sanitizeCell(teacherName, 60) || "(sem nome)"} | ${sanitizeCell(
     language,
     20
-  )} | ${sanitizeCell((levels || []).join(", "), 60)} | ${sanitizeCell(topic, 140)} |`;
+  )} | ${sanitizeCell((levels || []).join(", "), 60)} | ${sanitizeCell(
+    (ageGroups || []).join(", "),
+    60
+  )} | ${sanitizeCell(event || "geração", 30)} | ${sanitizeCell(topic, 140)} | ${sanitizeCell(detail, 200)} |`;
 
   // Sempre loga no Vercel também (efêmero, mas ajuda a depurar).
   console.log(`[atividade] ${line}`);
@@ -70,7 +77,7 @@ async function appendActivityLog({ teacherName, language, levels, topic }) {
   const path = `logs/${parts}.md`;
   const url = `https://api.github.com/repos/${process.env.GITHUB_LOG_REPO}/contents/${path}`;
 
-  const header = `# Atividades geradas — ${parts}\n\n| Data | Professor | Idioma | Nível | Tópico |\n|---|---|---|---|---|\n`;
+  const header = `# Atividades geradas — ${parts}\n\n| Data | Professor | Idioma | Nível | Faixa etária | Evento | Tópico | Detalhe |\n|---|---|---|---|---|---|---|---|\n`;
 
   // Lê o arquivo atual (se existir), anexa a linha e grava de volta. Em
   // caso de corrida (duas gerações no mesmo segundo), o PUT falha com 409

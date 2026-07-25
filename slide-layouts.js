@@ -33,7 +33,7 @@
  *
  * Fonts: section headings use "Aptos" bold (ships with modern Microsoft
  * Office, so the .pptx renders correctly on teachers' machines), falling
- * back to "Poppins" ExtraBold in the HTML/PDF renderer (visually very
+ * back to "Poppins" ExtraBold in the HTML preview renderer (visually very
  * close). Body copy uses "Poppins" to match the clean sans-serif used for
  * the real content in the template. ("Permanent Marker" was dropped: most
  * machines don't have it and PowerPoint silently fell back to Calibri.)
