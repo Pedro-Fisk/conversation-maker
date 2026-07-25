@@ -110,6 +110,15 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <p class="hint" id="micHint"></p>
 </div>
 
+<div class="panel" id="sourceField">
+<h2>📎 Já tem uma atividade pronta?</h2>
+<p class="hint hint-lead">Suba um <strong>.pptx</strong> que você já usa e crie outras atividades a partir dele. Escreva abaixo o que quer que a IA faça com ele — <em>"adapta esta atividade para uma turma de adultos avançados"</em>, <em>"usa o formato desta, mas sobre viagens"</em>, <em>"deixa as perguntas mais fáceis"</em>.</p>
+<input type="file" id="sourceFile" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation">
+<p class="hint" id="sourceStatus"></p>
+<textarea id="sourceInstruction" rows="3" placeholder="ex.: adapta esta atividade para Basic, mantendo o tema mas com perguntas mais curtas..."></textarea>
+<p class="hint">O arquivo é lido <strong>no seu navegador</strong> e só o texto dos slides vai para a IA — o arquivo em si não é enviado nem guardado. A aula sai sempre no <strong>template FISK</strong>: imagens e formatação do original não são aproveitadas, só o conteúdo.</p>
+</div>
+
 <div class="panel">
 <h2>✨ Incrementos</h2>
 <p class="hint hint-lead" style="margin-top:0">Recursos opcionais para enriquecer a atividade. Ative os que quiser usar.</p>
@@ -193,6 +202,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </footer>
 
 <script src="https://cdn.jsdelivr.net/gh/pedro-fisk/fisk-hub@v1.0.0/assets/fisk-shared.js"></script>
+<script src="pptx-reader.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -46,6 +46,22 @@ const {
   generateFullLesson,
 } = require("../lesson-generation");
 
+/**
+ * Sanea a "atividade pronta" que veio do navegador. O cliente já limita o
+ * tamanho, mas quem manda o corpo é o navegador — então o limite de verdade é
+ * aqui, senão um texto gigante estoura o prompt (e a conta).
+ */
+function sanitizarAtividadeBase(src) {
+  if (!src || typeof src !== "object") return null;
+  const texto = String(src.texto || "").trim();
+  if (!texto) return null;
+  return {
+    texto: texto.slice(0, 12000),
+    instrucao: String(src.instrucao || "").trim().slice(0, 600),
+    arquivo: String(src.arquivo || "").trim().slice(0, 200),
+  };
+}
+
 async function searchYouTubeVideo(topic) {
   try {
     const query = encodeURIComponent(`${topic} english conversation lesson`);
@@ -103,7 +119,7 @@ module.exports = async function handler(req, res) {
   // as demais combinações nível×faixa são geradas a partir dela.
   // previousLesson + feedback: recriação de UMA aula que o professor
   // rejeitou, com o texto do modal descrevendo o que mudar.
-  const { accessCode, profToken, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity, referenceLesson, previousLesson, feedback } = req.body || {};
+  const { accessCode, profToken, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, stages, videoId, videoSearch, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity } = req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
 
@@ -124,8 +140,11 @@ module.exports = async function handler(req, res) {
   }
   const effectiveTeacher = sessionTeacher || teacherName;
 
-  if (!language || !topic || !topic.trim()) {
-    res.status(400).json({ error: "Preencha idioma e tópico." });
+  // Com uma atividade pronta subida, o tema pode vir do próprio arquivo — então
+  // o tópico deixa de ser obrigatório nesse caso (e só nesse).
+  const atividadeBase = sanitizarAtividadeBase(sourceActivity);
+  if (!language || ((!topic || !topic.trim()) && !atividadeBase)) {
+    res.status(400).json({ error: "Preencha idioma e tópico (ou suba uma atividade pronta)." });
     return;
   }
 
@@ -170,6 +189,9 @@ module.exports = async function handler(req, res) {
           referenceLesson: referenceLesson || null,
           previousLesson: previousLesson || null,
           feedback: (feedback && String(feedback).trim()) || null,
+          // atividade pronta subida pelo professor: texto já extraído no
+          // navegador (o arquivo em si nunca chega aqui) + o que ele pediu
+          sourceActivity: atividadeBase,
         })
       )
     );

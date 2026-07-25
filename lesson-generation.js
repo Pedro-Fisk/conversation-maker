@@ -241,7 +241,29 @@ function compactLessonForPrompt(lesson) {
   };
 }
 
-function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback }) {
+/**
+ * Atividade pronta que o professor subiu (.pptx), já reduzida a texto no
+ * navegador. NÃO é um `lesson` no formato canônico — é material bruto, então
+ * entra como fonte a interpretar, e a instrução do professor é quem diz o que
+ * fazer com ela ("adapta para adultos", "usa o formato mas sobre viagens").
+ * A saída continua sendo uma aula nova no template FISK: nada do arquivo
+ * original é reaproveitado além do conteúdo.
+ */
+function buildSourceActivityBlock(sourceActivity) {
+  if (!sourceActivity || !sourceActivity.texto) return "";
+  const instrucao = String(sourceActivity.instrucao || "").trim();
+  const pedido = instrucao
+    ? `The teacher's instruction about what to do with it (in Portuguese): "${instrucao}". Follow this instruction — it takes precedence over your own reading of the material.`
+    : `The teacher gave no specific instruction, so build a fresh lesson on the same subject as the material below, at the level and age group requested above.`;
+  return `\nEXISTING ACTIVITY UPLOADED BY THE TEACHER — Below is the text extracted from a .pptx the teacher already uses (slide by slide; images, layout and formatting were not recoverable, so judge only the content). ${pedido}
+Treat it as raw material, not as a finished lesson: never copy its slides one-to-one, and always produce a complete lesson in the required JSON shape, adapted to the level and age group requested above. If the material is clearly above or below that level, rewrite it at the right depth instead of reusing its sentences.
+
+Extracted text:
+${sourceActivity.texto}
+`;
+}
+
+function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity }) {
   const guidance = LEVEL_GUIDANCE[level];
   const age = AGE_GUIDANCE[ageGroup] || AGE_GUIDANCE[DEFAULT_AGE_GROUP];
   const answerGuidance = ANSWER_GUIDANCE[ANSWER_STYLE_TIER[level]] || ANSWER_GUIDANCE.intermediate;
@@ -277,7 +299,14 @@ function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sourc
     ? `\nTEACHER FEEDBACK — The teacher was NOT satisfied with the previous version of this lesson and asked for a new one. Their feedback (in Portuguese): "${feedback}". Write a completely fresh version of the lesson that clearly applies this feedback — keep what the feedback doesn't complain about, change what it does.\n\nPrevious version JSON (for reference of what to change):\n${JSON.stringify(compactLessonForPrompt(previousLesson))}\n`
     : "";
 
-  return `${searchNote}${transcriptNote}${extraActivityNote}${referenceNote}${feedbackNote}Topic: ${topic}
+  const sourceNote = buildSourceActivityBlock(sourceActivity);
+  // Sem tópico digitado só é válido quando há atividade subida: aí o tema sai
+  // dela, e dizer isso explicitamente evita a IA inventar um assunto qualquer.
+  const topicLine = (topic && String(topic).trim())
+    ? `Topic: ${topic}`
+    : "Topic: not given — take the subject from the uploaded activity above.";
+
+  return `${searchNote}${transcriptNote}${extraActivityNote}${sourceNote}${referenceNote}${feedbackNote}${topicLine}
 Level: ${guidance.label}
 ${guidance.prompt}
 
@@ -460,7 +489,7 @@ async function callAnthropicRaw(body) {
   return extractJson(text, debugInfo);
 }
 
-async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, stages, transcript, extraActivity, referenceLesson, previousLesson, feedback }) {
+async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, stages, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity }) {
   const sources = language === "english" ? pickGrammarSources(level, stages, 6) : null;
 
   const body = {
@@ -468,7 +497,7 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
     max_tokens: 8000,
     system: SYSTEM_PROMPT,
     messages: [
-      { role: "user", content: buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback }) },
+      { role: "user", content: buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity }) },
     ],
   };
   if (useWebSearch) {

@@ -22,6 +22,9 @@ const levelHintEnglish = document.getElementById("levelHintEnglish");
 const levelHintSpanish = document.getElementById("levelHintSpanish");
 const stagesField = document.getElementById("stagesField");
 const stagesAutoHint = document.getElementById("stagesAutoHint");
+const sourceFileEl = document.getElementById("sourceFile");
+const sourceStatusEl = document.getElementById("sourceStatus");
+const sourceInstructionEl = document.getElementById("sourceInstruction");
 const stageChoices = document.getElementById("stageChoices");
 const results = document.getElementById("results");
 const generateBtn = document.getElementById("generateBtn");
@@ -384,6 +387,44 @@ buildMatrix(language);   // refreshMatrixBadges() no fim chama syncStagesField()
 wireChoiceRow(languageChoices, updateLanguageUI);
 if (stageChoices) wireMultiChoiceRow(stageChoices);
 updateLanguageUI(selectedValue(languageChoices));
+
+/* ============ ATIVIDADE PRONTA (.pptx) ============
+   O texto é extraído aqui no navegador (ver pptx-reader.js) e guardado nesta
+   variável; só ele viaja no corpo da requisição. Se a leitura falhar, o
+   professor é avisado na hora — e não na hora de gerar, quando já esperou. */
+let atividadeBase = null;   // { nomeArquivo, slides, texto, palavras, truncado }
+
+if (sourceFileEl) {
+sourceFileEl.addEventListener("change", async () => {
+const file = sourceFileEl.files && sourceFileEl.files[0];
+atividadeBase = null;
+// `required` no HTML bloqueia o submit ANTES do meu guard rodar, então o
+// atributo tem de acompanhar o estado: com arquivo, o tópico é opcional.
+if (topicEl) topicEl.required = true;
+if (!file) { if (sourceStatusEl) sourceStatusEl.textContent = ""; return; }
+if (sourceStatusEl) sourceStatusEl.textContent = "⏳ Lendo o arquivo…";
+try {
+const lido = await pptxLerArquivo(file);
+atividadeBase = {
+nomeArquivo: file.name,
+slides: lido.slides.length,
+texto: lido.texto,
+palavras: lido.palavras,
+truncado: lido.truncado,
+};
+if (topicEl) topicEl.required = false;   // o tema pode vir do arquivo
+if (sourceStatusEl) {
+sourceStatusEl.textContent = "✓ " + file.name + " — " + lido.slides.length +
+" slide(s), " + lido.palavras + " palavras de texto aproveitadas." +
+(lido.truncado ? " (arquivo longo: usei só o começo)" : "") +
+" O tópico acima agora é opcional.";
+}
+} catch (err) {
+if (sourceStatusEl) sourceStatusEl.textContent = "⚠️ " + (err.message || "não consegui ler este arquivo");
+sourceFileEl.value = "";
+}
+});
+}
 
 // YouTube checkbox toggle
 if (youtubeCheckEl && youtubeWrapEl) {
@@ -1021,6 +1062,7 @@ stages: stagesDoCombo(combo),
 videoId: batch.videoId,
 videoSearch: false,
 extraActivity: p.extraActivity,
+sourceActivity: p.sourceActivity,
 };
 if (extras) Object.assign(payload, extras);
 const { lessons, resolvedVideoId } = await fetchLessons(payload);
@@ -1504,7 +1546,11 @@ const videoSearch = !!(youtubeLuckyEl && youtubeLuckyEl.checked && youtubeCheckE
 const videoId = (youtubeCheckEl && youtubeCheckEl.checked && !videoSearch) ? extractVideoId(youtubeEl ? youtubeEl.value : "") : null;
 const extraActivity = (extraActivityCheckEl && extraActivityCheckEl.checked && extraActivityEl && extraActivityEl.value.trim()) ? extraActivityEl.value.trim() : null;
 
-if (!topic) return;
+// Sem tópico só passa quando há atividade subida — aí o tema vem dela.
+if (!topic && !atividadeBase) {
+setStatus("Escreva o tópico da aula, ou suba uma atividade pronta para basear a aula nela.", true);
+return;
+}
 
 if (!profSession) {
 setStatus("Entre pelo Fisk Hub antes de gerar — clique em \"Conversation Maker\" por lá.", true);
@@ -1533,10 +1579,18 @@ try {
 // está escondido nesse caso).
 const stagesAuto = estagioEhAutomatico();
 
+// Atividade pronta subida pelo professor: o texto extraído + o que ele pediu
+// para fazer com ela. Vai junto em TODAS as aulas do lote.
+const sourceActivity = atividadeBase ? {
+texto: atividadeBase.texto,
+arquivo: atividadeBase.nomeArquivo,
+instrucao: (sourceInstructionEl && sourceInstructionEl.value.trim()) || "",
+} : null;
+
 batch = {
 language,
 videoId: null,
-params: { topic, useWebSearch, teacherName: profSession.name, stages, stagesAuto, extraActivity },
+params: { topic, useWebSearch, teacherName: profSession.name, stages, stagesAuto, extraActivity, sourceActivity },
 slots: combos.map((combo) => ({ combo, versions: [], active: 0, recreations: 0, busy: null, error: null, slideEl: null })),
 generatingRest: false,
 barEl: null,
@@ -1556,6 +1610,7 @@ stages: stagesPrimeira,
 videoId,
 videoSearch,
 extraActivity,
+sourceActivity,
 };
 const { lessons, resolvedVideoId } = await fetchLessons(payload);
 
