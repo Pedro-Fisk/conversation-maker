@@ -14,6 +14,97 @@ body.theme-dark{ --ui:#5b90c0; --ui-dark:#8fb4d8; --ui-mid:#4a7ba8; --ui-pill:#3
 
 .req{color:var(--ui-dark);font-weight:800;font-size:12px}
 
+/* ---------- Menu do professor (canto superior direito) ----------
+   A identidade de quem está logado saiu do formulário: a primeira coisa que o
+   professor precisa ver é o tópico da aula. Fica ao lado do .theme-toggle, que
+   o kit compartilhado posiciona em top:1.25rem / right:1.5rem. */
+.hero-menu{
+position: absolute;
+top: 1.25rem;
+right: 5rem;
+z-index: 20;
+}
+.hero-menu.is-hidden{ display: none !important; }
+
+.hero-menu-btn{
+display: inline-flex;
+align-items: center;
+gap: 0.4rem;
+max-width: 15rem;
+padding: 0 0.9rem;
+height: 2.6rem;
+border: 1.5px solid rgba(255,255,255,0.35);
+border-radius: 999px;
+background: transparent;
+color: #ffffff;
+font-family: inherit;
+font-size: 0.85rem;
+font-weight: 700;
+cursor: pointer;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+transition: all 0.12s ease;
+}
+.hero-menu-btn:hover{ border-color: #ffffff; transform: translateY(-1px); }
+.hero-menu-caret{ font-size: 0.7rem; opacity: 0.8; }
+.hero-menu[data-open="1"] .hero-menu-caret{ transform: rotate(180deg); }
+
+.hero-menu-panel{
+position: absolute;
+top: calc(100% + 0.5rem);
+right: 0;
+min-width: 16rem;
+background: var(--white);
+border: 1.5px solid var(--surface-border-color);
+border-radius: 14px;
+box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+padding: 0.5rem;
+text-align: left;
+}
+.hero-menu-panel[hidden]{ display: none; }
+
+.hero-menu-title{
+margin: 0.25rem 0.6rem 0.5rem;
+font-size: 0.72rem;
+font-weight: 800;
+text-transform: uppercase;
+letter-spacing: 0.04em;
+color: var(--gray);
+}
+
+.hero-menu-item{
+display: block;
+width: 100%;
+box-sizing: border-box;
+text-align: left;
+padding: 0.55rem 0.6rem;
+border: none;
+border-radius: 9px;
+background: transparent;
+color: var(--black);
+font-family: inherit;
+font-size: 0.9rem;
+font-weight: 600;
+text-decoration: none;
+cursor: pointer;
+}
+.hero-menu-item:hover{ background: var(--ui-soft); color: var(--ui-ink); }
+
+.hero-menu-note{
+margin: 0.5rem 0.6rem 0.25rem;
+font-size: 0.72rem;
+line-height: 1.35;
+color: var(--gray);
+}
+
+@media (max-width: 620px){
+/* no celular o nome cede espaço: fica só o ícone e a seta */
+.hero-menu{ right: 4.6rem; }
+.hero-menu-btn{ padding: 0 0.7rem; }
+.hero-menu-btn #loggedName{ display: none; }
+}
+
 .wrap{
 flex: 1;
 max-width: 780px;
@@ -143,6 +234,9 @@ resize: vertical;
 min-height: 3rem;
 line-height: 1.4;
 padding-right: 3.4rem;
+/* a altura é ajustada por JS conforme o texto cresce (crescerTopico);
+   sem isso a barra de rolagem aparece por um instante a cada linha nova */
+overflow-y: hidden;
 }
 
 .mic-btn{

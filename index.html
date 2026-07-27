@@ -54,6 +54,21 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <header class="hero">
 <a class="back-link" href="https://pedro-fisk.github.io/fisk-hub/">&larr; Voltar aos recursos</a>
 <button type="button" class="theme-toggle" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar modo escuro">🌙</button>
+
+<!-- Identidade do professor fora do fluxo do formulário: a primeira coisa que
+     ele vê tem de ser o tópico da aula, não quem está logado. -->
+<div class="hero-menu is-hidden" id="profMenu">
+<button type="button" class="hero-menu-btn" id="profMenuBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="profMenuPanel">
+<span aria-hidden="true">🧑‍🏫</span> <span id="loggedName"></span> <span class="hero-menu-caret" aria-hidden="true">▾</span>
+</button>
+<div class="hero-menu-panel" id="profMenuPanel" role="menu" hidden>
+<p class="hero-menu-title">Histórico do professor</p>
+<a class="hero-menu-item" role="menuitem" href="historico.html">🗂 Minhas aulas</a>
+<button type="button" class="hero-menu-item" role="menuitem" id="logoutBtn">🚪 Sair neste computador</button>
+<p class="hero-menu-note">Logado pelo Fisk Hub. Seu nome vai para o registro de atividades — não aparece na atividade, no arquivo nem no nome do arquivo.</p>
+</div>
+</div>
+
 <img class="hero-logo" src="assets/fisk-logo.png" alt="FISK Taubaté · Caçapava">
 <h1>Conversation Maker</h1>
 <p>Crie roteiros de conversação para praticar com os alunos</p>
@@ -72,25 +87,6 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <a class="btn btn-gold btn-sm" href="https://pedro-fisk.github.io/fisk-hub/">Ir para o Fisk Hub →</a>
 </div>
 
-<div class="panel is-hidden" id="loggedInBox">
-<div class="row-inline logged-row">
-<span class="logged-as">🧑‍🏫 Logado como <strong id="loggedName"></strong> <span class="hint" style="display:inline">(pelo Fisk Hub)</span></span>
-<span class="row-inline" style="gap:0.5rem">
-<a class="btn btn-ghost btn-sm" href="historico.html">🗂 Minhas aulas</a>
-<button type="button" class="btn btn-ghost btn-sm" id="logoutBtn">Sair neste computador</button>
-</span>
-</div>
-<p class="hint">Seu nome vai automaticamente para o registro de atividades. Ele não aparece na atividade, no arquivo nem no nome do arquivo.</p>
-</div>
-
-<div class="panel">
-<h2>🌎 Idioma</h2>
-<div class="choice-row" id="languageChoices" data-field="language">
-<button type="button" class="choice is-active" data-value="english">Inglês</button>
-<button type="button" class="choice" data-value="spanish">Espanhol</button>
-</div>
-<p class="hint" id="languageHint">Os níveis do espanhol (Básico, Intermediário e Avançado) correspondem aos estágios Inmediato 1, 2 e 3 do curso.</p>
-</div>
 
 <div class="panel panel-featured">
 <h2>💬 Tópico da aula</h2>
@@ -108,6 +104,15 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </button>
 </div>
 <p class="hint" id="micHint"></p>
+</div>
+
+<div class="panel">
+<h2>🌎 Idioma</h2>
+<div class="choice-row" id="languageChoices" data-field="language">
+<button type="button" class="choice is-active" data-value="english">Inglês</button>
+<button type="button" class="choice" data-value="spanish">Espanhol</button>
+</div>
+<p class="hint" id="languageHint">Os níveis do espanhol (Básico, Intermediário e Avançado) correspondem aos estágios Inmediato 1, 2 e 3 do curso.</p>
 </div>
 
 <div class="panel" id="sourceField">

@@ -27,6 +27,19 @@ const results = document.getElementById("results");
 const generateBtn = document.getElementById("generateBtn");
 const statusEl = document.getElementById("status");
 const topicEl = document.getElementById("topic");
+
+/* A caixa do tópico cresce com o texto. A altura vem de scrollHeight, então
+   precisa ser recalculada também quando o valor muda por CÓDIGO (ditado pelo
+   microfone, limpar formulário) — nesses casos o evento "input" não dispara. */
+function crescerTopico() {
+if (!topicEl) return;
+topicEl.style.height = "auto";
+topicEl.style.height = topicEl.scrollHeight + "px";
+}
+if (topicEl) {
+topicEl.addEventListener("input", crescerTopico);
+requestAnimationFrame(crescerTopico);
+}
 const micBtn = document.getElementById("micBtn");
 const micHint = document.getElementById("micHint");
 const spinnerEl = document.getElementById("spinner");
@@ -80,7 +93,9 @@ const FISK_HUB_HOME = "https://pedro-fisk.github.io/fisk-hub/";
 
 const authGate = document.getElementById("authGate");
 const authGateMsg = document.getElementById("authGateMsg");
-const loggedInBox = document.getElementById("loggedInBox");
+const profMenu = document.getElementById("profMenu");
+const profMenuBtn = document.getElementById("profMenuBtn");
+const profMenuPanel = document.getElementById("profMenuPanel");
 const loggedNameEl = document.getElementById("loggedName");
 const logoutBtn = document.getElementById("logoutBtn");
 
@@ -102,9 +117,33 @@ updateAuthUI();
 function updateAuthUI() {
 const logged = Boolean(profSession);
 if (authGate) authGate.classList.toggle("is-hidden", logged);
-if (loggedInBox) loggedInBox.classList.toggle("is-hidden", !logged);
+if (profMenu) profMenu.classList.toggle("is-hidden", !logged);
+if (!logged) fecharMenuProf();
 if (loggedNameEl && profSession) loggedNameEl.textContent = profSession.name;
 }
+
+/* ---- menu do professor no cabeçalho ---- */
+function fecharMenuProf() {
+if (!profMenuPanel || !profMenu) return;
+profMenuPanel.hidden = true;
+profMenu.removeAttribute("data-open");
+if (profMenuBtn) profMenuBtn.setAttribute("aria-expanded", "false");
+}
+function alternarMenuProf() {
+if (!profMenuPanel || !profMenu) return;
+const abrir = profMenuPanel.hidden;
+profMenuPanel.hidden = !abrir;
+if (abrir) profMenu.setAttribute("data-open", "1"); else profMenu.removeAttribute("data-open");
+if (profMenuBtn) profMenuBtn.setAttribute("aria-expanded", abrir ? "true" : "false");
+}
+if (profMenuBtn) {
+profMenuBtn.addEventListener("click", (e) => { e.stopPropagation(); alternarMenuProf(); });
+}
+// clicar fora ou apertar Esc fecha — senão o painel fica preso aberto
+document.addEventListener("click", (e) => {
+if (profMenu && !profMenu.contains(e.target)) fecharMenuProf();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") fecharMenuProf(); });
 
 function hubPost(body) {
 return fetch(FISK_HUB_API, {
@@ -474,6 +513,7 @@ interim = joinText(interim, transcript);
 }
 }
 topicEl.value = joinText(joinText(baseText, finalChunk), interim);
+crescerTopico();
 });
 
 recognition.addEventListener("error", (event) => {
@@ -490,6 +530,7 @@ micHint.textContent = "Não foi possível usar o ditado agora. Tente novamente."
 recognition.addEventListener("end", () => {
 // Consolida o texto final na caixa e limpa o estado de gravação.
 topicEl.value = joinText(baseText, finalChunk);
+crescerTopico();
 setRecordingUI(false);
 });
 })();
@@ -1450,6 +1491,7 @@ if (btn) btn.click();
 
 function clearForm() {
 topicEl.value = "";
+crescerTopico();
 const webSearchEl = document.getElementById("webSearch");
 if (webSearchEl) webSearchEl.checked = false;
 if (youtubeCheckEl) { youtubeCheckEl.checked = false; }
