@@ -62,6 +62,13 @@ const batchModeModal = document.getElementById("batchModeModal");
 const batchSequentialBtn = document.getElementById("batchSequentialBtn");
 const batchParallelBtn = document.getElementById("batchParallelBtn");
 const cancelBatchModeBtn = document.getElementById("cancelBatchMode");
+const creditModal = document.getElementById("creditModal");
+const creditModalText = document.getElementById("creditModalText");
+const cancelCreditBtn = document.getElementById("cancelCredit");
+const confirmCreditBtn = document.getElementById("confirmCreditBtn");
+const creditosPill = document.getElementById("creditosPill");
+const creditosNum = document.getElementById("creditosNum");
+const menuCreditosNum = document.getElementById("menuCreditosNum");
 
 function extractVideoId(url) {
 if (!url) return null;
@@ -121,6 +128,7 @@ if (authGate) authGate.classList.toggle("is-hidden", logged);
 if (profMenu) profMenu.classList.toggle("is-hidden", !logged);
 if (!logged) fecharMenuProf();
 if (loggedNameEl && profSession) loggedNameEl.textContent = profSession.name;
+if (logged) buscarCreditos(); else { creditos = null; mostrarCreditos(); }
 }
 
 /* ---- menu do professor no cabeçalho ---- */
@@ -145,6 +153,61 @@ document.addEventListener("click", (e) => {
 if (profMenu && !profMenu.contains(e.target)) fecharMenuProf();
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") fecharMenuProf(); });
+
+/* ============ CRÉDITOS DO CONVERSATION MAKER ============
+   1 crédito por aula gerada; recriar não custa. O saldo mostrado aqui é
+   informativo — quem decide é o servidor, no /api/generate-lesson, porque a
+   tela dá para burlar pelo console e cada geração é uma chamada paga. */
+let creditos = null;
+
+function mostrarCreditos() {
+const tem = typeof creditos === "number";
+if (creditosPill) creditosPill.classList.toggle("is-hidden", !tem);
+if (creditosNum) creditosNum.textContent = tem ? creditos : "—";
+if (menuCreditosNum) menuCreditosNum.textContent = tem ? creditos : "—";
+if (creditosPill) {
+creditosPill.classList.toggle("is-zero", tem && creditos <= 0);
+}
+}
+
+async function buscarCreditos() {
+if (!profSession) { creditos = null; mostrarCreditos(); return; }
+try {
+const res = await hubPost({ action: "cmCreditos", token: profSession.token });
+creditos = res && res.ok && typeof res.creditos === "number" ? res.creditos : null;
+} catch (e) { creditos = null; }
+mostrarCreditos();
+}
+
+/* Confirmação antes de gastar: o professor vê quanto custa e quanto sobra.
+   Devolve Promise<boolean>. */
+function confirmarCusto(custo) {
+return new Promise((resolve) => {
+if (!creditModal || !creditModalText) return resolve(true);
+const saldo = typeof creditos === "number" ? creditos : null;
+creditModalText.innerHTML =
+"Esta ação vai gerar <strong>" + custo + " atividade" + (custo > 1 ? "s" : "") +
+"</strong> e custar <strong>" + custo + " crédito" + (custo > 1 ? "s" : "") + "</strong>." +
+(saldo !== null
+? " Você tem <strong>" + saldo + "</strong> e ficará com <strong>" + (saldo - custo) + "</strong>."
+: "") +
+"<br><br>Revisar e editar o texto na tela é de graça, e <strong>recriar uma aula não custa crédito</strong>.";
+function fechar(valor) {
+creditModal.classList.remove("open");
+cancelCreditBtn.removeEventListener("click", noCancelar);
+confirmCreditBtn.removeEventListener("click", noConfirmar);
+creditModal.removeEventListener("click", noFundo);
+resolve(valor);
+}
+function noCancelar() { fechar(false); }
+function noConfirmar() { fechar(true); }
+function noFundo(e) { if (e.target === creditModal) fechar(false); }
+cancelCreditBtn.addEventListener("click", noCancelar);
+confirmCreditBtn.addEventListener("click", noConfirmar);
+creditModal.addEventListener("click", noFundo);
+creditModal.classList.add("open");
+});
+}
 
 function hubPost(body) {
 return fetch(FISK_HUB_API, {
@@ -207,9 +270,14 @@ body: JSON.stringify(payload),
 const data = await response.json().catch(() => ({}));
 if (!response.ok) {
 if (response.status === 401) sessionExpired();
+// 402 = sem créditos: o servidor manda o saldo real, que pode divergir do
+// que a tela mostrava (outra aba, recarga da direção)
+if (response.status === 402 && typeof data.creditos === "number") {
+creditos = data.creditos; mostrarCreditos();
+}
 throw new Error(data.error || `Erro ${response.status} ao gerar a aula.`);
 }
-return { lessons: data.lessons, resolvedVideoId: data.resolvedVideoId || null };
+return { lessons: data.lessons, resolvedVideoId: data.resolvedVideoId || null, creditos: typeof data.creditos === "number" ? data.creditos : null };
 }
 
 function selectedValue(container) {
@@ -1620,6 +1688,17 @@ return;
 
 const combos = selectedCombos.slice();
 
+// Créditos: 1 por aula. Bloqueia antes de qualquer trabalho e confirma o gasto.
+// O servidor cobra de novo — aqui é só para o professor não descobrir o limite
+// depois de esperar a geração.
+if (typeof creditos === "number" && creditos < combos.length) {
+setStatus(creditos === 0
+? "Seus créditos acabaram. Eles voltam no dia 1º; se precisar antes, fale com a direção."
+: "Você tem " + creditos + " crédito(s) e marcou " + combos.length + " combinação(ões). Marque menos ou fale com a direção.", true);
+return;
+}
+if (!(await confirmarCusto(combos.length))) return;
+
 generateBtn.disabled = true;
 setStatus(language === "spanish" ? "Creando magia de conversación..." : "Making conversation magic...");
 setGenerating(true);
@@ -1664,7 +1743,8 @@ videoSearch,
 extraActivity,
 sourceActivity,
 };
-const { lessons, resolvedVideoId } = await fetchLessons(payload);
+const { lessons, resolvedVideoId, creditos: saldo } = await fetchLessons(payload);
+if (typeof saldo === "number") { creditos = saldo; mostrarCreditos(); }
 
 batch.videoId = resolvedVideoId || videoId || null;
 const lesson = lessons[0];

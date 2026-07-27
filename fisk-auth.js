@@ -58,4 +58,28 @@ async function logCmEvent({ profToken, event, topic, language, level, ageLabel, 
   if (!data || !data.ok) throw new Error((data && data.error) || "cmLogEvent falhou");
 }
 
-module.exports = { verifyProfToken, logCmEvent, FISK_HUB_API };
+/**
+ * Debita créditos do Conversation Maker (1 por aula gerada). O débito é
+ * SERVER-SIDE de propósito: se ficasse na tela, bastaria o console aberto para
+ * gerar à vontade — e cada geração é uma chamada paga.
+ *
+ * Devolve { ok:true, creditos } ou { ok:false, code:'sem_creditos', error }.
+ * Falha de rede devolve ok:false: melhor recusar do que gerar de graça.
+ */
+async function consumirCreditosCM(profToken, quantidade) {
+  try {
+    const res = await fetch(FISK_HUB_API, {
+      method: "POST",
+      headers: { "content-type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "cmConsumir", token: profToken, quantidade }),
+    });
+    if (!res.ok) return { ok: false, error: "Não deu para verificar seus créditos. Tente de novo." };
+    const data = await res.json().catch(() => null);
+    return data || { ok: false, error: "Resposta inválida ao verificar créditos." };
+  } catch (err) {
+    console.error("[creditos] falha:", err.message);
+    return { ok: false, error: "Não deu para verificar seus créditos. Tente de novo." };
+  }
+}
+
+module.exports = { verifyProfToken, logCmEvent, consumirCreditosCM, FISK_HUB_API };

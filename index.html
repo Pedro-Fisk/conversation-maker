@@ -39,6 +39,17 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </div>
 </div>
 
+<div id="creditModal" class="modal-overlay">
+<div class="modal-card">
+<div class="modal-title">Gerar atividade</div>
+<p class="modal-text" id="creditModalText"></p>
+<div class="modal-actions">
+<button type="button" class="btn btn-ghost btn-sm" id="cancelCredit">Cancelar</button>
+<button type="button" class="btn btn-gold btn-sm" id="confirmCreditBtn">Gerar</button>
+</div>
+</div>
+</div>
+
 <div id="batchModeModal" class="modal-overlay">
 <div class="modal-card">
 <div class="modal-title">Gerar as demais aulas</div>
@@ -63,6 +74,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </button>
 <div class="hero-menu-panel" id="profMenuPanel" role="menu" hidden>
 <p class="hero-menu-title">Histórico do professor</p>
+<p class="hero-menu-saldo" id="menuCreditos">🪙 <strong id="menuCreditosNum">—</strong> créditos</p>
 <a class="hero-menu-item" role="menuitem" href="historico.html">🗂 Minhas aulas</a>
 <button type="button" class="hero-menu-item" role="menuitem" id="logoutBtn">🚪 Sair neste computador</button>
 <p class="hero-menu-note">Logado pelo Fisk Hub. Seu nome vai para o registro de atividades — não aparece na atividade, no arquivo nem no nome do arquivo.</p>
@@ -186,6 +198,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 
 <div class="actions">
 <button type="submit" class="btn btn-generate" id="generateBtn">Gerar roteiro →</button>
+<span class="creditos-pill is-hidden" id="creditosPill" title="Cada atividade gerada custa 1 crédito. Recriar não custa.">🪙 <strong id="creditosNum">—</strong></span>
 <span id="spinner" class="spinner is-hidden" aria-hidden="true"></span>
 <span id="status" class="status-text"></span>
 </div>

@@ -36,7 +36,7 @@
 const { waitUntil } = require("@vercel/functions");
 const { recordTeacherActivity } = require("../canva-lib");
 const { appendActivityLog } = require("../activity-log");
-const { verifyProfToken, logCmEvent } = require("../fisk-auth");
+const { verifyProfToken, logCmEvent, consumirCreditosCM } = require("../fisk-auth");
 const {
   LEVEL_GUIDANCE,
   AGE_GUIDANCE,
@@ -174,6 +174,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
+  let creditosRestantes = null;
   let levels;
   if (language === "spanish") {
     // Espanhol agora também tem dois níveis (QECR): Básico B1 e Avançado
@@ -189,6 +190,23 @@ module.exports = async function handler(req, res) {
       return;
     }
     levels = levelChoice === "all_levels" ? ENGLISH_LEVELS.slice() : [levelChoice];
+  }
+
+  // Créditos: 1 por aula gerada, cobrados ANTES de chamar a IA — depois seria
+  // tarde, o custo já teria acontecido. Recriar não cobra (decisão do Pedro):
+  // uma recriação chega com previousLesson+feedback e passa direto.
+  const ehRecriacao = Boolean(previousLesson && feedback);
+  if (profToken && !ehRecriacao) {
+    const cobranca = await consumirCreditosCM(profToken, levels.length);
+    if (!cobranca.ok) {
+      res.status(cobranca.code === "sem_creditos" ? 402 : 503).json({
+        error: cobranca.error || "Não foi possível verificar seus créditos.",
+        code: cobranca.code || null,
+        creditos: typeof cobranca.creditos === "number" ? cobranca.creditos : null,
+      });
+      return;
+    }
+    creditosRestantes = cobranca.creditos;
   }
 
   try {
@@ -229,7 +247,7 @@ module.exports = async function handler(req, res) {
       lessons[i].vocabulary = lessons[0].vocabulary;
     }
 
-    res.status(200).json({ lessons, resolvedVideoId: resolvedVideoId || null });
+    res.status(200).json({ lessons, resolvedVideoId: resolvedVideoId || null, creditos: creditosRestantes });
 
     // Contabiliza a atividade por professor (apenas estatística interna;
     // o nome não entra na aula nem no arquivo). Roda após a resposta.
