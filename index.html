@@ -118,6 +118,15 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 
 <form id="form">
 
+<!-- Primeiro card: saldo de créditos numa linha só. Fica antes do tópico a
+     pedido do Pedro; é fino de propósito para não empurrar o tópico da aula
+     (que é o que o professor veio fazer) para fora da primeira tela. -->
+<div class="panel panel-creditos is-hidden" id="creditosCard">
+<svg class="moeda" viewBox="0 0 8 8" aria-hidden="true"><use href="#moedaPix"/></svg>
+<span>Você tem <strong id="cardCreditosNum">—</strong> créditos no Conversation Maker</span>
+<span class="panel-creditos-nota">cada atividade gerada custa 1 · recriar é grátis</span>
+</div>
+
 <div class="panel panel-featured">
 <h2>💬 Tópico da aula</h2>
 <label class="fld" for="topic">Sobre o que vai ser a conversação? <span class="req">* obrigatório</span></label>

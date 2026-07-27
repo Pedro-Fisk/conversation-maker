@@ -69,6 +69,8 @@ const confirmCreditBtn = document.getElementById("confirmCreditBtn");
 const creditosPill = document.getElementById("creditosPill");
 const creditosNum = document.getElementById("creditosNum");
 const menuCreditosNum = document.getElementById("menuCreditosNum");
+const creditosCard = document.getElementById("creditosCard");
+const cardCreditosNum = document.getElementById("cardCreditosNum");
 
 function extractVideoId(url) {
 if (!url) return null;
@@ -165,6 +167,11 @@ const tem = typeof creditos === "number";
 if (creditosPill) creditosPill.classList.toggle("is-hidden", !tem);
 if (creditosNum) creditosNum.textContent = tem ? creditos : "—";
 if (menuCreditosNum) menuCreditosNum.textContent = tem ? creditos : "—";
+if (cardCreditosNum) cardCreditosNum.textContent = tem ? creditos : "—";
+if (creditosCard) {
+creditosCard.classList.toggle("is-hidden", !tem);
+creditosCard.classList.toggle("is-zero", tem && creditos <= 0);
+}
 if (creditosPill) {
 creditosPill.classList.toggle("is-zero", tem && creditos <= 0);
 }

@@ -98,6 +98,31 @@ font-weight: 700;
 color: var(--ui-ink);
 }
 
+/* Card do saldo: uma linha só, e por isso com padding menor que os demais
+   painéis — ele vem ANTES do tópico da aula e não pode roubar a primeira tela. */
+.panel-creditos{
+display: flex;
+align-items: center;
+gap: 0.6rem;
+flex-wrap: wrap;
+padding: 0.85rem 1.25rem;
+font-size: 0.95rem;
+font-weight: 600;
+}
+.panel-creditos.is-hidden{ display: none !important; }
+.panel-creditos strong{ color: var(--ui-ink); font-weight: 800; }
+.panel-creditos-nota{
+margin-left: auto;
+font-size: 0.78rem;
+font-weight: 600;
+color: var(--gray);
+}
+/* .panel (definido mais abaixo) estava vencendo mesmo com especificidade menor;
+   incluir .panel no seletor torna a vitória inequívoca e independe da ordem. */
+.panel.panel-creditos.is-zero{ border-color: var(--red); background: #fdecea; }
+.panel.panel-creditos.is-zero strong{ color: var(--red-dark); }
+body.theme-dark .panel.panel-creditos.is-zero{ background: #3a1d1d; }
+
 /* Moeda pixelada. image-rendering pixelated reforça o crispEdges do SVG em
    telas de alta densidade, onde o navegador ainda tenta suavizar. */
 .moeda{
