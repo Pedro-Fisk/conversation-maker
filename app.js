@@ -51,6 +51,7 @@ const youtubeLuckyEl = document.getElementById("youtubeLucky");
 const extraActivityCheckEl = document.getElementById("extraActivityCheck");
 const extraActivityWrapEl = document.getElementById("extraActivityWrap");
 const extraActivityEl = document.getElementById("extraActivity");
+const extraLuckyEl = document.getElementById("extraLucky");
 
 // Modais da geração em lote
 const recreateModal = document.getElementById("recreateModal");
@@ -443,6 +444,15 @@ if (youtubeLuckyEl && youtubeEl) {
 }
 
 // Extra Activity checkbox toggle
+/* Com "estou com sorte" marcado, a caixa de texto sai de cena: quem delega a
+   dinâmica não precisa escrevê-la, e um campo editável ali sugeriria que o
+   texto ainda conta. */
+if (extraLuckyEl && extraActivityEl) {
+  extraLuckyEl.addEventListener("change", () => {
+    extraActivityEl.disabled = extraLuckyEl.checked;
+    extraActivityEl.style.opacity = extraLuckyEl.checked ? "0.5" : "";
+  });
+}
 if (extraActivityCheckEl && extraActivityWrapEl) {
   extraActivityCheckEl.addEventListener("change", () => {
     extraActivityWrapEl.classList.toggle("is-hidden", !extraActivityCheckEl.checked);
@@ -1533,7 +1543,8 @@ if (youtubeLuckyEl) { youtubeLuckyEl.checked = false; }
 if (youtubeEl) { youtubeEl.value = ""; youtubeEl.disabled = false; }
 if (extraActivityCheckEl) { extraActivityCheckEl.checked = false; }
 if (extraActivityWrapEl) extraActivityWrapEl.classList.add("is-hidden");
-if (extraActivityEl) extraActivityEl.value = "";
+if (extraActivityEl) { extraActivityEl.value = ""; extraActivityEl.disabled = false; extraActivityEl.style.opacity = ""; }
+if (extraLuckyEl) extraLuckyEl.checked = false;
 selectChoice(languageChoices, "english");
 selectedCombos = [];
 refreshMatrixBadges();
@@ -1566,7 +1577,15 @@ const webSearchEl = document.getElementById("webSearch");
 const useWebSearch = Boolean(webSearchEl && webSearchEl.checked);
 const videoSearch = !!(youtubeLuckyEl && youtubeLuckyEl.checked && youtubeCheckEl && youtubeCheckEl.checked);
 const videoId = (youtubeCheckEl && youtubeCheckEl.checked && !videoSearch) ? extractVideoId(youtubeEl ? youtubeEl.value : "") : null;
-const extraActivity = (extraActivityCheckEl && extraActivityCheckEl.checked && extraActivityEl && extraActivityEl.value.trim()) ? extraActivityEl.value.trim() : null;
+/* A instrução da dinâmica é texto livre para o servidor, então "estou com
+   sorte" não precisa de campo novo na API: manda-se o pedido escrito. */
+const SORTE_DINAMICA = "Proponha VOCÊ a dinâmica, a partir do tema e do nível da turma: " +
+  "escolha o formato que melhor servir (debate, entrevista em duplas, jogo, corrida pela sala, " +
+  "rodada de perguntas, dramatização) e escreva instruções claras e curtas para o professor conduzir.";
+const extraLigado = extraActivityCheckEl && extraActivityCheckEl.checked;
+const extraSorte = extraLigado && extraLuckyEl && extraLuckyEl.checked;
+const extraActivity = extraSorte ? SORTE_DINAMICA
+  : (extraLigado && extraActivityEl && extraActivityEl.value.trim() ? extraActivityEl.value.trim() : null);
 
 // Sem tópico só passa quando há atividade subida — aí o tema vem dela.
 if (!topic && !atividadeBase) {

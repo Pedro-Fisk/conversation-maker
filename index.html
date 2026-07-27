@@ -81,12 +81,6 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </div>
 
 <form id="form">
-<div class="panel is-hidden" id="authGate">
-<h2>🔒 Entre pelo Fisk Hub</h2>
-<p class="hint hint-lead" id="authGateMsg">Esta ferramenta usa o seu login do Fisk Hub — você não precisa de outra senha. Abra o Hub, entre com seu usuário e senha e clique em "Conversation Maker" por lá.</p>
-<a class="btn btn-gold btn-sm" href="https://pedro-fisk.github.io/fisk-hub/">Ir para o Fisk Hub →</a>
-</div>
-
 
 <div class="panel panel-featured">
 <h2>💬 Tópico da aula</h2>
@@ -115,14 +109,16 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <p class="hint" id="languageHint">Os níveis do espanhol (Básico, Intermediário e Avançado) correspondem aos estágios Inmediato 1, 2 e 3 do curso.</p>
 </div>
 
-<div class="panel" id="sourceField">
-<h2>📎 Já tem uma atividade pronta?</h2>
+<!-- Recolhido por padrão: a maioria das aulas nasce do zero, e este bloco
+     ocupava uma tela inteira de quem nunca sobe arquivo. -->
+<details class="panel panel-recolhe" id="sourceField">
+<summary><h2>📎 Já tem uma atividade pronta?</h2><span class="recolhe-dica">opcional — abrir</span></summary>
 <p class="hint hint-lead">Suba um <strong>.pptx</strong> que você já usa e crie outras atividades a partir dele. Escreva abaixo o que quer que a IA faça com ele — <em>"adapta esta atividade para uma turma de adultos avançados"</em>, <em>"usa o formato desta, mas sobre viagens"</em>, <em>"deixa as perguntas mais fáceis"</em>.</p>
 <input type="file" id="sourceFile" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation">
 <p class="hint" id="sourceStatus"></p>
 <textarea id="sourceInstruction" rows="3" placeholder="ex.: adapta esta atividade para Basic, mantendo o tema mas com perguntas mais curtas..."></textarea>
 <p class="hint">O arquivo é lido <strong>no seu navegador</strong> e só o texto dos slides vai para a IA — o arquivo em si não é enviado nem guardado. A aula sai sempre no <strong>template FISK</strong>: imagens e formatação do original não são aproveitadas, só o conteúdo.</p>
-</div>
+</details>
 
 <div class="panel">
 <h2>✨ Incrementos</h2>
@@ -160,6 +156,11 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <div id="extraActivityWrap" class="is-hidden">
 <p class="hint hint-lead">Pode ser um debate, entrevista entre alunos, jogo, corrida pela sala, rodada de perguntas, etc. A IA vai gerar um slide extra com instruções claras logo após a introdução.</p>
 <textarea id="extraActivity" rows="3" placeholder="ex.: Quero que os alunos se entrevistem em duplas por 3 minutos sobre o tema, depois trocam de parceiro e repetem..."></textarea>
+<label class="checkbox-row" for="extraLucky" style="margin-top:0.6rem">
+<input type="checkbox" id="extraLucky">
+<span>Estou com sorte — deixar a IA propor a dinâmica a partir do tema</span>
+</label>
+<p class="hint">A proposta vem junto com a aula e você confere <strong>antes de baixar o .pptx</strong>: o título e as instruções da dinâmica ficam editáveis na prévia, como o resto.</p>
 </div>
 </div>
 </div>
@@ -174,6 +175,14 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <p class="hint is-hidden" id="levelHintSpanish">Os níveis Básico, Intermediário e Avançado correspondem aos estágios do curso: Inmediato 1, 2 e 3.</p>
 </div>
 
+
+<!-- Aviso de sessão: era o PRIMEIRO card da página e roubava a cena de quem
+     já estava logado. Virou faixa fina, e só aparece quando falta sessão —
+     aqui embaixo, que é onde ela faz falta (na hora de gerar). -->
+<div class="auth-faixa is-hidden" id="authGate">
+<span id="authGateMsg">Esta ferramenta usa o seu login do Fisk Hub. Abra o Hub e clique em "Conversation Maker" por lá — não há outra senha.</span>
+<a class="btn btn-gold btn-sm" href="https://pedro-fisk.github.io/fisk-hub/">Ir para o Fisk Hub →</a>
+</div>
 
 <div class="actions">
 <button type="submit" class="btn btn-generate" id="generateBtn">Gerar roteiro →</button>

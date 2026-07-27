@@ -969,3 +969,48 @@ footer, .theme-toggle, .mic-btn{
 transition: background-color 0.4s ease, color 0.4s ease,
 border-color 0.4s ease, box-shadow 0.4s ease;
 }
+
+/* ---------- Card recolhível (bloco opcional que não deve ocupar a tela) ---------- */
+.panel-recolhe > summary{
+list-style: none;
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 0.6rem;
+}
+.panel-recolhe > summary::-webkit-details-marker{ display: none; }
+.panel-recolhe > summary::before{
+content: '\25B8';
+font-size: 0.9rem;
+color: var(--gray);
+transition: transform 0.15s ease;
+}
+.panel-recolhe[open] > summary::before{ transform: rotate(90deg); }
+.panel-recolhe > summary h2{ margin: 0; }
+.panel-recolhe .recolhe-dica{
+margin-left: auto;
+font-size: 0.72rem;
+font-weight: 800;
+text-transform: uppercase;
+letter-spacing: 0.04em;
+color: var(--gray);
+}
+.panel-recolhe[open] .recolhe-dica{ display: none; }
+
+/* ---------- Faixa de aviso de sessão (fina, junto do botão de gerar) ---------- */
+.auth-faixa{
+display: flex;
+align-items: center;
+gap: 0.9rem;
+flex-wrap: wrap;
+background: var(--gold-soft);
+border: 1.5px solid var(--gold);
+border-radius: 12px;
+padding: 0.7rem 1rem;
+margin-bottom: 1rem;
+font-size: 0.88rem;
+font-weight: 600;
+color: #6b4a12;
+}
+.auth-faixa.is-hidden{ display: none; }
+body.theme-dark .auth-faixa{ background: #33280f; color: #f0d9a4; }
