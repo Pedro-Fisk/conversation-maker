@@ -44,22 +44,33 @@ module.exports = async function handler(req, res) {
         .normalize("NFD")
         .replace(/[̀-ͯ]/g, "")   // remove combining diacritics (accents)
         .replace(/[^\x20-\x7E]/g, "")      // strip any remaining non-ASCII (em-dash, curly quotes, emoji…)
-        .replace(/[\\/:*?"<>|]+/g, "")     // remove filename-illegal chars
+        .replace(/[\\/:*?"<>|]+/g, " ")    // vira espaço: apagar colaria as palavras vizinhas
         .replace(/\s+/g, " ")
         .trim();
 
-    // Nome do arquivo SEMPRE inclui nível e faixa etária, para não haver
-    // colisão de nomes quando várias aulas do lote são baixadas juntas:
-    //   Conversation_Lesson_Basico_Jovens.pptx
-    // Aulas antigas (sem ageLabel) mantêm o padrão anterior
-    // "AC - [Título] - [Nível].pptx".
-    const compact = (s) => cleanPart(s).replace(/[^A-Za-z0-9]+/g, "");
-    const fileName = lesson.ageLabel
-      ? `Conversation_Lesson_${compact(lesson.coverLevel) || "Nivel"}_${compact(lesson.ageLabel) || "Faixa"}.pptx`
-      : `AC - ${cleanPart(lesson.coverTitle) || "Atividade"} - ${cleanPart(lesson.coverLevel) || "Nivel"}.pptx`;
+    // Padrão pedido pelo Pedro (27/07/2026):
+    //   "Ac - [Título da atividade] - [Nível] - [Nome do professor].pptx"
+    const partes = (limpa) => [
+      "Ac",
+      limpa(lesson.coverTitle) || "Atividade",
+      limpa(lesson.coverLevel) || "Nivel",
+      limpa((meta && meta.teacherName) || ""),
+    ].filter(Boolean).join(" - ") + ".pptx";
+
+    // Mantém acentos, tirando só o que é proibido em nome de arquivo. Vai no
+    // filename* (RFC 5987), que o navegador prefere — assim "Júlia" não vira
+    // "Julia" no nome baixado.
+    const limpaComAcento = (s) =>
+      String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+
+    const fileName = partes(cleanPart);            // ASCII puro: fallback do header
+    const fileNameUtf8 = partes(limpaComAcento);   // com acentos: o que o professor vê
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileNameUtf8)}`
+    );
     res.status(200).send(buffer);
 
     // Cópia automática para o Canva (pasta "Uploads - Conversation Maker"),
