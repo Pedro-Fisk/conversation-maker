@@ -1422,7 +1422,13 @@ return batch.slots[melhor] || null;
 function ajustarAlturaTrack() {
 const slot = slotVisivel();
 const el = slot && slot.slideEl;
-if (el) track.style.height = el.scrollHeight + "px";
+if (!el) return;
+const altura = el.scrollHeight;
+// Zero significa que ainda não dá para medir — o #results nasce em
+// display:none e só fica visível no fim do renderBatch. Gravar 0 aqui deixava
+// o carrossel EM BRANCO até um resize (o professor precisava dar zoom para a
+// aula aparecer). Na dúvida, não mexe na altura.
+if (altura > 0) track.style.height = altura + "px";
 }
 
 function atualizarCarrossel() {
@@ -1433,6 +1439,12 @@ ajustarAlturaTrack();
 }
 // disparado por renderLessonPreview sempre que um bloco abre ou fecha
 document.addEventListener("cm:alturaMudou", ajustarAlturaTrack);
+// rede de segurança: qualquer mudança de tamanho de um slide reajusta o track
+// (fontes e imagens que terminam de carregar, conteúdo que muda de altura).
+if (typeof ResizeObserver === "function") {
+const observador = new ResizeObserver(() => ajustarAlturaTrack());
+batch.slots.forEach((s) => { if (s.slideEl) observador.observe(s.slideEl); });
+}
 track.addEventListener("scroll", atualizarCarrossel, { passive: true });
 // redimensionar muda a largura dos slides e, com ela, o fim do carrossel
 window.addEventListener("resize", atualizarCarrossel);
@@ -1460,6 +1472,8 @@ batch.barEl = bar;
 renderBatchBar();
 
 results.classList.add("is-visible");
+// só agora as medidas valem: antes disso o #results estava em display:none
+requestAnimationFrame(ajustarAlturaTrack);
 results.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
