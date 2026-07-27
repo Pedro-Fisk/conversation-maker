@@ -62,11 +62,32 @@ function sanitizarAtividadeBase(src) {
   };
 }
 
-async function searchYouTubeVideo(topic) {
+/**
+ * "Estou com sorte": acha um vídeo no YouTube para o tema.
+ *
+ * O tópico é escrito em PORTUGUÊS pelo professor, então uma busca crua entrega
+ * vídeo em português — foi o que aconteceu num teste real. Por isso a consulta
+ * é montada no idioma DA AULA e a busca vai com hl/gl daquele idioma, o que
+ * enviesa o ranking do YouTube para conteúdo naquela língua.
+ *
+ * Continua sendo heurística: é raspagem da página de resultados, sem filtro
+ * oficial de idioma. Se vier algo fora do idioma, o professor remove o bloco
+ * do vídeo na prévia.
+ */
+async function searchYouTubeVideo(topic, language) {
   try {
-    const query = encodeURIComponent(`${topic} english conversation lesson`);
-    const res = await fetch(`https://www.youtube.com/results?search_query=${query}`, {
-      headers: { "Accept-Language": "en-US,en;q=0.9", "User-Agent": "Mozilla/5.0" },
+    const espanhol = language === "spanish";
+    const alvo = espanhol
+      ? `${topic} clase de conversación en español para estudiantes`
+      : `${topic} english conversation lesson for students`;
+    const hl = espanhol ? "es" : "en";
+    const gl = espanhol ? "ES" : "US";
+    const query = encodeURIComponent(alvo);
+    const res = await fetch(`https://www.youtube.com/results?search_query=${query}&hl=${hl}&gl=${gl}`, {
+      headers: {
+        "Accept-Language": espanhol ? "es-ES,es;q=0.9" : "en-US,en;q=0.9",
+        "User-Agent": "Mozilla/5.0",
+      },
     });
     if (!res.ok) return null;
     const html = await res.text();
@@ -78,7 +99,7 @@ async function searchYouTubeVideo(topic) {
   }
 }
 
-async function fetchYouTubeTranscript(videoId) {
+async function fetchYouTubeTranscript(videoId, language) {
   try {
     const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
       headers: { "Accept-Language": "en-US,en;q=0.9", "User-Agent": "Mozilla/5.0" },
@@ -91,8 +112,13 @@ async function fetchYouTubeTranscript(videoId) {
     const captionTracks =
       playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
     if (!captionTracks?.length) return null;
+    // legenda no idioma DA AULA (antes era fixo em "en", o que pegava a
+    // legenda inglesa de um vídeo espanhol quando ela existia)
+    const idiomaLegenda = language === "spanish" ? "es" : "en";
     const track =
-      captionTracks.find((t) => t.languageCode === "en") || captionTracks[0];
+      captionTracks.find((t) => t.languageCode === idiomaLegenda) ||
+      captionTracks.find((t) => String(t.languageCode || "").startsWith(idiomaLegenda)) ||
+      captionTracks[0];
     const captionRes = await fetch(track.baseUrl + "&fmt=json3");
     if (!captionRes.ok) return null;
     const captionData = await captionRes.json();
@@ -168,9 +194,9 @@ module.exports = async function handler(req, res) {
   try {
     let resolvedVideoId = videoId || null;
     if (videoSearch && !resolvedVideoId) {
-      resolvedVideoId = await searchYouTubeVideo(topic);
+      resolvedVideoId = await searchYouTubeVideo(topic, language);
     }
-    const transcript = resolvedVideoId ? await fetchYouTubeTranscript(resolvedVideoId) : null;
+    const transcript = resolvedVideoId ? await fetchYouTubeTranscript(resolvedVideoId, language) : null;
 
     // As chamadas rodam em PARALELO (antes eram sequenciais): com três
     // níveis, o tempo total caía fora do maxDuration e o Vercel devolvia

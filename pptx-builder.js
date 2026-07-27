@@ -331,12 +331,31 @@ async function fetchYoutubeThumbnail(videoId) {
   return null;
 }
 
-function addVideoSlide(pptx, videoId, thumbnailData) {
+/**
+ * Slide do vídeo: thumbnail ocupando o slide + faixa escura na base com o link.
+ *
+ * O rótulo sai no idioma DA AULA — um slide em inglês com "Assistir no YouTube"
+ * quebra a imersão que a atividade inteira tenta manter.
+ *
+ * A THUMBNAIL também recebe o hyperlink, não só o texto: no PowerPoint, um link
+ * de texto em modo de edição só abre com Ctrl+clique, e o professor clica na
+ * imagem. Com o link na imagem, o clique funciona na apresentação e a área
+ * clicável passa a ser o slide todo, não uma linha de texto.
+ */
+function addVideoSlide(pptx, videoId, thumbnailData, language) {
   const slide = pptx.addSlide();
   slide.background = { color: "000000" };
 
+  const url = `https://www.youtube.com/watch?v=${videoId}`;
+  const espanhol = language === "spanish";
+  const rotulo = espanhol ? "▶  Ver en YouTube" : "▶  Watch on YouTube";
+  const dica = espanhol ? "Abrir el video en YouTube" : "Open the video on YouTube";
+
   if (thumbnailData) {
-    slide.addImage({ data: thumbnailData, x: 0, y: 0, w: SLIDE_W_IN, h: SLIDE_H_IN });
+    slide.addImage({
+      data: thumbnailData, x: 0, y: 0, w: SLIDE_W_IN, h: SLIDE_H_IN,
+      hyperlink: { url, tooltip: dica },
+    });
   }
 
   // Barra escura na base para o texto do link ser legível sobre qualquer thumbnail
@@ -350,7 +369,7 @@ function addVideoSlide(pptx, videoId, thumbnailData) {
   });
 
   slide.addText(
-    [{ text: "▶  Assistir no YouTube", options: { hyperlink: { url: `https://www.youtube.com/watch?v=${videoId}`, tooltip: "Abrir vídeo no YouTube" } } }],
+    [{ text: rotulo, options: { hyperlink: { url, tooltip: dica } } }],
     {
       x: 1,
       y: SLIDE_H_IN - 1.5,
@@ -417,7 +436,7 @@ function buildPptx(lesson, thumbnailData) {
     layout.fields.forEach((field) => renderField(slide, field, lesson, pptx));
 
     if (layout.role === "intro" && videoId) {
-      addVideoSlide(pptx, videoId, thumbnailData || null);
+      addVideoSlide(pptx, videoId, thumbnailData || null, lesson.language);
     }
     if (layout.role === "intro" && lesson.extraActivityTitle) {
       addExtraActivitySlide(pptx, lesson);

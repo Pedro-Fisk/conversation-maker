@@ -64,7 +64,7 @@ text-align: left;
 }
 .hero-menu-panel[hidden]{ display: none; }
 
-.hero-menu-title{
+.hero-menu .hero-menu-title{
 margin: 0.25rem 0.6rem 0.5rem;
 font-size: 0.72rem;
 font-weight: 800;
@@ -91,7 +91,7 @@ cursor: pointer;
 }
 .hero-menu-item:hover{ background: var(--ui-soft); color: var(--ui-ink); }
 
-.hero-menu-note{
+.hero-menu .hero-menu-note{
 margin: 0.5rem 0.6rem 0.25rem;
 font-size: 0.72rem;
 line-height: 1.35;
@@ -802,6 +802,12 @@ position: relative;
 display: flex;
 gap: 1rem;
 overflow-x: auto;
+/* a altura é definida por JS conforme a aula visível (ajustarAlturaTrack).
+   flex-start impede que os slides estiquem até a altura do mais alto, e
+   overflow-y hidden evita barra de rolagem vertical durante o deslize. */
+align-items: flex-start;
+overflow-y: hidden;
+transition: height 0.2s ease;
 scroll-snap-type: x mandatory;
 -webkit-overflow-scrolling: touch;
 scroll-behavior: smooth;

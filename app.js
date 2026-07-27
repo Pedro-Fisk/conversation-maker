@@ -677,6 +677,8 @@ alternarTudo.textContent = abertos ? "⌃ Recolher tudo" : "⌄ Expandir tudo";
 alternarTudo.title = abertos
 ? "Fecha todos os blocos — mostra só a estrutura da aula"
 : "Abre todos os blocos para revisar o texto";
+// o carrossel precisa reajustar a própria altura à nova altura desta aula
+document.dispatchEvent(new CustomEvent("cm:alturaMudou"));
 }
 
 alternarTudo.addEventListener("click", () => {
@@ -808,6 +810,24 @@ iframe.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;bo
 iframe.title = "Vídeo da aula";
 wrapper.appendChild(iframe);
 body.appendChild(wrapper);
+
+// O vídeo é escolhido por heurística ("Estou com sorte") ou colado à mão, e
+// pode simplesmente não servir. Remover zera o _videoId DESTA aula, que é o
+// que o pptx-builder consulta para montar o slide — some da tela e do arquivo.
+// As outras aulas do lote não são afetadas: cada uma tem seu próprio objeto.
+const remover = document.createElement("button");
+remover.type = "button";
+remover.className = "btn-regen";
+remover.style.marginTop = "0.75rem";
+remover.textContent = "🗑 Remover o vídeo desta aula";
+remover.title = "Tira o slide do vídeo desta aula, inclusive do .pptx ao baixar. As outras aulas do lote não mudam.";
+remover.addEventListener("click", () => {
+lesson._videoId = null;
+const bloco = body.closest(".slide");
+if (bloco) bloco.remove();
+sincronizarAlternarTudo();
+});
+body.appendChild(remover);
 });
 }
 
@@ -1385,11 +1405,24 @@ if (d < menorDist) { menorDist = d; melhor = i; }
 });
 return batch.slots[melhor] || null;
 }
+/* O track é flex: sem intervenção, TODOS os slides ficam com a altura do mais
+   alto. Expandir tudo na aula 1 e deslizar para a aula 2 (recolhida) deixava um
+   vazio enorme e o botão de baixar fora de vista. Aqui a altura passa a seguir
+   a aula visível — e muda junto quando o professor abre ou fecha um bloco. */
+function ajustarAlturaTrack() {
+const slot = slotVisivel();
+const el = slot && slot.slideEl;
+if (el) track.style.height = el.scrollHeight + "px";
+}
+
 function atualizarCarrossel() {
 const slot = slotVisivel();
 if (slot) badge.textContent = slotLabel(slot);
 atualizarSetas();
+ajustarAlturaTrack();
 }
+// disparado por renderLessonPreview sempre que um bloco abre ou fecha
+document.addEventListener("cm:alturaMudou", ajustarAlturaTrack);
 track.addEventListener("scroll", atualizarCarrossel, { passive: true });
 // redimensionar muda a largura dos slides e, com ela, o fim do carrossel
 window.addEventListener("resize", atualizarCarrossel);
