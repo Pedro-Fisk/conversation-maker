@@ -98,6 +98,17 @@ font-weight: 700;
 color: var(--ui-ink);
 }
 
+/* Moeda pixelada. image-rendering pixelated reforça o crispEdges do SVG em
+   telas de alta densidade, onde o navegador ainda tenta suavizar. */
+.moeda{
+width: 1.05em;
+height: 1.05em;
+flex: 0 0 auto;
+vertical-align: -0.15em;
+image-rendering: pixelated;
+filter: drop-shadow(0 1px 0 rgba(0,0,0,0.18));
+}
+
 /* Saldo ao lado do botão de gerar — é onde o crédito é gasto. */
 .creditos-pill{
 display: inline-flex;

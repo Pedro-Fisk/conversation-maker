@@ -16,6 +16,30 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 }catch(e){}
 </script>
 
+<!-- Moeda pixelada dos créditos: grade 8×8, cada quadradinho é um "pixel".
+     shape-rendering=crispEdges impede o navegador de suavizar as bordas ao
+     escalar — é o que dá o aspecto de sprite em vez de círculo borrado. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<symbol id="moedaPix" viewBox="0 0 8 8">
+<g shape-rendering="crispEdges">
+<g fill="#7a4a08">
+<rect x="2" y="0" width="4" height="1"/><rect x="1" y="1" width="6" height="1"/>
+<rect x="0" y="2" width="8" height="4"/>
+<rect x="1" y="6" width="6" height="1"/><rect x="2" y="7" width="4" height="1"/>
+</g>
+<g fill="#e0a52b">
+<rect x="2" y="1" width="4" height="1"/><rect x="1" y="2" width="6" height="4"/>
+<rect x="2" y="6" width="4" height="1"/>
+</g>
+<g fill="#ffd76a">
+<rect x="2" y="2" width="4" height="3"/>
+</g>
+<rect x="2" y="2" width="1" height="1" fill="#fff6d5"/>
+<rect x="3" y="5" width="2" height="1" fill="#c98a1c"/>
+</g>
+</symbol>
+</svg>
+
 <div id="confirmClear" class="modal-overlay">
 <div class="modal-card">
 <div class="modal-title">Limpar formulário?</div>
@@ -74,7 +98,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </button>
 <div class="hero-menu-panel" id="profMenuPanel" role="menu" hidden>
 <p class="hero-menu-title">Histórico do professor</p>
-<p class="hero-menu-saldo" id="menuCreditos">🪙 <strong id="menuCreditosNum">—</strong> créditos restantes no Conversation Maker</p>
+<p class="hero-menu-saldo" id="menuCreditos"><svg class="moeda" viewBox="0 0 8 8" aria-hidden="true"><use href="#moedaPix"/></svg> <strong id="menuCreditosNum">—</strong> créditos restantes no Conversation Maker</p>
 <a class="hero-menu-item" role="menuitem" href="historico.html">🗂 Minhas aulas</a>
 <button type="button" class="hero-menu-item" role="menuitem" id="logoutBtn">🚪 Sair neste computador</button>
 <p class="hero-menu-note">Logado pelo Fisk Hub. Seu nome vai para o registro de atividades — não aparece na atividade, no arquivo nem no nome do arquivo.</p>
@@ -198,7 +222,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 
 <div class="actions">
 <button type="submit" class="btn btn-generate" id="generateBtn">Gerar roteiro →</button>
-<span class="creditos-pill is-hidden" id="creditosPill" title="Cada atividade gerada custa 1 crédito. Recriar não custa.">🪙 <strong id="creditosNum">—</strong></span>
+<span class="creditos-pill is-hidden" id="creditosPill" title="Cada atividade gerada custa 1 crédito. Recriar não custa."><svg class="moeda" viewBox="0 0 8 8" aria-hidden="true"><use href="#moedaPix"/></svg> <strong id="creditosNum">—</strong></span>
 <span id="spinner" class="spinner is-hidden" aria-hidden="true"></span>
 <span id="status" class="status-text"></span>
 </div>
