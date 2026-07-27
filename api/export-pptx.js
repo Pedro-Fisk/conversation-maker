@@ -49,11 +49,16 @@ module.exports = async function handler(req, res) {
         .trim();
 
     // Padrão pedido pelo Pedro (27/07/2026):
-    //   "Ac - [Título da atividade] - [Nível] - [Nome do professor].pptx"
+    //   "Ac - [Título] - [Nível] - [Faixa etária] - [Professor].pptx"
+    // A faixa entra logo depois do nível porque é ela que distingue as aulas de
+    // um mesmo lote: sem ela, Basic×Jovens e Basic×Adultos baixavam com nome
+    // idêntico e o navegador renomeava uma para "(1)".
+    // Aulas antigas não têm ageLabel — o filter(Boolean) simplesmente omite.
     const partes = (limpa) => [
       "Ac",
       limpa(lesson.coverTitle) || "Atividade",
       limpa(lesson.coverLevel) || "Nivel",
+      limpa(lesson.ageLabel || ""),
       limpa((meta && meta.teacherName) || ""),
     ].filter(Boolean).join(" - ") + ".pptx";
 
