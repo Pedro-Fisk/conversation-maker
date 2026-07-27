@@ -2,7 +2,17 @@
 .theme-toggle, .modal-*, .btn, .btn-ghost, .btn-generate/.btn-gold vêm
 de fisk-shared.css. Aqui só fica o que é específico do Conversation Maker. */
 
-.req{color:var(--red-dark);font-weight:800;font-size:12px}
+/* Chrome em azul escuro — o vermelho fica para marca e erro (decisão de
+   27/07/2026; a referência é o Gerador de Boletins). Estes tokens também
+   vêm do kit compartilhado; ficam aqui como rede de segurança para o caso
+   de o CDN ainda estar servindo uma versão anterior do kit. */
+:root{ --ui:#2b4d70; --ui-dark:#223e5a; --ui-mid:#3d6b93; --ui-pill:#1d3349;
+       --ui-ink:#1d3349; --ui-soft:#e9eff5; --ui-bd:#9db6cb; --ui-line:#a8bfd2;
+       --surface-border-color:var(--ui-line); --surface-shadow:0 4px 14px rgba(43,77,112,.09); }
+body.theme-dark{ --ui:#5b90c0; --ui-dark:#8fb4d8; --ui-mid:#4a7ba8; --ui-pill:#3d6b93;
+       --ui-ink:#cfe0ee; --ui-soft:#16283a; --ui-bd:#3a5a78; --ui-line:#2f4459; }
+
+.req{color:var(--ui-dark);font-weight:800;font-size:12px}
 
 .wrap{
 flex: 1;
@@ -27,7 +37,7 @@ font-size: 1.15rem;
 font-weight: 800;
 }
 
-.req{color:var(--red-dark);font-weight:800;font-size:12px}
+.req{color:var(--ui-dark);font-weight:800;font-size:12px}
 
 .fld{
 display: block;
@@ -57,7 +67,7 @@ background: var(--gray-light);
 
 input[type="text"]:focus, input[type="password"]:focus, select:focus, textarea:focus{
 outline: none;
-border-color: var(--red);
+border-color: var(--ui);
 }
 
 /* Campo do código de acesso: maior e mais legível */
@@ -89,7 +99,7 @@ color: var(--black);
 transition: all 0.12s ease;
 }
 
-.choice:hover{ border-color: var(--red); }
+.choice:hover{ border-color: var(--ui); }
 
 .choice.is-active{
 background: var(--black);
@@ -151,7 +161,7 @@ color: var(--gray);
 cursor: pointer;
 transition: all 0.12s ease;
 }
-.mic-btn:hover{ border-color: var(--red); color: var(--red); }
+.mic-btn:hover{ border-color: var(--ui); color: var(--ui); }
 .mic-btn.is-hidden{ display: none; }
 
 #levelField{ display: none; }
@@ -301,7 +311,7 @@ margin: 0.5rem;
 
 .slide-layout{
 display: inline-block;
-background: var(--red);
+background: var(--ui);
 color: var(--white);
 font-size: 0.72rem;
 font-weight: 800;
@@ -333,7 +343,7 @@ border-radius: 999px;
 margin-bottom: 0.5rem;
 transition: all 0.12s ease;
 }
-.btn-regen:hover{ border-color: var(--red); color: var(--red); }
+.btn-regen:hover{ border-color: var(--ui); color: var(--ui); }
 .btn-regen:disabled{ opacity: 0.6; cursor: wait; }
 
 /* Recolher/expandir todos os blocos de uma vez — são 8 por aula, e fechar um
@@ -354,7 +364,7 @@ padding: 0.3rem 0.75rem;
 border-radius: 999px;
 transition: all 0.12s ease;
 }
-.btn-collapse-all:hover{ border-color: var(--red); color: var(--red); }
+.btn-collapse-all:hover{ border-color: var(--ui); color: var(--ui); }
 
 /* Painel destaque (tópico da aula) */
 .panel-featured{
@@ -424,7 +434,7 @@ color: var(--black);
 background: var(--white);
 margin: 0.2rem 0;
 }
-.edit-field:focus{ outline: none; border-color: var(--red); }
+.edit-field:focus{ outline: none; border-color: var(--ui); }
 textarea.edit-field{ resize: vertical; line-height: 1.4; }
 
 .edit-label{
@@ -453,7 +463,7 @@ margin: 0.45rem 0;
 .edit-qa .edit-qa-num{
 font-size: 0.78rem;
 font-weight: 800;
-color: var(--red);
+color: var(--ui);
 }
 .edit-answers-list{
 display: flex;
@@ -482,13 +492,13 @@ font-size: 1rem;
 line-height: 1;
 cursor: pointer;
 }
-.edit-answer-remove:hover{ border-color: var(--red); color: var(--red); }
+.edit-answer-remove:hover{ border-color: var(--ui); color: var(--ui); }
 
 .edit-answer-add{
 align-self: flex-start;
 border: none;
 background: none;
-color: var(--red);
+color: var(--ui);
 font-size: 0.82rem;
 font-weight: 700;
 cursor: pointer;
@@ -653,7 +663,7 @@ display: inline-flex;
 align-items: center;
 justify-content: center;
 }
-.matrix-cell:hover{ border-color: var(--red); }
+.matrix-cell:hover{ border-color: var(--ui); }
 
 .matrix-cell .matrix-check{
 color: var(--gray-light);
@@ -675,7 +685,7 @@ min-width: 1.25rem;
 height: 1.25rem;
 padding: 0 0.25rem;
 border-radius: 999px;
-background: var(--red);
+background: var(--ui);
 color: var(--white);
 font-size: 0.72rem;
 font-weight: 800;
@@ -719,7 +729,7 @@ scroll-snap-align: center;
 position: sticky;
 top: 0;
 z-index: 5;
-background: var(--red);
+background: var(--ui);
 color: #ffffff;
 border-radius: 14px 14px 0 0;
 padding: 0.85rem 1.25rem;
@@ -780,7 +790,7 @@ cursor: pointer;
 box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 transition: all 0.12s ease;
 }
-.car-arrow:hover:not(:disabled){ border-color: var(--red); color: var(--red); }
+.car-arrow:hover:not(:disabled){ border-color: var(--ui); color: var(--ui); }
 /* Ponta do carrossel: não há para onde ir, então a seta apaga e não clica. */
 .car-arrow:disabled{
 opacity: 0.3;
@@ -848,7 +858,7 @@ flex-wrap: wrap;
 }
 
 body.theme-dark .car-arrow{ box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
-body.theme-dark .car-badge{ background: var(--red-dark); }
+body.theme-dark .car-badge{ background: var(--ui-dark); }
 
 /* Transição suave entre modo claro e escuro. Fica por último no arquivo
 * para vencer transições mais curtas declaradas acima (ex.: .choice). */
