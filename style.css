@@ -134,6 +134,32 @@ image-rendering: pixelated;
 filter: drop-shadow(0 1px 0 rgba(0,0,0,0.18));
 }
 
+/* Gira como moeda de fliperama: steps() dá o "tranco" entre posições, que é o
+   que mantém o espírito pixelado — rotação lisa entregaria a suavidade que o
+   sprite justamente evita.
+   PARADA por padrão: movimento perpétuo ao lado de um formulário cansa. Gira
+   só quando alguém procura (mouse) ou quando há o que comunicar (saldo mudou). */
+@keyframes moedaGira{
+from{ transform: rotateY(0deg); }
+to{ transform: rotateY(360deg); }
+}
+
+.moeda:hover,
+.panel-creditos:hover .moeda,
+.creditos-pill:hover .moeda,
+.hero-menu-saldo:hover .moeda{
+animation: moedaGira 3.2s steps(10, end) infinite;
+}
+
+/* uma volta só, disparada por JS quando o saldo muda */
+.moeda.girou{ animation: moedaGira 0.9s steps(10, end) 1; }
+
+@media (prefers-reduced-motion: reduce){
+.moeda, .moeda.girou, .moeda:hover,
+.panel-creditos:hover .moeda, .creditos-pill:hover .moeda,
+.hero-menu-saldo:hover .moeda{ animation: none; }
+}
+
 /* Saldo ao lado do botão de gerar — é onde o crédito é gasto. */
 .creditos-pill{
 display: inline-flex;

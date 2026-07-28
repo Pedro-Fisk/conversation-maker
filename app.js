@@ -161,9 +161,25 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") fecharMenu
    informativo — quem decide é o servidor, no /api/generate-lesson, porque a
    tela dá para burlar pelo console e cada geração é uma chamada paga. */
 let creditos = null;
+let creditosAnterior = null;
+
+/* Uma volta na moeda quando o saldo muda — vira feedback do gasto, não enfeite.
+   Remover a classe e forçar reflow antes de readicionar é o que faz a animação
+   reiniciar quando o saldo cai duas vezes seguidas. */
+function girarMoedas() {
+document.querySelectorAll("svg.moeda").forEach((m) => {
+m.classList.remove("girou");
+void m.getBoundingClientRect();
+m.classList.add("girou");
+m.addEventListener("animationend", () => m.classList.remove("girou"), { once: true });
+});
+}
 
 function mostrarCreditos() {
 const tem = typeof creditos === "number";
+// só gira quando havia um número antes e ele mudou (não na primeira carga)
+if (tem && typeof creditosAnterior === "number" && creditos !== creditosAnterior) girarMoedas();
+creditosAnterior = tem ? creditos : null;
 if (creditosPill) creditosPill.classList.toggle("is-hidden", !tem);
 if (creditosNum) creditosNum.textContent = tem ? creditos : "—";
 if (menuCreditosNum) menuCreditosNum.textContent = tem ? creditos : "—";
