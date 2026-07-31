@@ -77,7 +77,7 @@ async function appendActivityLog({ teacherName, language, levels, ageGroups, eve
   const path = `logs/${parts}.md`;
   const url = `https://api.github.com/repos/${process.env.GITHUB_LOG_REPO}/contents/${path}`;
 
-  const header = `# Atividades geradas — ${parts}\n\n| Data | Professor | Idioma | Nível | Faixa etária | Evento | Tópico | Detalhe |\n|---|---|---|---|---|---|---|---|\n`;
+  const header = `# Atividades geradas. ${parts}\n\n| Data | Professor | Idioma | Nível | Faixa etária | Evento | Tópico | Detalhe |\n|---|---|---|---|---|---|---|---|\n`;
 
   // Lê o arquivo atual (se existir), anexa a linha e grava de volta. Em
   // caso de corrida (duas gerações no mesmo segundo), o PUT falha com 409

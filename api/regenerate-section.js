@@ -99,7 +99,7 @@ module.exports = async function handler(req, res) {
         teacherName: effectiveTeacher,
         language: language === "spanish" ? "espanhol" : "inglês",
         levels: [LEVEL_GUIDANCE[level].label],
-        topic: `${topic} — regenerou "${SECTION_LABELS[section]}"`,
+        topic: `${topic}, regenerou "${SECTION_LABELS[section]}"`,
       }).catch((err) => console.error("[log] falha ao gravar:", err.message))
     );
   } catch (err) {

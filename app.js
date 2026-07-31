@@ -181,9 +181,9 @@ const tem = typeof creditos === "number";
 if (tem && typeof creditosAnterior === "number" && creditos !== creditosAnterior) girarMoedas();
 creditosAnterior = tem ? creditos : null;
 if (creditosPill) creditosPill.classList.toggle("is-hidden", !tem);
-if (creditosNum) creditosNum.textContent = tem ? creditos : "—";
-if (menuCreditosNum) menuCreditosNum.textContent = tem ? creditos : "—";
-if (cardCreditosNum) cardCreditosNum.textContent = tem ? creditos : "—";
+if (creditosNum) creditosNum.textContent = tem ? creditos : "-";
+if (menuCreditosNum) menuCreditosNum.textContent = tem ? creditos : "-";
+if (cardCreditosNum) cardCreditosNum.textContent = tem ? creditos : "-";
 if (creditosCard) {
 creditosCard.classList.toggle("is-hidden", !tem);
 creditosCard.classList.toggle("is-zero", tem && creditos <= 0);
@@ -433,7 +433,7 @@ if (level.onlyAge && level.onlyAge !== age.key) {
 // Combinação inexistente no curso (ex.: Teens só existe para
 // Pré-adolescentes) — célula desabilitada.
 td.className = "matrix-na";
-td.textContent = "—";
+td.textContent = "-";
 } else {
 const btn = document.createElement("button");
 btn.type = "button";
@@ -503,7 +503,7 @@ truncado: lido.truncado,
 };
 if (topicEl) topicEl.required = false;   // o tema pode vir do arquivo
 if (sourceStatusEl) {
-sourceStatusEl.textContent = "✓ " + file.name + " — " + lido.slides.length +
+sourceStatusEl.textContent = "✓ " + file.name + " - " + lido.slides.length +
 " slide(s), " + lido.palavras + " palavras de texto aproveitadas." +
 (lido.truncado ? " (arquivo longo: usei só o começo)" : "") +
 " O tópico acima agora é opcional.";
@@ -750,7 +750,7 @@ sections.className = "slide-list";
 
 const note = document.createElement("p");
 note.className = "edit-note";
-note.textContent = "✏️ Os blocos começam recolhidos — clique no título de um deles (ou em \"Expandir tudo\") para revisar e corrigir o texto à vontade. As alterações entram no .pptx ao baixar. Não gostou de uma seção inteira? Use \"🔄 Gerar de novo\" para pedir só aquela parte de novo pra IA, sem mexer no resto.";
+note.textContent = "✏️ Os blocos começam recolhidos. Clique no título de um deles (ou em \"Expandir tudo\") para revisar e corrigir o texto à vontade. As alterações entram no .pptx ao baixar. Não gostou de uma seção inteira? Use \"🔄 Gerar de novo\" para pedir só aquela parte de novo pra IA, sem mexer no resto.";
 sections.appendChild(note);
 
 // Cada bloco já colapsa sozinho (clique na faixa do rótulo), mas são 8 blocos
@@ -776,7 +776,7 @@ barra.classList.toggle("is-hidden", total === 0);
 const abertos = blocosAbertos();
 alternarTudo.textContent = abertos ? "⌃ Recolher tudo" : "⌄ Expandir tudo";
 alternarTudo.title = abertos
-? "Fecha todos os blocos — mostra só a estrutura da aula"
+? "Fecha todos os blocos, mostra só a estrutura da aula"
 : "Abre todos os blocos para revisar o texto";
 // o carrossel precisa reajustar a própria altura à nova altura desta aula
 document.dispatchEvent(new CustomEvent("cm:alturaMudou"));
@@ -947,7 +947,7 @@ const answers = Array.isArray(item.modelAnswers) ? item.modelAnswers : (item.mod
 if (answers.length === 0) {
 const hint = document.createElement("span");
 hint.className = "edit-answer-hint";
-hint.textContent = "Pergunta aberta — sem resposta-modelo.";
+hint.textContent = "Pergunta aberta, sem resposta-modelo.";
 container.appendChild(hint);
 }
 
@@ -1326,7 +1326,7 @@ renderBatchBar();
 msg.appendChild(retry);
 body.appendChild(msg);
 } else {
-body.appendChild(slotMessage("🕐 Aguardando geração — clique em \"Gerar as demais\" abaixo do carrossel.", false));
+body.appendChild(slotMessage("🕐 Aguardando geração, clique em \"Gerar as demais\" abaixo do carrossel.", false));
 }
 return;
 }
@@ -1579,7 +1579,7 @@ const ready = batch.slots.filter((s) => s.versions.length > 0);
 if (pending.length > 0 && !batch.generatingRest) {
 const note = document.createElement("span");
 note.className = "batch-bar-note";
-note.textContent = "Revise e edite a primeira aula à vontade — as demais vão seguir a estrutura dela.";
+note.textContent = "Revise e edite a primeira aula à vontade. As demais vão seguir a estrutura dela.";
 bar.appendChild(note);
 
 const genRestBtn = document.createElement("button");
@@ -1699,7 +1699,7 @@ return;
 }
 
 if (!profSession) {
-setStatus("Entre pelo Fisk Hub antes de gerar — clique em \"Conversation Maker\" por lá.", true);
+setStatus("Entre pelo Fisk Hub antes de gerar, clique em \"Conversation Maker\" por lá.", true);
 if (authGate) authGate.scrollIntoView({ behavior: "smooth", block: "center" });
 return;
 }

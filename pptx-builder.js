@@ -424,7 +424,7 @@ function buildPptx(lesson, thumbnailData) {
   const pptx = new pptxgen();
   pptx.defineLayout({ name: "FISK_16x9", width: SLIDE_W_IN, height: SLIDE_H_IN });
   pptx.layout = "FISK_16x9";
-  pptx.author = "FISK — Conversation Maker";
+  pptx.author = "FISK, Conversation Maker";
   pptx.title = lesson.coverTitle || "Conversation Maker";
 
   const videoId = lesson._videoId || null;

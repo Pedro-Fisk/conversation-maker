@@ -119,7 +119,7 @@ async function pptxLerArquivo(file, opts) {
     .filter((e) => /^ppt\/slides\/slide\d+\.xml$/i.test(e.nome))
     .sort((a, b) => pptxNumeroDoSlide(a.nome) - pptxNumeroDoSlide(b.nome));
 
-  if (!slides.length) throw new Error("não encontrei slides neste arquivo — ele é um .pptx mesmo?");
+  if (!slides.length) throw new Error("não encontrei slides neste arquivo. Ele é um.pptx mesmo?");
 
   const out = [];
   for (const entrada of slides) {
@@ -128,7 +128,7 @@ async function pptxLerArquivo(file, opts) {
     if (texto) out.push({ numero: pptxNumeroDoSlide(entrada.nome), texto });
   }
 
-  if (!out.length) throw new Error("os slides deste arquivo não têm texto — só imagens não dá para aproveitar");
+  if (!out.length) throw new Error("os slides deste arquivo não têm texto. Só imagens não dá para aproveitar");
 
   let texto = out.map((s) => "[Slide " + s.numero + "]\n" + s.texto).join("\n\n");
   let truncado = false;

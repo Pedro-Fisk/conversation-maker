@@ -26,12 +26,12 @@ const LEVEL_GUIDANCE = {
   real_beginners: {
     label: "Real Beginners",
     prompt:
-      "Real Beginners level: absolute beginners studying English for the very first time. Target CEFR pre-A1 (A0) moving into A1 — never above A1. Stay inside pre-A1 can-do statements: greet and introduce yourself, say where you are from, numbers, colors, days, family, classroom and everyday objects, express basic likes and needs. Grammar limited to present simple at its simplest ('I am', 'I have', 'I like', 'this is'), plus can for ability. Use only high-frequency words; no idioms, no phrasal verbs, no past or future tenses. Very short and direct questions, each answerable with one or two words. Model answers must almost complete the sentence, leaving only one small piece for the student to fill in.",
+      "Real Beginners level: absolute beginners studying English for the very first time. Target CEFR pre-A1 (A0) moving into A1, never above A1. Stay inside pre-A1 can-do statements: greet and introduce yourself, say where you are from, numbers, colors, days, family, classroom and everyday objects, express basic likes and needs. Grammar limited to present simple at its simplest ('I am', 'I have', 'I like', 'this is'), plus can for ability. Use only high-frequency words; no idioms, no phrasal verbs, no past or future tenses. Very short and direct questions, each answerable with one or two words. Model answers must almost complete the sentence, leaving only one small piece for the student to fill in.",
   },
   teens: {
     label: "Teens",
     prompt:
-      "Teens level: young learners aged 10–11 (pre-teens). Linguistically this is the SAME band as Real Beginners — target CEFR pre-A1/A1, leaning A1, and never above A1. What changes is the framing, not the difficulty: topics, examples and names must feel relevant to a pre-teen (school, friends, games, sports, family, animals, food, routines) instead of adult or workplace contexts. Grammar limited to present simple, present continuous, can, and the most common past of 'be'/regular verbs; high-frequency vocabulary only, no idioms or phrasal verbs. Questions should be short and concrete. Model answers guide the student clearly, leaving the key content word(s) for them to supply. The Teens course uses its own coursebooks, so never reference the adult-track books (Essentials, Transitions, Fluency, In Focus).",
+      "Teens level: young learners aged 10–11 (pre-teens). Linguistically this is the SAME band as Real Beginners. Target CEFR pre-A1/A1, leaning A1, and never above A1. What changes is the framing, not the difficulty: topics, examples and names must feel relevant to a pre-teen (school, friends, games, sports, family, animals, food, routines) instead of adult or workplace contexts. Grammar limited to present simple, present continuous, can, and the most common past of 'be'/regular verbs; high-frequency vocabulary only, no idioms or phrasal verbs. Questions should be short and concrete. Model answers guide the student clearly, leaving the key content word(s) for them to supply. The Teens course uses its own coursebooks, so never reference the adult-track books (Essentials, Transitions, Fluency, In Focus).",
   },
   basic: {
     label: "Basic",
@@ -51,17 +51,17 @@ const LEVEL_GUIDANCE = {
   spanish_basic: {
     label: "Básico",
     prompt:
-      "Spanish Básico level (Inmediato 1 — FISK course). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). Simple vocabulary and tenses: presente de indicativo, ser/estar, common phrases. Natural, simple conversational Spanish appropriate for Inmediato 1 learners.",
+      "Spanish Básico level (Inmediato 1, FISK course). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). Simple vocabulary and tenses: presente de indicativo, ser/estar, common phrases. Natural, simple conversational Spanish appropriate for Inmediato 1 learners.",
   },
   spanish_intermediate: {
     label: "Intermediário",
     prompt:
-      "Spanish Intermediário level (Inmediato 2 — FISK course). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). A wider range of vocabulary and tenses: presente, pretérito indefinido, futuro próximo, common reflexive verbs. Natural conversational Spanish appropriate for Inmediato 2 learners.",
+      "Spanish Intermediário level (Inmediato 2, FISK course). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). A wider range of vocabulary and tenses: presente, pretérito indefinido, futuro próximo, common reflexive verbs. Natural conversational Spanish appropriate for Inmediato 2 learners.",
   },
   spanish_advanced: {
     label: "Avançado",
     prompt:
-      "Spanish Avançado level (Inmediato 3 — FISK course). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). More complex vocabulary and structures: multiple tenses including subjuntivo, condicional, idiomatic expressions, questions that invite nuanced opinions. Fluent, natural Spanish appropriate for Inmediato 3 learners.",
+      "Spanish Avançado level (Inmediato 3, FISK course). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). More complex vocabulary and structures: multiple tenses including subjuntivo, condicional, idiomatic expressions, questions that invite nuanced opinions. Fluent, natural Spanish appropriate for Inmediato 3 learners.",
   },
 };
 
@@ -100,7 +100,7 @@ const ANSWER_GUIDANCE = {
 - Across the questions, give a model answer to only about 40% of them — leave the rest with an empty modelAnswers array entirely.
 - When you do include one, it must be a single OPEN sentence starter (e.g. "I think that... because...", "In my opinion..."), never a complete, fully-elaborated answer. At most one model answer per question — never two.
 - Choose which questions get a starter based on which ones are harder to begin (more abstract/complex), not randomly.`,
-  advanced: `MODEL ANSWERS (conversation + evaluation questions only) — do not provide any (leave modelAnswers as an empty array for every conversation and evaluation question); students at this level answer fully unprompted.`,
+  advanced: `MODEL ANSWERS (conversation + evaluation questions only). Do not provide any (leave modelAnswers as an empty array for every conversation and evaluation question); students at this level answer fully unprompted.`,
 };
 
 // O language game NÃO usa modelAnswers — é sempre múltipla escolha (3
@@ -155,7 +155,7 @@ The template has a FIXED structure that never changes, so your output must alway
 - 6 language game items (short language-focused challenges: fill-in-the-blank, choose the correct word/tense, etc. — testing the vocabulary/grammar just covered)
 - 2 evaluation/reflection questions
 
-Each conversation and evaluation question has a "modelAnswers" array of 0 to 2 short strings. This is NOT always 2 — how many (if any), and whether they're open sentence starters or complete answers, is dictated by the MODEL ANSWERS guidance in the user message. Follow it precisely: real FISK classroom material is deliberately sparing with model answers, leaning on open sentence starters (ending in "...") rather than fully-written answers, so students have to produce their own language instead of just reading a ready-made sentence.
+Each conversation and evaluation question has a "modelAnswers"array of 0 to 2 short strings. This is NOT always 2. How many (if any), and whether they're open sentence starters or complete answers, is dictated by the MODEL ANSWERS guidance in the user message. Follow it precisely: real FISK classroom material is deliberately sparing with model answers, leaning on open sentence starters (ending in"...") rather than fully-written answers, so students have to produce their own language instead of just reading a ready-made sentence.
 
 Each language game item is DIFFERENT: it's multiple choice, with an "options" array of exactly 3 strings and a "correctIndex" (0, 1, or 2) marking the single correct one — see the LANGUAGE GAME guidance in the user message for how to write good distractors.
 
@@ -201,7 +201,7 @@ function pickGrammarSources(level, count) {
     book.points.forEach((point) => {
       pool.push({
         label: `${book.label} · ${point.code}`,
-        promptLabel: `${book.label} — Lesson ${point.code} (${point.title})`,
+        promptLabel: `${book.label}, Lesson ${point.code} (${point.title})`,
         grammar: point.grammar,
       });
     });
@@ -271,7 +271,7 @@ function buildSourceActivityBlock(sourceActivity) {
   if (!sourceActivity || !sourceActivity.texto) return "";
   const instrucao = String(sourceActivity.instrucao || "").trim();
   const pedido = instrucao
-    ? `The teacher's instruction about what to do with it (in Portuguese): "${instrucao}". Follow this instruction — it takes precedence over your own reading of the material.`
+    ? `The teacher's instruction about what to do with it (in Portuguese): "${instrucao}". Follow this instruction. It takes precedence over your own reading of the material.`
     : `The teacher gave no specific instruction, so build a fresh lesson on the same subject as the material below, at the level and age group requested above.`;
   return `\nEXISTING ACTIVITY UPLOADED BY THE TEACHER — Below is the text extracted from a .pptx the teacher already uses (slide by slide; images, layout and formatting were not recoverable, so judge only the content). ${pedido}
 Treat it as raw material, not as a finished lesson: never copy its slides one-to-one, and always produce a complete lesson in the required JSON shape, adapted to the level and age group requested above. If the material is clearly above or below that level, rewrite it at the right depth instead of reusing its sentences.
@@ -288,15 +288,15 @@ function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sourc
   const sourceBlock = buildLanguageGameSourceBlock(sources);
 
   const searchNote = useWebSearch
-    ? `\nBefore writing, use the web search tool (at most ${MAX_WEB_SEARCHES} searches) to gather recent, factual information about the topic — names, results, dates, current events. Base the lesson content on what you find. After searching, your final answer must still be ONLY the JSON object, with no citations, no commentary and no source list inside the JSON values.\n`
+    ? `\nBefore writing, use the web search tool (at most ${MAX_WEB_SEARCHES} searches) to gather recent, factual information about the topic, names, results, dates, current events. Base the lesson content on what you find. After searching, your final answer must still be ONLY the JSON object, with no citations, no commentary and no source list inside the JSON values.\n`
     : "";
 
   const transcriptNote = transcript
-    ? `\nYOUTUBE VIDEO TRANSCRIPT — The teacher attached a YouTube video related to this lesson's topic. Use it SPARINGLY: exactly 2 of the 9 conversation questions and exactly 2 of the 6 language game items should draw directly from specific content in the video (a detail, example, or idea from the transcript). The remaining 7 conversation questions and 4 language game items must be written normally based on the teacher's topic alone, as if no video existed. Do NOT let the video dominate or replace the topic — it is a supplementary reference only. IMPORTANT: do NOT include the video URL or any link in any text field — the URL is displayed separately on its own slide.\n\nTranscript:\n${transcript.slice(0, 8000)}\n`
+    ? `\nYOUTUBE VIDEO TRANSCRIPT. The teacher attached a YouTube video related to this lesson's topic. Use it SPARINGLY: exactly 2 of the 9 conversation questions and exactly 2 of the 6 language game items should draw directly from specific content in the video (a detail, example, or idea from the transcript). The remaining 7 conversation questions and 4 language game items must be written normally based on the teacher's topic alone, as if no video existed. Do NOT let the video dominate or replace the topic, it is a supplementary reference only. IMPORTANT: do NOT include the video URL or any link in any text field, the URL is displayed separately on its own slide.\n\nTranscript:\n${transcript.slice(0, 8000)}\n`
     : "";
 
   const extraActivityNote = extraActivity
-    ? `\nEXTRA ACTIVITY — The teacher wants to include a specific class activity or dynamic. Their description: "${extraActivity}". Generate a short, creative title for this activity (2–5 words) as "extraActivityTitle", and clear step-by-step instructions (3–6 sentences) as "extraActivityInstructions". Instructions should be practical and cover what both the teacher and students should do.\n`
+    ? `\nEXTRA ACTIVITY. The teacher wants to include a specific class activity or dynamic. Their description: "${extraActivity}". Generate a short, creative title for this activity (2–5 words) as "extraActivityTitle", and clear step-by-step instructions (3–6 sentences) as "extraActivityInstructions". Instructions should be practical and cover what both the teacher and students should do.\n`
     : "";
 
   const extraActivitySchema = extraActivity
@@ -308,13 +308,13 @@ function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sourc
   // (já editada) como referência estrutural — mesma identidade de aula,
   // profundidade adaptada ao novo nível/faixa.
   const referenceNote = referenceLesson
-    ? `\nREFERENCE LESSON — The teacher already generated (and hand-edited) this SAME lesson for a different level/age group, and is now generating it for the level and age group requested above. Use the reference below as the structural and thematic guide: keep the same lesson identity — same subject angle, same flow of subtopics, and preserve the spirit of any question or content the teacher added by hand (e.g. questions about specific characters or a monthly cross-cutting theme). Adapt depth, vocabulary, grammar and register to the level and age group requested above — do NOT copy sentences verbatim when the level differs; rewrite them at the right depth.\n\nReference lesson JSON:\n${JSON.stringify(compactLessonForPrompt(referenceLesson))}\n`
+    ? `\nREFERENCE LESSON. The teacher already generated (and hand-edited) this SAME lesson for a different level/age group, and is now generating it for the level and age group requested above. Use the reference below as the structural and thematic guide: keep the same lesson identity, same subject angle, same flow of subtopics, and preserve the spirit of any question or content the teacher added by hand (e.g. questions about specific characters or a monthly cross-cutting theme). Adapt depth, vocabulary, grammar and register to the level and age group requested above, do NOT copy sentences verbatim when the level differs; rewrite them at the right depth.\n\nReference lesson JSON:\n${JSON.stringify(compactLessonForPrompt(referenceLesson))}\n`
     : "";
 
   // Recriação: o professor rejeitou a versão anterior e descreveu no modal
   // o que quer mudar. A versão anterior + o feedback entram no prompt.
   const feedbackNote = feedback && previousLesson
-    ? `\nTEACHER FEEDBACK — The teacher was NOT satisfied with the previous version of this lesson and asked for a new one. Their feedback (in Portuguese): "${feedback}". Write a completely fresh version of the lesson that clearly applies this feedback — keep what the feedback doesn't complain about, change what it does.\n\nPrevious version JSON (for reference of what to change):\n${JSON.stringify(compactLessonForPrompt(previousLesson))}\n`
+    ? `\nTEACHER FEEDBACK. The teacher was NOT satisfied with the previous version of this lesson and asked for a new one. Their feedback (in Portuguese): "${feedback}". Write a completely fresh version of the lesson that clearly applies this feedback, keep what the feedback doesn't complain about, change what it does.\n\nPrevious version JSON (for reference of what to change):\n${JSON.stringify(compactLessonForPrompt(previousLesson))}\n`
     : "";
 
   const sourceNote = buildSourceActivityBlock(sourceActivity);
@@ -322,13 +322,13 @@ function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sourc
   // dela, e dizer isso explicitamente evita a IA inventar um assunto qualquer.
   const topicLine = (topic && String(topic).trim())
     ? `Topic: ${topic}`
-    : "Topic: not given — take the subject from the uploaded activity above.";
+    : "Topic: not given, take the subject from the uploaded activity above.";
 
   return `${searchNote}${transcriptNote}${extraActivityNote}${sourceNote}${referenceNote}${feedbackNote}${topicLine}
 Level: ${guidance.label}
 ${guidance.prompt}
 
-Student age group: ${age.label}. Use this ONLY as background context. Do NOT adapt, replace or soften the themes because of the students' age, and never make the content childish or cartoonish — develop the teacher's topic exactly as given, with full depth and a natural register.
+Student age group: ${age.label}. Use this ONLY as background context. Do NOT adapt, replace or soften the themes because of the students'age, and never make the content childish or cartoonish, develop the teacher's topic exactly as given, with full depth and a natural register.
 
 ${answerGuidance}
 

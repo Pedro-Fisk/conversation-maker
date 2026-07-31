@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Conversation Maker — FISK</title>
+<title>Conversation Maker, FISK</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/pedro-fisk/fisk-hub@v1.0.0/assets/fisk-shared.css">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -54,7 +54,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <div id="recreateModal" class="modal-overlay">
 <div class="modal-card">
 <div class="modal-title">Recriar esta aula</div>
-<p class="modal-text">Descreva o que você quer mudar nesta aula. A IA vai gerar uma nova versão levando seu feedback em conta — só desta aula, as demais não mudam.</p>
+<p class="modal-text">Descreva o que você quer mudar nesta aula. A IA vai gerar uma nova versão levando seu feedback em conta. Só desta aula, as demais não mudam.</p>
 <textarea id="recreateFeedback" rows="4" placeholder="ex.: achei muito infantil, deixe mais adulta / foque menos nesse assunto e mais no outro..."></textarea>
 <div class="modal-actions">
 <button type="button" class="btn btn-ghost btn-sm" id="cancelRecreate">Cancelar</button>
@@ -98,10 +98,10 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </button>
 <div class="hero-menu-panel" id="profMenuPanel" role="menu" hidden>
 <p class="hero-menu-title">Histórico do professor</p>
-<p class="hero-menu-saldo" id="menuCreditos"><svg class="moeda" viewBox="0 0 8 8" aria-hidden="true"><use href="#moedaPix"/></svg> <strong id="menuCreditosNum">—</strong> créditos restantes no Conversation Maker</p>
+<p class="hero-menu-saldo" id="menuCreditos"><svg class="moeda" viewBox="0 0 8 8" aria-hidden="true"><use href="#moedaPix"/></svg> <strong id="menuCreditosNum">-</strong> créditos restantes no Conversation Maker</p>
 <a class="hero-menu-item" role="menuitem" href="historico.html">🗂 Minhas aulas</a>
 <button type="button" class="hero-menu-item" role="menuitem" id="logoutBtn">🚪 Sair neste computador</button>
-<p class="hero-menu-note">Logado pelo Fisk Hub. Seu nome vai para o registro de atividades — não aparece na atividade, no arquivo nem no nome do arquivo.</p>
+<p class="hero-menu-note">Logado pelo Fisk Hub. Seu nome vai para o registro de atividades. Não aparece na atividade, no arquivo nem no nome do arquivo.</p>
 </div>
 </div>
 
@@ -123,14 +123,14 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
      (que é o que o professor veio fazer) para fora da primeira tela. -->
 <div class="panel panel-creditos is-hidden" id="creditosCard">
 <svg class="moeda" viewBox="0 0 8 8" aria-hidden="true"><use href="#moedaPix"/></svg>
-<span>Você tem <strong id="cardCreditosNum">—</strong> créditos no Conversation Maker</span>
+<span>Você tem <strong id="cardCreditosNum">-</strong> créditos no Conversation Maker</span>
 <span class="panel-creditos-nota">cada atividade gerada custa 1</span>
 </div>
 
 <div class="panel panel-featured">
 <h2>💬 Tópico da aula</h2>
 <label class="fld" for="topic">Sobre o que vai ser a conversação? <span class="req">* obrigatório</span></label>
-<p class="hint hint-lead">Escreva livremente o tema da aula — não precisa ser uma palavra só. Você pode descrever o contexto, o objetivo, situações que quer explorar ou o que os alunos precisam praticar. Quanto mais detalhe, melhor a IA adapta a atividade.</p>
+<p class="hint hint-lead">Escreva livremente o tema da aula. Não precisa ser uma palavra só. Você pode descrever o contexto, o objetivo, situações que quer explorar ou o que os alunos precisam praticar. Quanto mais detalhe, melhor a IA adapta a atividade.</p>
 <div class="topic-wrap">
 <textarea id="topic" rows="3" placeholder="ex.: going shopping / uma conversa sobre planejar uma viagem ao Japão, incluindo pedir informações e reservar hotel..." required></textarea>
 <button type="button" class="mic-btn" id="micBtn" aria-label="Ditar por voz" title="Clique para ditar por voz">
@@ -157,12 +157,12 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <!-- Recolhido por padrão: a maioria das aulas nasce do zero, e este bloco
      ocupava uma tela inteira de quem nunca sobe arquivo. -->
 <details class="panel panel-recolhe" id="sourceField">
-<summary><h2>📎 Já tem uma atividade pronta?</h2><span class="recolhe-dica">opcional — abrir</span></summary>
-<p class="hint hint-lead">Suba um <strong>.pptx</strong> que você já usa e crie outras atividades a partir dele. Escreva abaixo o que quer que a IA faça com ele — <em>"adapta esta atividade para uma turma de adultos avançados"</em>, <em>"usa o formato desta, mas sobre viagens"</em>, <em>"deixa as perguntas mais fáceis"</em>.</p>
+<summary><h2>📎 Já tem uma atividade pronta?</h2><span class="recolhe-dica">opcional, abrir</span></summary>
+<p class="hint hint-lead">Suba um <strong>.pptx</strong> que você já usa e crie outras atividades a partir dele. Escreva abaixo o que quer que a IA faça com ele, <em>"adapta esta atividade para uma turma de adultos avançados"</em>, <em>"usa o formato desta, mas sobre viagens"</em>, <em>"deixa as perguntas mais fáceis"</em>.</p>
 <input type="file" id="sourceFile" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation">
 <p class="hint" id="sourceStatus"></p>
 <textarea id="sourceInstruction" rows="3" placeholder="ex.: adapta esta atividade para Basic, mantendo o tema mas com perguntas mais curtas..."></textarea>
-<p class="hint">O arquivo é lido <strong>no seu navegador</strong> e só o texto dos slides vai para a IA — o arquivo em si não é enviado nem guardado. A aula sai sempre no <strong>template FISK</strong>: imagens e formatação do original não são aproveitadas, só o conteúdo.</p>
+<p class="hint">O arquivo é lido <strong>no seu navegador</strong>e só o texto dos slides vai para a IA. O arquivo em si não é enviado nem guardado. A aula sai sempre no<strong>template FISK</strong>: imagens e formatação do original não são aproveitadas, só o conteúdo.</p>
 </details>
 
 <div class="panel">
@@ -187,9 +187,9 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <input type="text" id="youtubeUrl" placeholder="ex.: https://www.youtube.com/watch?v=...">
 <label class="checkbox-row" for="youtubeLucky" style="margin-top:0.6rem">
 <input type="checkbox" id="youtubeLucky">
-<span>Estou com sorte — deixar a IA escolher um vídeo relevante automaticamente</span>
+<span>Estou com sorte, deixar a IA escolher um vídeo relevante automaticamente</span>
 </label>
-<p class="hint">A busca é feita no idioma da aula (o que você escolheu acima), mas o YouTube não garante o resultado — pode vir um vídeo em português. Depois de gerar, dá para <strong>remover o bloco do vídeo</strong> na prévia da aula, e ele sai também do .pptx.</p>
+<p class="hint">A busca é feita no idioma da aula (o que você escolheu acima), mas o YouTube não garante o resultado. Pode vir um vídeo em português. Depois de gerar, dá para<strong>remover o bloco do vídeo</strong> na prévia da aula, e ele sai também do .pptx.</p>
 </div>
 </div>
 
@@ -203,7 +203,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <textarea id="extraActivity" rows="3" placeholder="ex.: Quero que os alunos se entrevistem em duplas por 3 minutos sobre o tema, depois trocam de parceiro e repetem..."></textarea>
 <label class="checkbox-row" for="extraLucky" style="margin-top:0.6rem">
 <input type="checkbox" id="extraLucky">
-<span>Estou com sorte — deixar a IA propor a dinâmica a partir do tema</span>
+<span>Estou com sorte. Deixar a IA propor a dinâmica a partir do tema</span>
 </label>
 <p class="hint">A proposta vem junto com a aula e você confere <strong>antes de baixar o .pptx</strong>: o título e as instruções da dinâmica ficam editáveis na prévia, como o resto.</p>
 </div>
@@ -212,11 +212,11 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 
 <div class="panel" id="matrixField">
 <h2>📊 Nível × Faixa etária</h2>
-<p class="hint hint-lead">Marque na tabela quais combinações de nível e faixa etária você quer gerar. Uma só combinação gera uma aula única, como sempre. Marcando várias, você gera a <strong>primeira</strong> combinação, revisa e edita à vontade, e depois manda gerar as demais — elas seguem a estrutura da primeira aula já revisada.</p>
+<p class="hint hint-lead">Marque na tabela quais combinações de nível e faixa etária você quer gerar. Uma só combinação gera uma aula única, como sempre. Marcando várias, você gera a <strong>primeira</strong>combinação, revisa e edita à vontade, e depois manda gerar as demais. Elas seguem a estrutura da primeira aula já revisada.</p>
 <div class="matrix-scroll">
 <table class="matrix" id="matrixTable" aria-label="Seleção de combinações de nível e faixa etária"></table>
 </div>
-<p class="hint" id="levelHintEnglish">A faixa etária é contexto para a IA: o tema continua sendo exatamente o que você escreveu no tópico. O nível <strong>Teens</strong> é exclusivo da faixa Pré-adolescentes.<br>O <strong>Language Game</strong> já sai na gramática do nível, sem você precisar configurar nada: <strong>Basic</strong> usa Essentials 1 e 2, <strong>Intermediate</strong> usa Transitions 1 e 2, <strong>Advanced</strong> usa Fluency 1, 2 e In Focus — e cada pergunta mostra no rodapé do slide a qual livro e lição se refere. <strong>Real Beginners</strong> e <strong>Teens</strong> seguem o nível pré-A1/A1 do Quadro Europeu, sem citar livro.</p>
+<p class="hint" id="levelHintEnglish">A faixa etária é contexto para a IA: o tema continua sendo exatamente o que você escreveu no tópico. O nível <strong>Teens</strong> é exclusivo da faixa Pré-adolescentes.<br>O <strong>Language Game</strong> já sai na gramática do nível, sem você precisar configurar nada: <strong>Basic</strong> usa Essentials 1 e 2, <strong>Intermediate</strong> usa Transitions 1 e 2, <strong>Advanced</strong>usa Fluency 1, 2 e In Focus, e cada pergunta mostra no rodapé do slide a qual livro e lição se refere.<strong>Real Beginners</strong> e <strong>Teens</strong> seguem o nível pré-A1/A1 do Quadro Europeu, sem citar livro.</p>
 <p class="hint is-hidden" id="levelHintSpanish">Os níveis Básico, Intermediário e Avançado correspondem aos estágios do curso: Inmediato 1, 2 e 3.</p>
 </div>
 
@@ -225,13 +225,13 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
      já estava logado. Virou faixa fina, e só aparece quando falta sessão —
      aqui embaixo, que é onde ela faz falta (na hora de gerar). -->
 <div class="auth-faixa is-hidden" id="authGate">
-<span id="authGateMsg">Esta ferramenta usa o seu login do Fisk Hub. Abra o Hub e clique em "Conversation Maker" por lá — não há outra senha.</span>
+<span id="authGateMsg">Esta ferramenta usa o seu login do Fisk Hub. Abra o Hub e clique em "Conversation Maker" por lá. Não há outra senha.</span>
 <a class="btn btn-gold btn-sm" href="https://pedro-fisk.github.io/fisk-hub/">Ir para o Fisk Hub →</a>
 </div>
 
 <div class="actions">
 <button type="submit" class="btn btn-generate" id="generateBtn">Gerar roteiro →</button>
-<span class="creditos-pill is-hidden" id="creditosPill" title="Cada atividade gerada custa 1 crédito. Recriar não custa."><svg class="moeda" viewBox="0 0 8 8" aria-hidden="true"><use href="#moedaPix"/></svg> <strong id="creditosNum">—</strong></span>
+<span class="creditos-pill is-hidden" id="creditosPill" title="Cada atividade gerada custa 1 crédito. Recriar não custa."><svg class="moeda" viewBox="0 0 8 8" aria-hidden="true"><use href="#moedaPix"/></svg> <strong id="creditosNum">-</strong></span>
 <span id="spinner" class="spinner is-hidden" aria-hidden="true"></span>
 <span id="status" class="status-text"></span>
 </div>

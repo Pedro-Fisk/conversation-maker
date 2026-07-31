@@ -81,7 +81,7 @@ info.appendChild(title);
 const sub = document.createElement("div");
 sub.className = "hist-sub";
 const when = it.t ? new Date(it.t).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
-sub.textContent = [when, it.idioma, it.nivel && it.faixa ? it.nivel + " · " + it.faixa : it.nivel].filter(Boolean).join("  —  ");
+sub.textContent = [when, it.idioma, it.nivel && it.faixa ? it.nivel + " · " + it.faixa : it.nivel].filter(Boolean).join("  -  ");
 info.appendChild(sub);
 
 row.appendChild(info);

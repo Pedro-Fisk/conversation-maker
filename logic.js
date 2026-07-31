@@ -111,7 +111,7 @@ function generateMock({ language, topic, level, grammarPoint }) {
     language,
     topic,
     level,
-    coverTitle: `${titleCase(topic)} — Conversation Lesson`,
+    coverTitle: `${titleCase(topic)}, Conversation Lesson`,
     coverSubtitle: `${titleCase(level.replace("_", " "))} level`,
     material: { activity: "Powerpoint Activity", durationMinutes: DEFAULT_DURATION_MINUTES },
     objectives: [
