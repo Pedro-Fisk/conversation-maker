@@ -16,6 +16,17 @@
  *                                já existente sem tocar no resto.
  */
 
+/* ÂNCORA CEFR EM TODO NÍVEL — acrescentada em 04/08/2026.
+ *
+ * Antes, só Real Beginners e Teens diziam a faixa do Quadro Europeu; os
+ * três níveis adultos traziam apenas o nome. E "Advanced", sozinho, tem um
+ * significado universal que o modelo aplica: C1/C2. Só que o "Avançado" da
+ * FISK é Fluency 1/2 e In Focus — na prática B1 indo a B2, não C1. O
+ * resultado eram aulas escritas para um aluno que não existe nesta escola.
+ *
+ * Nome de nível é rótulo interno da escola; CEFR é a única régua que o
+ * modelo interpreta igual todas as vezes. Por isso todo nível agora declara
+ * a sua faixa E o seu teto. Ao criar nível novo, declare os dois. */
 const LEVEL_GUIDANCE = {
   // Real Beginners e Teens compartilham a MESMA faixa linguística — pré-A1/A1 do
   // Quadro Europeu Comum. O que os separa é o enquadramento (adulto iniciante x
@@ -36,32 +47,43 @@ const LEVEL_GUIDANCE = {
   basic: {
     label: "Basic",
     prompt:
-      "Basic level: simple present/past tense, short common-word vocabulary, short direct conversation questions.",
+      "Basic level (FISK Essentials 1-2). Target CEFR A1 moving into A2, never above A2. Simple present and past tenses, short common-word vocabulary, short and direct conversation questions. No idioms, no phrasal verbs beyond the most frequent, no conditionals beyond the simplest.",
   },
   intermediate: {
     label: "Intermediate",
     prompt:
-      "Intermediate level: a wider range of tenses and everyday vocabulary, conversation questions that invite a short opinion or explanation.",
+      "Intermediate level (FISK Transitions 1-2). Target CEFR A2 moving into B1, never above B1. A wider range of tenses and everyday vocabulary, conversation questions that invite a short opinion or explanation. Some very common idioms and phrasal verbs are fine; avoid low-frequency or literary vocabulary.",
   },
   advanced: {
+    /* Reescrito em 04/08/2026 depois de professores relatarem que as aulas
+       de Avançado ficavam boas demais em ABSTRAÇÃO para turmas de 13-14
+       anos. A queixa não era o inglês — era a estrutura das perguntas, que
+       exigia um raciocínio filosófico que o aluno não tem por idade, não
+       por nível.
+       A causa estava aqui: o prompt pedia explicitamente "critical thinking
+       e raciocínio hipotético", ou seja, soldava DIFICULDADE LINGUÍSTICA e
+       EXIGÊNCIA COGNITIVA num botão só. Agora "Avançado" descreve só o
+       INGLÊS; a profundidade do raciocínio é decidida pela faixa etária
+       (ver AGE_GUIDANCE), que é o eixo certo para isso. */
     label: "Advanced",
     prompt:
-      "Advanced level: nuanced/less common vocabulary, questions that invite critical thinking, comparison or hypothetical reasoning, fluent and idiomatic phrasing.",
+      "Advanced level (FISK Fluency 1-2 and In Focus). Target CEFR B1 moving into B2 — NEVER C1 or above. This is the top of THIS school's track, not the top of the CEFR scale: these are confident, fluent-sounding learners, not near-native ones. Use a wide range of tenses and structures, common idiomatic phrasing and everyday phrasal verbs, and vocabulary that is richer than Intermediate but still high-to-mid frequency. Do NOT use rare, literary, academic or abstract-noun-heavy vocabulary, and do not write sentences whose length or subordination would tax a B2 reader. " +
+      "This level describes the ENGLISH, not the abstraction of the thinking. Questions may ask for opinion, comparison, justification and narration at length. How ABSTRACT the reasoning should be is decided by the student age group below, not by this level: an advanced teenager still deserves advanced English about concrete, lived experience.",
   },
   spanish_basic: {
     label: "Básico",
     prompt:
-      "Spanish Básico level (Inmediato 1, FISK course). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). Simple vocabulary and tenses: presente de indicativo, ser/estar, common phrases. Natural, simple conversational Spanish appropriate for Inmediato 1 learners.",
+      "Spanish Básico level (Inmediato 1, FISK course). Target CEFR A1 moving into A2, never above A2. Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). Simple vocabulary and tenses: presente de indicativo, ser/estar, common phrases. Natural, simple conversational Spanish appropriate for Inmediato 1 learners.",
   },
   spanish_intermediate: {
     label: "Intermediário",
     prompt:
-      "Spanish Intermediário level (Inmediato 2, FISK course). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). A wider range of vocabulary and tenses: presente, pretérito indefinido, futuro próximo, common reflexive verbs. Natural conversational Spanish appropriate for Inmediato 2 learners.",
+      "Spanish Intermediário level (Inmediato 2, FISK course). Target CEFR A2 moving into B1, never above B1. Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). A wider range of vocabulary and tenses: presente, pretérito indefinido, futuro próximo, common reflexive verbs. Natural conversational Spanish appropriate for Inmediato 2 learners.",
   },
   spanish_advanced: {
     label: "Avançado",
     prompt:
-      "Spanish Avançado level (Inmediato 3, FISK course). Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). More complex vocabulary and structures: multiple tenses including subjuntivo, condicional, idiomatic expressions, questions that invite nuanced opinions. Fluent, natural Spanish appropriate for Inmediato 3 learners.",
+      "Spanish Avançado level (Inmediato 3, FISK course). Target CEFR B1 moving into B2 — NEVER C1 or above; this is the top of THIS school's track, not of the CEFR scale. Write the topic content, objectives, vocabulary words, conversation questions, language game items and evaluation questions ALL IN SPANISH (not English). Vocabulary translations must be in Brazilian Portuguese (the students are Brazilian). More complex vocabulary and structures: multiple tenses including subjuntivo, condicional, idiomatic expressions, questions that invite nuanced opinions. Fluent, natural Spanish appropriate for Inmediato 3 learners.",
   },
 };
 
@@ -112,13 +134,34 @@ const LANGUAGE_GAME_GUIDANCE = `LANGUAGE GAME — always multiple choice, never 
 - Make the two wrong options plausible distractors (a common mistake a learner would make: wrong verb tense, wrong preposition, confusable word) rather than random or absurd — they should require real knowledge to rule out, not be obviously silly.
 - Keep each option short (a word, a short phrase, or a short full-sentence version of the prompt with the blank filled in — pick whichever reads naturally for that question).`;
 
-// Perfil da turma escolhido pelo professor. Entra no prompt apenas como
-// contexto leve: a IA NÃO deve trocar os temas nem infantilizar o conteúdo
-// por causa da idade — o tópico do professor manda.
+/* Perfil da turma escolhido pelo professor.
+ * O TEMA continua sendo do professor: nada aqui troca assunto, suaviza
+ * conteúdo ou infantiliza — essa regra original vale e está repetida no
+ * prompt. O que a faixa passa a governar (04/08/2026) é outra coisa: o
+ * GRAU DE ABSTRAÇÃO das perguntas.
+ * Antes daqui só viajava o rótulo ("teenagers"), sem instrução nenhuma, e
+ * o nível Avançado pedia raciocínio hipotético para todo mundo. O resultado
+ * foram aulas filosóficas demais para turmas de 13-14 anos — inglês certo,
+ * pergunta impossível. Mesmo tema, mesmo inglês, ponto de entrada outro. */
 const AGE_GUIDANCE = {
-  preteens: { label: "pre-teens", ptLabel: "Pré-adolescentes" },
-  teens: { label: "teenagers", ptLabel: "Jovens" },
-  adults: { label: "adults", ptLabel: "Adultos" },
+  preteens: {
+    label: "pre-teens",
+    ptLabel: "Pré-adolescentes",
+    thinking:
+      "These students are around 10-12. Keep every question CONCRETE and anchored in their own experience: what they did, saw, like, would choose, would do. Ask about facts, preferences, short stories from their life, and simple comparisons they can see. Do NOT ask them to define abstract concepts, weigh ethical dilemmas, argue a thesis, speculate about society, or reason about hypothetical worlds they have never lived in. A good question starts with Do/Did/Have you, What/Which/Who, or a simple Would you rather.",
+  },
+  teens: {
+    label: "teenagers",
+    ptLabel: "Jovens",
+    thinking:
+      "These students are around 13-16. They can give opinions, justify them and compare, but on things inside their world: school, friendship, family, sports, music, internet, money they handle, choices they actually face. Ask for opinion + reason ('Do you think... Why?'), personal experience, and concrete comparisons. AVOID philosophical abstraction: no defining concepts like justice, identity or freedom in the abstract; no ethical dilemmas of the trolley-problem kind; no questions about society at large, economic systems or 'the meaning of' anything. If the teacher's topic IS abstract, keep the topic and enter it through a concrete door — a personal example, a situation they have lived, a choice they would make.",
+  },
+  adults: {
+    label: "adults",
+    ptLabel: "Adultos",
+    thinking:
+      "These are adults. They can handle abstraction, hypothetical reasoning, comparison of viewpoints, and questions about society, work and ethics.",
+  },
 };
 const DEFAULT_AGE_GROUP = "adults";
 
@@ -328,7 +371,10 @@ function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sourc
 Level: ${guidance.label}
 ${guidance.prompt}
 
-Student age group: ${age.label}. Use this ONLY as background context. Do NOT adapt, replace or soften the themes because of the students'age, and never make the content childish or cartoonish, develop the teacher's topic exactly as given, with full depth and a natural register.
+Student age group: ${age.label}.
+The TOPIC is the teacher's and does not change: do NOT replace or soften the theme because of the students' age, never make the content childish or cartoonish, and keep a natural register with full depth.
+What the age DOES decide is how abstract the QUESTIONS are — this is the difference between a hard question and an impossible one:
+${age.thinking}
 
 ${answerGuidance}
 
@@ -369,7 +415,9 @@ function buildSectionUserPrompt({ section, topic, level, ageGroup, useWebSearch,
 Level: ${guidance.label}
 ${guidance.prompt}
 
-Student age group: ${age.label}. Use this ONLY as background context — do not adapt, replace or soften content because of the students' age.
+Student age group: ${age.label}.
+Do not adapt, replace or soften the CONTENT because of the students' age. The age decides only how abstract the questions may be:
+${age.thinking}
 `;
 
   switch (section) {
@@ -594,6 +642,7 @@ module.exports = {
   pickGrammarSources,   // exportado para teste: é o que garante a gramática do nível
   LEVEL_GUIDANCE,
   AGE_GUIDANCE,
+  buildUserPrompt,      // exportado para teste: é o prompt que decide a aula
   DEFAULT_AGE_GROUP,
   ENGLISH_LEVELS,
   SPANISH_LEVELS,
