@@ -36,7 +36,7 @@
 const { waitUntil } = require("@vercel/functions");
 const { recordTeacherActivity } = require("../canva-lib");
 const { appendActivityLog } = require("../activity-log");
-const { verifyProfToken, logCmEvent, consumirCreditosCM } = require("../fisk-auth");
+const { verifyProfToken, logCmEvent, consumirCreditosCM, estornarCreditosCM } = require("../fisk-auth");
 const {
   LEVEL_GUIDANCE,
   AGE_GUIDANCE,
@@ -175,6 +175,7 @@ module.exports = async function handler(req, res) {
   }
 
   let creditosRestantes = null;
+  let ticketEstorno = null;   // devolve o crédito se a geração falhar (ver catch)
   let levels;
   if (language === "spanish") {
     // Espanhol agora também tem dois níveis (QECR): Básico B1 e Avançado
@@ -207,6 +208,9 @@ module.exports = async function handler(req, res) {
       return;
     }
     creditosRestantes = cobranca.creditos;
+    // Fica só aqui no servidor: com ele em mãos o navegador devolveria
+    // crédito à vontade, e o débito server-side perderia o sentido.
+    ticketEstorno = cobranca.estorno || null;
   }
 
   try {
@@ -292,6 +296,19 @@ module.exports = async function handler(req, res) {
     }
   } catch (err) {
     console.error(err);
-    res.status(502).json({ error: "Falha ao gerar a aula. Tente novamente em instantes." });
+    /* O crédito é cobrado ANTES da IA (senão não haveria como cobrar), mas
+       aqui a aula não existe — devolver é obrigatório, ou uma falha nossa
+       sairia do bolso do professor. O estorno é aguardado, e não disparado
+       em segundo plano, porque a mensagem de erro afirma que o crédito
+       voltou: prometer sem confirmar seria pior do que não devolver. */
+    const saldo = await estornarCreditosCM(profToken, ticketEstorno);
+    const estornado = typeof saldo === "number";
+    res.status(502).json({
+      error: estornado
+        ? "Falha ao gerar a aula. Seus créditos foram devolvidos — pode tentar de novo."
+        : "Falha ao gerar a aula. Tente novamente em instantes.",
+      creditos: estornado ? saldo : null,
+      estornado,
+    });
   }
 };

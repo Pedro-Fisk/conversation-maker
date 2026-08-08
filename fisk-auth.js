@@ -63,8 +63,12 @@ async function logCmEvent({ profToken, event, topic, language, level, ageLabel, 
  * SERVER-SIDE de propósito: se ficasse na tela, bastaria o console aberto para
  * gerar à vontade — e cada geração é uma chamada paga.
  *
- * Devolve { ok:true, creditos } ou { ok:false, code:'sem_creditos', error }.
- * Falha de rede devolve ok:false: melhor recusar do que gerar de graça.
+ * Devolve { ok:true, creditos, estorno } ou { ok:false, code:'sem_creditos',
+ * error }. Falha de rede devolve ok:false: melhor recusar do que gerar de
+ * graça.
+ *
+ * O `estorno` é um tíquete de uso único que NÃO pode chegar ao navegador —
+ * é ele que autoriza devolver o crédito se a geração falhar.
  */
 async function consumirCreditosCM(profToken, quantidade) {
   try {
@@ -82,4 +86,32 @@ async function consumirCreditosCM(profToken, quantidade) {
   }
 }
 
-module.exports = { verifyProfToken, logCmEvent, consumirCreditosCM, FISK_HUB_API };
+/**
+ * Devolve os créditos de uma geração que falhou, usando o tíquete emitido no
+ * débito. Nunca lança: o professor já está recebendo uma mensagem de erro, e
+ * uma falha no estorno não pode virar uma segunda falha em cima.
+ *
+ * Devolve o saldo restaurado (número) ou null se não deu para estornar.
+ */
+async function estornarCreditosCM(profToken, ticket) {
+  if (!profToken || !ticket) return null;
+  try {
+    const res = await fetch(FISK_HUB_API, {
+      method: "POST",
+      headers: { "content-type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "cmEstornar", token: profToken, estorno: ticket }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    if (!data || !data.ok) {
+      console.error("[creditos] estorno recusado:", (data && data.error) || "sem resposta");
+      return null;
+    }
+    return typeof data.creditos === "number" ? data.creditos : null;
+  } catch (err) {
+    console.error("[creditos] estorno falhou:", err.message);
+    return null;
+  }
+}
+
+module.exports = { verifyProfToken, logCmEvent, consumirCreditosCM, estornarCreditosCM, FISK_HUB_API };

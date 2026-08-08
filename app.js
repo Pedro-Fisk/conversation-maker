@@ -295,7 +295,9 @@ if (!response.ok) {
 if (response.status === 401) sessionExpired();
 // 402 = sem créditos: o servidor manda o saldo real, que pode divergir do
 // que a tela mostrava (outra aba, recarga da direção)
-if (response.status === 402 && typeof data.creditos === "number") {
+// 502 = a geração falhou e o servidor estornou: o saldo que volta aqui já
+// é o restaurado, e sem isto a moeda ficaria mostrando o número debitado.
+if ((response.status === 402 || response.status === 502) && typeof data.creditos === "number") {
 creditos = data.creditos; mostrarCreditos();
 }
 throw new Error(data.error || `Erro ${response.status} ao gerar a aula.`);
