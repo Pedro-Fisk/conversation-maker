@@ -639,6 +639,105 @@ gap: 0.4rem;
 margin: 0.2rem 0;
 }
 
+/* ---- Reescrita mantendo o design do arquivo do professor ----
+   A tela mostra só o que MUDOU, em duas linhas por bloco: o texto original
+   apagado em cima, o novo e editável embaixo. É a leitura mais rápida de
+   "o que a IA fez com o meu material". */
+.reescrita{
+display: flex;
+flex-direction: column;
+gap: 1rem;
+}
+
+.reescrita-cab{
+background: var(--card);
+border: 1px solid var(--gray-light);
+border-radius: 12px;
+padding: 1rem 1.1rem;
+display: flex;
+flex-direction: column;
+gap: 0.5rem;
+align-items: flex-start;
+}
+
+.reescrita-cab h3{
+margin: 0;
+font-size: 1.05rem;
+}
+
+.reescrita-resumo{
+margin: 0;
+font-size: 0.92rem;
+}
+
+.reescrita-conta{
+margin: 0;
+font-size: 0.85rem;
+color: var(--gray);
+}
+
+.reescrita-slide{
+background: var(--card);
+border: 1px solid var(--gray-light);
+border-radius: 12px;
+padding: 0.9rem 1rem;
+}
+
+.reescrita-slide-num{
+display: inline-block;
+font-size: 0.7rem;
+text-transform: uppercase;
+letter-spacing: 0.09em;
+font-weight: 700;
+color: var(--gray);
+margin-bottom: 0.6rem;
+}
+
+.reescrita-item{
+display: grid;
+grid-template-columns: 1fr auto;
+gap: 0.35rem 0.5rem;
+padding: 0.55rem 0;
+border-top: 1px solid var(--gray-light);
+}
+
+.reescrita-item:first-of-type{ border-top: 0; }
+
+.reescrita-antes{
+grid-column: 1 / -1;
+margin: 0;
+font-size: 0.85rem;
+color: var(--gray);
+text-decoration: line-through;
+text-decoration-thickness: 1px;
+}
+
+.reescrita-desfazer{
+align-self: start;
+}
+
+.reescrita-aviso{
+grid-column: 1 / -1;
+margin: 0.15rem 0 0;
+font-size: 0.78rem;
+color: var(--red-dark);
+}
+
+/* Título da capa: emoji do tema numa caixinha à esquerda do título. O emoji
+   é campo separado (e não parte do título) porque o nome do arquivo baixado
+   sai do título — ver lesson-data.js. */
+.edit-title-row{
+display: grid;
+grid-template-columns: 3.2rem 1fr;
+gap: 0.4rem;
+margin: 0.2rem 0;
+}
+
+.edit-field-emoji{
+text-align: center;
+font-size: 1.1rem;
+}
+
 .edit-qa{
 border: 1px solid var(--gray-light);
 border-radius: 10px;

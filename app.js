@@ -23,6 +23,8 @@ const levelHintSpanish = document.getElementById("levelHintSpanish");
 const sourceFileEl = document.getElementById("sourceFile");
 const sourceStatusEl = document.getElementById("sourceStatus");
 const sourceInstructionEl = document.getElementById("sourceInstruction");
+const keepDesignEl = document.getElementById("keepDesign");
+const keepDesignWrapEl = document.getElementById("keepDesignWrap");
 const results = document.getElementById("results");
 const generateBtn = document.getElementById("generateBtn");
 const statusEl = document.getElementById("status");
@@ -397,7 +399,11 @@ updateGenerateButton();
 
 function updateGenerateButton() {
 const n = selectedCombos.length;
-if (n > 1) {
+// No modo "manter o design" não existe lote: o resultado é UM arquivo, o do
+// professor. O rótulo do botão é o que conta isso antes de ele clicar.
+if (mantendoDesign()) {
+generateBtn.textContent = "Reescrever minha atividade →";
+} else if (n > 1) {
 generateBtn.textContent = `Gerar primeira aula (1 de ${n}) →`;
 } else {
 generateBtn.textContent = "Gerar roteiro →";
@@ -514,8 +520,39 @@ sourceStatusEl.textContent = "✓ " + file.name + " - " + lido.slides.length +
 if (sourceStatusEl) sourceStatusEl.textContent = "⚠️ " + (err.message || "não consegui ler este arquivo");
 sourceFileEl.value = "";
 }
+atualizarModoDesign();
 });
 }
+
+/* ============ MODO "MANTER O DESIGN" ============
+   A outra saída possível do mesmo upload: em vez de uma aula nova no template
+   FISK, o professor recebe o PRÓPRIO arquivo de volta com os textos trocados.
+
+   O Pedro já tinha recusado, antes, um seletor entre dois MODOS abstratos
+   ("molde" x "fonte"): a diferença era clara no código e confusa na tela.
+   Esta escolha volta porque agora ela não é conceitual, é o arquivo que sai:
+   ou sai um slide FISK, ou sai o arquivo dele. Isso dá para ver. */
+
+// Incrementos (busca na web, vídeo, dinâmica) não têm onde entrar num arquivo
+// que já está desenhado: não existe slide novo para eles ocuparem.
+const incrementosPanel = (function () {
+const titulo = Array.prototype.find.call(document.querySelectorAll(".panel h2"), (h) => /Incrementos/.test(h.textContent));
+return titulo ? titulo.closest(".panel") : null;
+})();
+
+function mantendoDesign() {
+return Boolean(keepDesignEl && keepDesignEl.checked && sourceFileEl && sourceFileEl.files && sourceFileEl.files[0]);
+}
+
+function atualizarModoDesign() {
+const ligado = Boolean(keepDesignEl && keepDesignEl.checked);
+if (keepDesignWrapEl) keepDesignWrapEl.classList.toggle("is-hidden", !ligado);
+if (incrementosPanel) incrementosPanel.classList.toggle("is-hidden", ligado);
+if (topicEl) topicEl.required = ligado ? false : !atividadeBase;
+updateGenerateButton();
+}
+
+if (keepDesignEl) keepDesignEl.addEventListener("change", atualizarModoDesign);
 
 // YouTube checkbox toggle
 if (youtubeCheckEl && youtubeWrapEl) {
@@ -746,6 +783,22 @@ btn.textContent = originalLabel;
 }
 }
 
+// Título como o professor vê na tela: com o emoji na frente, igual à capa do
+// .pptx. No objeto `lesson` os dois seguem separados (ver lesson-data.js).
+function tituloComEmoji(lesson) {
+return (lesson.coverEmoji ? lesson.coverEmoji + " " : "") + (lesson.coverTitle || "");
+}
+
+/* O cabeçalho da aula fica FORA do bloco editável, então editar o título ali
+   dentro não o repintaria sozinho. O cabeçalho certo é achado subindo a partir
+   do PRÓPRIO campo editado: num lote, um seletor global pegaria o cabeçalho da
+   primeira aula do carrossel e renomearia a aula errada. */
+function atualizarCabecalho(campo, lesson) {
+const deck = campo && campo.closest ? campo.closest(".deck") : null;
+const h3 = deck ? deck.querySelector(".deck-head h3") : null;
+if (h3) h3.textContent = tituloComEmoji(lesson);
+}
+
 function renderLessonPreview(lesson) {
 const sections = document.createElement("div");
 sections.className = "slide-list";
@@ -848,11 +901,25 @@ el.appendChild(body);
 sections.appendChild(el);
 }
 
-// Título da capa
+// Título da capa. O emoji do tema é campo SEPARADO, e não parte do título,
+// porque o nome do arquivo baixado é montado a partir do título — assim ele
+// continua sem emoji. Aqui os dois aparecem lado a lado para o professor
+// trocar o emoji que a IA escolheu.
 addSection("Título da capa", (body) => {
-body.appendChild(
-editField(lesson.coverTitle, (v) => { lesson.coverTitle = v; }, { placeholder: "título da aula" })
+const linha = document.createElement("div");
+linha.className = "edit-title-row";
+const emoji = editField(lesson.coverEmoji || "", (v) => {
+lesson.coverEmoji = v.trim();
+atualizarCabecalho(linha, lesson);
+}, { placeholder: "🙂" });
+emoji.classList.add("edit-field-emoji");
+emoji.title = "Emoji do tema, aparece na capa e nos divisores. Pode apagar se não quiser nenhum.";
+emoji.setAttribute("aria-label", "Emoji do tema da aula");
+linha.appendChild(emoji);
+linha.appendChild(
+editField(lesson.coverTitle, (v) => { lesson.coverTitle = v; atualizarCabecalho(linha, lesson); }, { placeholder: "título da aula" })
 );
+body.appendChild(linha);
 });
 
 // Objetivos (3)
@@ -1351,7 +1418,8 @@ deck.className = "deck";
 
 const head = document.createElement("div");
 head.className = "deck-head";
-head.innerHTML = `<h3>${escapeHtml(lesson.coverTitle)}</h3><span>${escapeHtml(lesson.coverLevel)}${lesson.ageLabel ? " · " + escapeHtml(lesson.ageLabel) : ""}</span>`;
+head.dataset.lessonHead = "1";
+head.innerHTML = `<h3>${escapeHtml(tituloComEmoji(lesson))}</h3><span>${escapeHtml(lesson.coverLevel)}${lesson.ageLabel ? " · " + escapeHtml(lesson.ageLabel) : ""}</span>`;
 
 const foot = document.createElement("div");
 foot.className = "deck-foot";
@@ -1630,6 +1698,218 @@ bar.appendChild(allBtn);
 }
 }
 
+/* ============ REESCRITA MANTENDO O DESIGN ============
+   Fluxo inteiro do modo "manter o design", separado do fluxo do lote porque
+   ele não produz aula nenhuma: produz o arquivo do professor de volta.
+
+   O arquivo NÃO sobe. A leitura, a troca dos textos e a montagem do .pptx
+   novo acontecem todas aqui no navegador (ver pptx-rewriter.js); para o
+   servidor vai só o texto, e de lá volta só o texto novo. */
+
+let reescrita = null;   // { estrutura, originais, textos, resumo, nomeArquivo }
+
+function nomeDoArquivoReescrito(nome) {
+const semExtensao = String(nome || "atividade").replace(/\.pptx$/i, "");
+return semExtensao + " - reescrito.pptx";
+}
+
+async function pedirReescrita({ combo, instrucao }) {
+const arquivo = sourceFileEl.files[0];
+setStatus("Lendo o seu arquivo...");
+const buffer = await arquivo.arrayBuffer();
+const estrutura = await PptxRewriter.lerPptx(buffer);
+const medida = PptxRewriter.medir(estrutura);
+if (!medida.paragrafos) {
+throw new Error("não achei texto editável neste arquivo. Se o conteúdo estiver todo dentro de imagens, não dá para reescrever.");
+}
+
+setStatus("Reescrevendo os textos, mantendo o seu desenho...");
+const resposta = await fetch("/api/rewrite-pptx", {
+method: "POST",
+headers: { "content-type": "application/json" },
+body: JSON.stringify({
+profToken: profSession.token,
+estrutura: PptxRewriter.paraPrompt(estrutura),
+instrucao: instrucao,
+language: selectedValue(languageChoices),
+level: combo.level,
+ageGroup: combo.age,
+arquivo: arquivo.name,
+}),
+});
+const dados = await resposta.json().catch(() => ({}));
+if (!resposta.ok) {
+if (resposta.status === 401) sessionExpired();
+if (typeof dados.creditos === "number") { creditos = dados.creditos; mostrarCreditos(); }
+throw new Error(dados.error || `Erro ${resposta.status} ao reescrever a atividade.`);
+}
+if (typeof dados.creditos === "number") { creditos = dados.creditos; mostrarCreditos(); }
+
+// guarda o texto ORIGINAL de cada parágrafo: é o que permite mostrar o
+// antes/depois e desfazer item a item
+const originais = {};
+estrutura.slides.forEach((slide) =>
+slide.formas.forEach((forma) =>
+forma.paragrafos.forEach((p) => { originais[p.id] = p.texto; })
+)
+);
+
+return {
+estrutura,
+originais,
+textos: dados.textos || {},
+resumo: dados.resumo || "",
+nomeArquivo: arquivo.name,
+medida,
+};
+}
+
+/* Tela de conferência: o professor vê cada troca lado a lado e edita antes de
+   baixar. Só aparecem os textos que MUDARAM — mostrar os 120 parágrafos de um
+   arquivo para achar as 12 trocas seria pior do que não mostrar nada. */
+function renderReescrita(estado) {
+results.innerHTML = "";
+results.classList.add("is-visible");
+
+const painel = document.createElement("section");
+painel.className = "reescrita";
+
+const ids = Object.keys(estado.textos).filter((id) => estado.textos[id] !== estado.originais[id]);
+
+const cab = document.createElement("div");
+cab.className = "reescrita-cab";
+const titulo = document.createElement("h3");
+titulo.textContent = "🎨 " + estado.nomeArquivo;
+cab.appendChild(titulo);
+
+if (estado.resumo) {
+const resumo = document.createElement("p");
+resumo.className = "reescrita-resumo";
+resumo.textContent = estado.resumo;
+cab.appendChild(resumo);
+}
+
+const conta = document.createElement("p");
+conta.className = "reescrita-conta";
+conta.textContent = ids.length
+? `${ids.length} texto(s) reescrito(s) de ${estado.medida.paragrafos}, em ${estado.medida.slides} slides. O resto do arquivo fica exatamente como está.`
+: "A IA não achou nada para mudar neste arquivo. Tente descrever melhor o que você quer, no campo de instrução.";
+cab.appendChild(conta);
+
+const baixar = document.createElement("button");
+baixar.type = "button";
+baixar.className = "btn btn-download";
+baixar.textContent = "⬇️ Baixar minha atividade";
+baixar.addEventListener("click", () => baixarReescrita(estado, baixar));
+cab.appendChild(baixar);
+painel.appendChild(cab);
+
+// agrupado por slide, que é como o professor navega o material dele
+const porSlide = new Map();
+estado.estrutura.slides.forEach((slide) =>
+slide.formas.forEach((forma) =>
+forma.paragrafos.forEach((p) => {
+if (ids.indexOf(p.id) === -1) return;
+if (!porSlide.has(slide.numero)) porSlide.set(slide.numero, []);
+porSlide.get(slide.numero).push(p);
+})
+)
+);
+
+porSlide.forEach((paragrafos, numero) => {
+const bloco = document.createElement("div");
+bloco.className = "reescrita-slide";
+const rotulo = document.createElement("span");
+rotulo.className = "reescrita-slide-num";
+rotulo.textContent = "Slide " + numero;
+bloco.appendChild(rotulo);
+
+paragrafos.forEach((p) => {
+const item = document.createElement("div");
+item.className = "reescrita-item";
+
+const antes = document.createElement("p");
+antes.className = "reescrita-antes";
+antes.textContent = estado.originais[p.id];
+antes.title = "Como estava no seu arquivo";
+item.appendChild(antes);
+
+/* A caixa do arquivo do professor NÃO cresce: ela tem o tamanho e a fonte
+   que ele escolheu. Texto novo muito maior que o antigo transborda, e ele
+   descobriria na frente da turma. O prompt pede para respeitar o tamanho,
+   mas pedido não é garantia — então a conta é refeita aqui, a cada tecla. */
+const aviso = document.createElement("p");
+aviso.className = "reescrita-aviso is-hidden";
+
+function conferirTamanho(valor) {
+const original = (estado.originais[p.id] || "").length;
+const excesso = original ? valor.length / original : 1;
+const grande = original > 12 && excesso > 1.25;
+aviso.classList.toggle("is-hidden", !grande);
+if (grande) {
+aviso.textContent = "⚠️ " + Math.round((excesso - 1) * 100) + "% mais longo que o original. Pode não caber na caixa deste slide.";
+}
+}
+
+const campo = editField(estado.textos[p.id], (v) => {
+estado.textos[p.id] = v;
+conferirTamanho(v);
+}, { multiline: true, rows: 1 });
+campo.classList.add("reescrita-depois");
+item.appendChild(campo);
+conferirTamanho(estado.textos[p.id]);
+
+// Reverter item a item: a IA pode acertar 11 trocas e errar uma, e
+// apagar a caixa à mão não devolveria o texto original.
+const desfazer = document.createElement("button");
+desfazer.type = "button";
+desfazer.className = "edit-answer-remove reescrita-desfazer";
+desfazer.textContent = "↩";
+desfazer.title = "Voltar ao texto original deste bloco";
+desfazer.setAttribute("aria-label", "Voltar ao texto original deste bloco");
+desfazer.addEventListener("click", () => {
+estado.textos[p.id] = estado.originais[p.id];
+campo.value = estado.originais[p.id];
+campo.style.height = "auto";
+campo.style.height = campo.scrollHeight + "px";
+});
+item.appendChild(desfazer);
+item.appendChild(aviso);
+
+bloco.appendChild(item);
+});
+painel.appendChild(bloco);
+});
+
+results.appendChild(painel);
+reajustarCaixas(painel);
+}
+
+async function baixarReescrita(estado, btn) {
+const rotulo = btn.textContent;
+btn.disabled = true;
+btn.textContent = "Montando o arquivo...";
+try {
+const resultado = await PptxRewriter.reescreverPptx(estado.estrutura, estado.textos);
+const blob = new Blob([resultado.bytes], {
+type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+});
+const url = URL.createObjectURL(blob);
+const a = document.createElement("a");
+a.href = url;
+a.download = nomeDoArquivoReescrito(estado.nomeArquivo);
+document.body.appendChild(a);
+a.click();
+a.remove();
+URL.revokeObjectURL(url);
+} catch (err) {
+alert(err.message || "Não consegui montar o arquivo. Tente baixar de novo.");
+} finally {
+btn.disabled = false;
+btn.textContent = rotulo;
+}
+}
+
 // ---- Modo escuro ----
 fiskInitThemeToggle("themeToggle", { storageKey: "cm-theme" });
 
@@ -1653,6 +1933,13 @@ if (extraActivityWrapEl) extraActivityWrapEl.classList.add("is-hidden");
 if (extraActivityEl) { extraActivityEl.value = ""; extraActivityEl.disabled = false; extraActivityEl.style.opacity = ""; }
 if (extraLuckyEl) extraLuckyEl.checked = false;
 selectChoice(languageChoices, "english");
+if (keepDesignEl) keepDesignEl.checked = false;
+if (sourceFileEl) sourceFileEl.value = "";
+if (sourceInstructionEl) sourceInstructionEl.value = "";
+atividadeBase = null;
+reescrita = null;
+if (sourceStatusEl) sourceStatusEl.textContent = "";
+atualizarModoDesign();
 selectedCombos = [];
 refreshMatrixBadges();
 batch = null;
@@ -1708,6 +1995,39 @@ return;
 
 if (selectedCombos.length === 0) {
 setStatus("Marque ao menos uma combinação de nível × faixa etária na tabela.", true);
+return;
+}
+
+/* Modo "manter o design": caminho próprio, que sai daqui e não volta. Não há
+   lote, não há aula, não há carrossel — o que sai é o arquivo do professor. */
+if (mantendoDesign()) {
+if (selectedCombos.length > 1) {
+setStatus("Neste modo sai um arquivo só, o seu. Marque apenas uma combinação de nível × faixa etária.", true);
+return;
+}
+if (typeof creditos === "number" && creditos < 1) {
+setStatus("Seus créditos acabaram. Eles voltam no dia 1º; se precisar antes, fale com a direção.", true);
+return;
+}
+if (!(await confirmarCusto(1))) return;
+
+generateBtn.disabled = true;
+setGenerating(true);
+results.classList.remove("is-visible");
+try {
+reescrita = await pedirReescrita({
+combo: selectedCombos[0],
+instrucao: (sourceInstructionEl && sourceInstructionEl.value.trim()) || "",
+});
+renderReescrita(reescrita);
+setStatus("");
+} catch (err) {
+reescrita = null;
+setStatus(err.message || "Não foi possível reescrever a atividade.", true);
+} finally {
+generateBtn.disabled = false;
+setGenerating(false);
+}
 return;
 }
 

@@ -134,6 +134,20 @@ const LANGUAGE_GAME_GUIDANCE = `LANGUAGE GAME — always multiple choice, never 
 - Make the two wrong options plausible distractors (a common mistake a learner would make: wrong verb tense, wrong preposition, confusable word) rather than random or absurd — they should require real knowledge to rule out, not be obviously silly.
 - Keep each option short (a word, a short phrase, or a short full-sentence version of the prompt with the blank filled in — pick whichever reads naturally for that question).`;
 
+/* EMOJI DO TEMA (21/08/2026)
+ *
+ * Pedido do Pedro: o título da aula ganha um emoji que converse com o tema, e
+ * cada divisor de seção também. Os emojis vêm em campos PRÓPRIOS, nunca
+ * embutidos no título — é isso que mantém limpo o nome do arquivo baixado, que
+ * é montado a partir de `coverTitle`.
+ *
+ * As chaves de seção são as mesmas que o slide-layouts.js/lesson-data.js
+ * procuram; mudar um nome aqui sem mudar lá faz o emoji sumir em silêncio. */
+const EMOJI_GUIDANCE = `EMOJIS — pick emojis that a teacher would recognise as connected to THIS lesson's topic:
+- "coverEmoji": ONE single emoji that best represents the lesson topic as a whole (e.g. a lesson about Japan could use a Japanese landmark or food emoji).
+- "sectionEmojis": ONE emoji for each of the six section titles, using these exact keys: objectives, vocabulary, intro, conversation, languageGame, evaluation. Each should suggest what that section does, tinted by the lesson topic when a natural connection exists; when it does not, a clean generic icon for that section is better than a forced one.
+- Exactly ONE emoji per field, no text, no numbers, no repeated emoji across the six sections, and nothing that could read as violent, political or inappropriate for a classroom of any age.`;
+
 /* Perfil da turma escolhido pelo professor.
  * O TEMA continua sendo do professor: nada aqui troca assunto, suaviza
  * conteúdo ou infantiliza — essa regra original vale e está repetida no
@@ -191,6 +205,7 @@ const SECTION_LABELS = {
 const SYSTEM_PROMPT = `You are the content engine behind Conversation Maker, an authoring tool for language teachers at FISK. You generate ONLY lesson content as structured JSON — a fixed, already-designed 18-page slide template (built in Canva) handles all layout and visuals downstream. Your only job is to fill in the text.
 
 The template has a FIXED structure that never changes, so your output must always contain exactly:
+- 1 theme emoji for the cover, plus 1 emoji for each of the 6 section titles
 - 3 objectives
 - 8 vocabulary words (each with a Portuguese translation, since the students are Brazilian)
 - 1 introductory paragraph (a single flowing paragraph, not a list, not multiple paragraphs)
@@ -280,6 +295,8 @@ function compactLessonForPrompt(lesson) {
   if (!lesson) return null;
   return {
     coverTitle: lesson.coverTitle,
+    coverEmoji: lesson.coverEmoji || undefined,
+    sectionEmojis: lesson.sectionEmojis || undefined,
     topic: lesson.topic,
     objectives: lesson.objectives,
     vocabulary: lesson.vocabulary,
@@ -360,6 +377,15 @@ function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sourc
     ? `\nTEACHER FEEDBACK. The teacher was NOT satisfied with the previous version of this lesson and asked for a new one. Their feedback (in Portuguese): "${feedback}". Write a completely fresh version of the lesson that clearly applies this feedback, keep what the feedback doesn't complain about, change what it does.\n\nPrevious version JSON (for reference of what to change):\n${JSON.stringify(compactLessonForPrompt(previousLesson))}\n`
     : "";
 
+  /* ESPANHOL: a instrução de escrever em espanhol vivia dentro de cada nível
+     (LEVEL_GUIDANCE) e LISTAVA os campos, um a um. O que não estava na lista
+     saía em inglês por omissão — era o caso do título da capa, do parágrafo de
+     introdução e da dinâmica extra. Agora a regra é global e vale para todo
+     campo, inclusive os que forem criados depois. */
+  const espanholNote = language === "spanish"
+    ? `\nLANGUAGE OF THE OUTPUT: write EVERY text field in SPANISH — including coverTitle, topic, objectives, introText, all questions, all options, all model answers and, when present, extraActivityTitle and extraActivityInstructions. The ONLY exception is the vocabulary "translation" field, which must be in BRAZILIAN PORTUGUESE, because the students are Brazilian. Do not leave any field in English.\n`
+    : "";
+
   const sourceNote = buildSourceActivityBlock(sourceActivity);
   // Sem tópico digitado só é válido quando há atividade subida: aí o tema sai
   // dela, e dizer isso explicitamente evita a IA inventar um assunto qualquer.
@@ -367,7 +393,7 @@ function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sourc
     ? `Topic: ${topic}`
     : "Topic: not given, take the subject from the uploaded activity above.";
 
-  return `${searchNote}${transcriptNote}${extraActivityNote}${sourceNote}${referenceNote}${feedbackNote}${topicLine}
+  return `${espanholNote}${searchNote}${transcriptNote}${extraActivityNote}${sourceNote}${referenceNote}${feedbackNote}${topicLine}
 Level: ${guidance.label}
 ${guidance.prompt}
 
@@ -383,10 +409,14 @@ EVALUATION QUESTIONS — exactly 2 questions total, mixing two types:
 2. ONE metacognition question where the student reflects on their OWN learning and participation in today's activity. Examples: "What new word did you learn today that you want to remember?", "From 0 to 10, how would you rate your own participation in today's conversation? Why?", "How do you feel about your pronunciation today?", "What would you like to practice more after this activity?". Write it naturally and age-appropriately; do not repeat the same metacognition question across lessons — vary the angle each time.
 
 ${LANGUAGE_GAME_GUIDANCE}
+
+${EMOJI_GUIDANCE}
 ${sourceBlock}
 Return a single JSON object with exactly these keys:
 {
-  "coverTitle": string,        // short, catchy lesson title built from the topic (e.g. "Discovering Japan")
+  "coverTitle": string,        // short, catchy lesson title built from the topic (e.g. "Discovering Japan") — NO emoji inside this string, the emoji goes in coverEmoji
+  "coverEmoji": string,        // exactly ONE emoji representing the topic
+  "sectionEmojis": { "objectives": string, "vocabulary": string, "intro": string, "conversation": string, "languageGame": string, "evaluation": string },  // exactly ONE emoji each
   "coverLevel": "${guidance.label}",
   "topic": string,             // short topic phrase, e.g. "Japan"
   "objectives": [string, string, string],
@@ -491,6 +521,39 @@ function extractJson(text, debugInfo) {
   }
 }
 
+/* A IA às vezes devolve "🗾 Japan", "emoji: 🗾" ou dois emojis colados no
+ * mesmo campo. Como isso vai direto para o slide, o valor é reduzido aqui ao
+ * PRIMEIRO grupo de grafemas, e só se ele for mesmo um pictograma — texto solto
+ * no lugar do emoji é descartado (o slide simplesmente sai sem emoji, que é
+ * melhor do que sair com a palavra "emoji" no título). */
+const RE_PICTOGRAMA = /\p{Extended_Pictographic}/u;
+
+function primeiroEmoji(valor) {
+  const texto = String(valor || "").trim();
+  if (!texto || !RE_PICTOGRAMA.test(texto)) return "";
+  try {
+    // grafema, e não caractere: 🏙️ e 👩‍🏫 têm mais de um code point
+    const segmentador = new Intl.Segmenter("pt", { granularity: "grapheme" });
+    const primeiro = segmentador.segment(texto)[Symbol.iterator]().next().value;
+    const grafema = primeiro ? primeiro.segment : "";
+    return RE_PICTOGRAMA.test(grafema) ? grafema : "";
+  } catch (err) {
+    return Array.from(texto)[0] || "";
+  }
+}
+
+const CHAVES_DE_SECAO = ["objectives", "vocabulary", "intro", "conversation", "languageGame", "evaluation"];
+
+function sanearEmojisDeSecao(bruto) {
+  const entrada = bruto && typeof bruto === "object" ? bruto : {};
+  const saida = {};
+  CHAVES_DE_SECAO.forEach((chave) => {
+    const emoji = primeiroEmoji(entrada[chave]);
+    if (emoji) saida[chave] = emoji;
+  });
+  return saida;
+}
+
 function clampArray(arr, n) {
   const a = Array.isArray(arr) ? arr.slice(0, n) : [];
   while (a.length < n) a.push(a[a.length - 1] || {});
@@ -574,6 +637,10 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
 
   return {
     coverTitle: parsed.coverTitle || topic,
+    // campos próprios de propósito: o nome do arquivo baixado sai de
+    // coverTitle, e emoji em nome de arquivo dá dor de cabeça
+    coverEmoji: primeiroEmoji(parsed.coverEmoji),
+    sectionEmojis: sanearEmojisDeSecao(parsed.sectionEmojis),
     coverLevel: LEVEL_GUIDANCE[level].label,
     // Chave "crua" do nível (ex.: "basic"), diferente do rótulo bonito
     // acima — precisa viajar de volta ao regenerar uma seção depois.
@@ -643,6 +710,7 @@ module.exports = {
   LEVEL_GUIDANCE,
   AGE_GUIDANCE,
   buildUserPrompt,      // exportado para teste: é o prompt que decide a aula
+  primeiroEmoji,        // exportado para teste: é o que barra "emoji: 🗾" no slide
   DEFAULT_AGE_GROUP,
   ENGLISH_LEVELS,
   SPANISH_LEVELS,

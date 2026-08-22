@@ -1,6 +1,17 @@
 // Shared mock lesson used by test-render.js and qa-dump.js.
 module.exports = {
   coverTitle: "Discovering Japan",
+  // emoji do tema (21/08/2026): campo próprio, nunca embutido no título — é
+  // o que mantém o nome do arquivo baixado limpo
+  coverEmoji: "🗾",
+  sectionEmojis: {
+    objectives: "🎯",
+    vocabulary: "📚",
+    intro: "⛩️",
+    conversation: "💬",
+    languageGame: "🎲",
+    evaluation: "✅",
+  },
   coverLevel: "Basic",
   language: "english",
   topic: "Japan",
@@ -19,8 +30,10 @@ module.exports = {
     { word: "sushi", translation: "sushi" },
     { word: "capital city", translation: "capital" },
   ],
+  // 100 palavras: é o teto que o prompt permite, ou seja, o pior caso que o
+  // slide da introdução precisa aguentar sem estourar
   introText:
-    "Japan is a country full of contrasts, ancient temples next to futuristic cities, quiet gardens next to bullet trains. Today we'll talk about what makes it such a popular place to visit.",
+    "Japan is a country full of contrasts, where ancient temples stand quietly beside futuristic cities and neon streets. In the same afternoon you can walk through a peaceful garden, ride a bullet train at three hundred kilometres an hour, and eat sushi prepared by a chef who has practised the same recipe for thirty years. People bow when they greet each other, take their shoes off indoors, and turn small daily gestures into something close to art. Today we are going to talk about what makes this country such a popular place to visit, and what you would like to see there.",
   conversation: [
     { question: "Have you ever visited Japan or another Asian country?", modelAnswers: ["Yes, I visited Japan last year.", "No, but I'd love to go someday."] },
     { question: "What Japanese food would you like to try?", modelAnswers: ["I'd like to try real sushi.", "I want to try ramen."] },
@@ -33,12 +46,12 @@ module.exports = {
     { question: "What souvenir would you bring back from Japan?", modelAnswers: ["I'd bring a kimono.", "I'd bring some tea."] },
   ],
   languageGame: [
-    { question: "Complete: 'I ___ to Japan next year.'", modelAnswers: ["will travel", "am going to travel"] },
-    { question: "Complete: 'She ___ sushi every week.'", modelAnswers: ["eats", "is eating"] },
-    { question: "Complete: 'They ___ visiting Kyoto now.'", modelAnswers: ["are", "were"] },
-    { question: "Choose the correct word: temple / templo", modelAnswers: ["temple"] },
-    { question: "Choose the correct word: chopsticks / talheres", modelAnswers: ["chopsticks"] },
-    { question: "Fill in: 'He has never ___ Japan.'", modelAnswers: ["visited"] },
+    { question: "Complete: 'I ___ to Japan next year.'", options: ["will travel", "will travelling", "will to travel"], correctIndex: 0, source: "Essentials 1 · L12" },
+    { question: "Complete: 'She ___ sushi every week.'", options: ["eat", "eats", "is eat"], correctIndex: 1, source: "Essentials 1 · L4" },
+    { question: "Complete: 'They ___ visiting Kyoto right now with their cousins.'", options: ["are", "were", "have"], correctIndex: 0, source: "Essentials 2 · L7" },
+    { question: "Which sentence is correct about a trip that already happened?", options: ["I go to Tokyo last year.", "I went to Tokyo last year.", "I have go to Tokyo last year."], correctIndex: 1, source: "Essentials 2 · L9" },
+    { question: "Choose the correct preposition: 'We arrived ___ Osaka on Sunday morning.'", options: ["in", "at", "to"], correctIndex: 0, source: "Essentials 2 · L11" },
+    { question: "Fill in: 'He has never ___ Japan, but he wants to go.'", options: ["visit", "visited", "visiting"], correctIndex: 1, source: "Essentials 2 · L14" },
   ],
   evaluation: [
     { question: "Summarize what you learned about Japan today in 2-3 sentences.", modelAnswers: ["Japan mixes old traditions with modern life.", "Students can describe temples, food and travel plans."] },

@@ -162,7 +162,22 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <input type="file" id="sourceFile" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation">
 <p class="hint" id="sourceStatus"></p>
 <textarea id="sourceInstruction" rows="3" placeholder="ex.: adapta esta atividade para Basic, mantendo o tema mas com perguntas mais curtas..."></textarea>
-<p class="hint">O arquivo é lido <strong>no seu navegador</strong>e só o texto dos slides vai para a IA. O arquivo em si não é enviado nem guardado. A aula sai sempre no<strong>template FISK</strong>: imagens e formatação do original não são aproveitadas, só o conteúdo.</p>
+
+<!-- O que muda entre os dois modos é o ARQUIVO QUE SAI, então a escolha é
+     apresentada como duas saídas possíveis, não como dois conceitos. -->
+<div class="modo-saida">
+<label class="checkbox-row" for="keepDesign">
+<input type="checkbox" id="keepDesign">
+<span class="increment-title">🎨 Manter o design do meu arquivo</span>
+</label>
+<p class="hint">Desmarcado, a atividade sai no <strong>template FISK</strong>, com a estrutura de sempre (vocabulário, conversação, Language Game, avaliação). Marcado, você recebe o <strong>seu próprio arquivo de volta</strong>, com as mesmas imagens, cores e slides, e só os textos trocados.</p>
+<div class="is-hidden" id="keepDesignWrap">
+<p class="hint hint-lead">Como o seu arquivo já tem o desenho pronto, a IA só troca o que está escrito nas caixas de texto que já existem. Não importa quantos slides ele tem nem em que ordem: nada é encaixado num molde nosso.</p>
+<p class="hint">Vale saber antes: <strong>as caixas não crescem</strong>, então o texto novo sai com tamanho parecido com o antigo; <strong>texto dentro de imagem não muda</strong>, porque é figura e não texto; e cabeçalhos como "Unit 4" ou linhas de preencher ficam como estão. Você <strong>confere e edita tudo antes de baixar</strong>. Marque <strong>uma</strong> combinação de nível e faixa etária na tabela abaixo.</p>
+</div>
+</div>
+
+<p class="hint">O arquivo é lido <strong>no seu navegador</strong> e só o texto dos slides vai para a IA. O arquivo em si não é enviado nem guardado, nos dois modos.</p>
 </details>
 
 <div class="panel">
@@ -247,6 +262,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </footer>
 
 <script src="https://cdn.jsdelivr.net/gh/pedro-fisk/fisk-hub@v1.0.0/assets/fisk-shared.js"></script>
+<script src="pptx-rewriter.js"></script>
 <script src="pptx-reader.js"></script>
 <script src="app.js"></script>
 </body>

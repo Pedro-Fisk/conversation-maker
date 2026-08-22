@@ -19,7 +19,18 @@
 const path = require("path");
 const pptxgen = require("pptxgenjs");
 const { LAYOUTS, FONT_MARKER } = require("./slide-layouts");
-const { getQaItems, buildDynamicValue } = require("./lesson-data");
+const {
+  getQaItems,
+  buildDynamicValue,
+  textoEstatico,
+  emojiDaSecao,
+  fonteDoCampo,
+  fonteDaLista,
+  fonteDoBlocoQa,
+  fonteDoVocabulario,
+  colunasDoVocabulario,
+  VOCAB_GAP,
+} = require("./lesson-data");
 
 const SLIDE_W_IN = 13.333;
 const SLIDE_H_IN = 7.5;
@@ -33,14 +44,26 @@ const pt = (px) => Math.round(px * PT_PER_PX * 10) / 10;
 const hex = (c) => String(c || "").replace("#", "");
 const faceFor = (cssFont) => (cssFont === FONT_MARKER ? "Aptos" : "Poppins");
 
-function addStatic(slide, field) {
-  slide.addText(field.value, {
+// Caixa do campo em px do canvas 1920x1080 (a unidade em que lesson-data.js
+// calcula quantas linhas o texto ocupa).
+const caixaEmPx = (field) => ({
+  largura: (field.width / 100) * 1920,
+  altura: (field.height / 100) * 1080,
+});
+
+function addStatic(slide, field, lesson) {
+  // Texto no idioma da aula, com o emoji da seção na frente quando esta caixa
+  // é um título de seção (ver lesson-data.js).
+  const prefixo = field.emojiKey ? emojiDaSecao(lesson, field.emojiKey) : "";
+  const texto = prefixo + textoEstatico(field, lesson);
+  const caixa = caixaEmPx(field);
+  slide.addText(texto, {
     x: xIn(field.left),
     y: yIn(field.top),
     w: wIn(field.width),
     h: hIn(field.height),
     fontFace: faceFor(field.font),
-    fontSize: pt(field.fontSize),
+    fontSize: pt(fonteDoCampo(field, texto, caixa.largura, caixa.altura)),
     bold: field.fontWeight >= 600,
     color: hex(field.color),
     align: field.align || "left",
@@ -50,8 +73,8 @@ function addStatic(slide, field) {
   });
 }
 
-function addBadge(slide, field, pptx) {
-  slide.addText(field.value, {
+function addBadge(slide, field, pptx, lesson) {
+  slide.addText(textoEstatico(field, lesson), {
     shape: pptx.ShapeType.roundRect,
     rectRadius: hIn(field.height) / 2,
     fill: { color: hex(field.background) },
@@ -71,13 +94,14 @@ function addBadge(slide, field, pptx) {
 }
 
 function addSimpleDynamic(slide, field, value) {
+  const caixa = caixaEmPx(field);
   slide.addText(String(value || ""), {
     x: xIn(field.left),
     y: yIn(field.top),
     w: wIn(field.width),
     h: hIn(field.height),
     fontFace: faceFor(field.font),
-    fontSize: pt(field.fontSize),
+    fontSize: pt(fonteDoCampo(field, String(value || ""), caixa.largura, caixa.altura)),
     bold: field.fontWeight >= 600,
     color: hex(field.color),
     align: field.align || "left",
@@ -88,16 +112,18 @@ function addSimpleDynamic(slide, field, value) {
 }
 
 function addBulletList(slide, field, items) {
+  const caixa = caixaEmPx(field);
+  const tamanho = fonteDaLista(field, items, caixa.largura, caixa.altura);
   const runs = (items || []).map((text, i) => ({
     text,
     options: {
       bullet: { code: "2022" },
       breakLine: i < items.length - 1,
       fontFace: faceFor(field.font),
-      fontSize: pt(field.fontSize),
+      fontSize: pt(tamanho),
       bold: field.fontWeight >= 600,
       color: hex(field.color),
-      paraSpaceAfter: pt(field.fontSize) * 0.5,
+      paraSpaceAfter: pt(tamanho) * 0.5,
     },
   }));
   slide.addText(runs, {
@@ -112,33 +138,56 @@ function addBulletList(slide, field, items) {
   });
 }
 
-// Vocabulary grid: CSS grid-template-columns:1fr 1fr fills row-major
-// (item0→col0row0, item1→col1row0, item2→col0row1, ...), so even indices
-// go in the left text box and odd indices in the right one, in order.
+// Vocabulário: duas colunas preenchidas por linha (item 0 à esquerda, item 1
+// à direita, item 2 à esquerda...), e cada item ocupa DUAS linhas — palavra em
+// cima, tradução embaixo em cinza. Antes as duas vinham na mesma linha e um
+// par comprido estourava a coluna para fora do slide.
 function addVocabGrid(slide, field, items) {
-  const colGapIn = 0.28;
+  const caixa = caixaEmPx(field);
+  const tamanho = fonteDoVocabulario(field, items, caixa.largura, caixa.altura);
+  const tamanhoTraducao = tamanho * (field.translationScale || 0.62);
+  const colGapIn = wIn(field.width) * VOCAB_GAP;
   const colWIn = (wIn(field.width) - colGapIn) / 2;
-  const left = (items || []).filter((_, i) => i % 2 === 0);
-  const right = (items || []).filter((_, i) => i % 2 === 1);
-  const toRuns = (col) =>
-    col.map((it, i) => ({
-      text: `${it.word}${it.translation ? " – " + it.translation : ""}`,
-      options: {
-        breakLine: i < col.length - 1,
-        fontFace: faceFor(field.font),
-        fontSize: pt(field.fontSize),
-        bold: field.fontWeight >= 600,
-        color: hex(field.color),
-        paraSpaceAfter: pt(field.fontSize) * 0.4,
-      },
-    }));
+  const [left, right] = colunasDoVocabulario(items);
+
+  const toRuns = (col) => {
+    const runs = [];
+    col.forEach((it, i) => {
+      const ultimo = i === col.length - 1;
+      runs.push({
+        text: it.word || "",
+        options: {
+          breakLine: true,
+          fontFace: faceFor(field.font),
+          fontSize: pt(tamanho),
+          bold: field.fontWeight >= 600,
+          color: hex(field.color),
+        },
+      });
+      if (it.translation) {
+        runs.push({
+          text: it.translation,
+          options: {
+            breakLine: !ultimo,
+            fontFace: faceFor(field.font),
+            fontSize: pt(tamanhoTraducao),
+            bold: false,
+            color: hex(field.translationColor || "#6F6A6A"),
+            paraSpaceAfter: ultimo ? 0 : pt(tamanho) * (field.itemSpacing || 0.42),
+          },
+        });
+      }
+    });
+    return runs;
+  };
+
   const baseOpts = {
     y: yIn(field.top),
     w: colWIn,
     h: hIn(field.height),
     valign: "top",
     align: "left",
-    lineSpacingMultiple: field.lineHeight || 1.3,
+    lineSpacingMultiple: field.lineHeight || 1.15,
     wrap: true,
   };
   slide.addText(toRuns(left), { ...baseOpts, x: xIn(field.left) });
@@ -146,16 +195,18 @@ function addVocabGrid(slide, field, items) {
 }
 
 function addIntroText(slide, field, value) {
+  const caixa = caixaEmPx(field);
+  const tamanho = fonteDoCampo(field, value, caixa.largura, caixa.altura);
   const paragraphs = String(value || "").split(/\n{2,}/);
   const runs = paragraphs.map((p, i) => ({
     text: p,
     options: {
       breakLine: true,
       fontFace: faceFor(field.font),
-      fontSize: pt(field.fontSize),
+      fontSize: pt(tamanho),
       bold: field.fontWeight >= 600,
       color: hex(field.color),
-      paraSpaceAfter: i < paragraphs.length - 1 ? pt(field.fontSize) * 0.6 : 0,
+      paraSpaceAfter: i < paragraphs.length - 1 ? pt(tamanho) * 0.6 : 0,
     },
   }));
   slide.addText(runs, {
@@ -172,29 +223,38 @@ function addIntroText(slide, field, value) {
 
 function addQaBlock(slide, field, lesson) {
   const items = getQaItems(lesson, field.group, field.startIndex, field.count);
+  const caixa = caixaEmPx(field);
+  // Pergunta comprida saía por fora da caixa; agora o bloco inteiro é medido
+  // antes e a fonte cai só o necessário (as respostas acompanham a proporção).
+  const tamanhoQ = fonteDoBlocoQa(field, items, caixa.largura, caixa.altura);
+  const tamanhoA = tamanhoQ * (field.answerFontSize / field.questionFontSize);
   const runs = [];
   items.forEach((item, i) => {
+    const respostas = item.modelAnswers || [];
     runs.push({
       text: `${field.startIndex + i + 1}. ${item.question}`,
       options: {
         breakLine: true,
         bold: field.questionWeight >= 600,
         fontFace: faceFor(field.questionFont),
-        fontSize: pt(field.questionFontSize),
+        fontSize: pt(tamanhoQ),
         color: hex(field.color),
+        // pergunta sem resposta-modelo (comum do Intermediário para cima)
+        // precisa do respiro aqui, senão gruda na pergunta seguinte
+        paraSpaceAfter: respostas.length ? 0 : pt(tamanhoQ) * 0.8,
       },
     });
-    (item.modelAnswers || []).forEach((ans, j) => {
-      const isLast = j === item.modelAnswers.length - 1;
+    respostas.forEach((ans, j) => {
+      const isLast = j === respostas.length - 1;
       runs.push({
         text: ans,
         options: {
           breakLine: true,
           italic: true,
           fontFace: faceFor(field.answerFont),
-          fontSize: pt(field.answerFontSize),
+          fontSize: pt(tamanhoA),
           color: hex(field.answerColor),
-          paraSpaceAfter: isLast ? pt(field.questionFontSize) * 0.8 : 0,
+          paraSpaceAfter: isLast ? pt(tamanhoQ) * 0.8 : 0,
         },
       });
     });
@@ -225,6 +285,9 @@ const OPTION_LETTERS = ["A", "B", "C"];
 
 function addMultipleChoiceBlock(slide, field, lesson) {
   const items = getQaItems(lesson, field.group, field.startIndex, field.count);
+  const caixa = caixaEmPx(field);
+  const tamanhoQ = fonteDoBlocoQa(field, items, caixa.largura, caixa.altura);
+  const tamanhoA = tamanhoQ * (field.answerFontSize / field.questionFontSize);
   const runs = [];
   items.forEach((item, i) => {
     runs.push({
@@ -233,7 +296,7 @@ function addMultipleChoiceBlock(slide, field, lesson) {
         breakLine: true,
         bold: field.questionWeight >= 600,
         fontFace: faceFor(field.questionFont),
-        fontSize: pt(field.questionFontSize),
+        fontSize: pt(tamanhoQ),
         color: hex(field.color),
       },
     });
@@ -249,9 +312,9 @@ function addMultipleChoiceBlock(slide, field, lesson) {
           italic: !isCorrect,
           bold: isCorrect,
           fontFace: faceFor(field.answerFont),
-          fontSize: pt(field.answerFontSize),
+          fontSize: pt(tamanhoA),
           color: isCorrect ? CORRECT_OPTION_COLOR : hex(field.answerColor),
-          paraSpaceAfter: isLast ? pt(field.questionFontSize) * 0.8 : 0,
+          paraSpaceAfter: isLast ? pt(tamanhoQ) * 0.8 : 0,
         },
       });
     });
@@ -297,8 +360,8 @@ function addLanguageGameSources(slide, field, lesson) {
 }
 
 function renderField(slide, field, lesson, pptx) {
-  if (field.kind === "badge") return addBadge(slide, field, pptx);
-  if (field.kind === "static") return addStatic(slide, field);
+  if (field.kind === "badge") return addBadge(slide, field, pptx, lesson);
+  if (field.kind === "static") return addStatic(slide, field, lesson);
   if (field.kind === "qaBlock" && field.group === "languageGame") {
     return addMultipleChoiceBlock(slide, field, lesson);
   }

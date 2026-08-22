@@ -249,6 +249,10 @@ module.exports = async function handler(req, res) {
     for (let i = 1; i < lessons.length; i++) {
       lessons[i].objectives = lessons[0].objectives;
       lessons[i].vocabulary = lessons[0].vocabulary;
+      // mesma aula, mesmos ícones: emoji diferente por nível daria a impressão
+      // de serem atividades distintas
+      lessons[i].coverEmoji = lessons[0].coverEmoji;
+      lessons[i].sectionEmojis = lessons[0].sectionEmojis;
     }
 
     res.status(200).json({ lessons, resolvedVideoId: resolvedVideoId || null, creditos: creditosRestantes });

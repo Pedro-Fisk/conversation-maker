@@ -42,7 +42,27 @@
 const fs = require("fs");
 const path = require("path");
 const { LAYOUTS, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY } = require("./slide-layouts");
-const { getQaItems, buildDynamicValue } = require("./lesson-data");
+const {
+  getQaItems,
+  buildDynamicValue,
+  textoEstatico,
+  emojiDaSecao,
+  fonteDoCampo,
+  fonteDaLista,
+  fonteDoBlocoQa,
+  fonteDoVocabulario,
+  colunasDoVocabulario,
+  VOCAB_GAP,
+} = require("./lesson-data");
+
+// Caixa do campo em pixels do canvas 1920x1080 — é nessa unidade que o
+// lesson-data.js calcula quantas linhas o texto ocupa.
+function caixaEmPx(field) {
+  return {
+    largura: (field.width / 100) * CANVAS_W,
+    altura: (field.height / 100) * CANVAS_H,
+  };
+}
 
 function escapeHtml(str) {
   return String(str == null ? "" : str)
@@ -134,11 +154,17 @@ function fieldStyle(field) {
   ].join(";");
 }
 
-function renderTextField(field) {
+function renderTextField(field, lesson) {
+  // Texto no idioma da aula (ver lesson-data.js) com o emoji da seção na
+  // frente, quando esta caixa é o título de uma seção.
+  const prefixo = field.emojiKey ? emojiDaSecao(lesson, field.emojiKey) : "";
+  const texto = prefixo + textoEstatico(field, lesson);
+  const caixa = caixaEmPx(field);
+  const tamanho = fonteDoCampo(field, texto, caixa.largura, caixa.altura);
   const style = [
     fieldStyle(field),
     `font-family:${field.font}`,
-    `font-size:${field.fontSize}px`,
+    `font-size:${tamanho}px`,
     `font-weight:${field.fontWeight}`,
     `color:${field.color}`,
     `line-height:${field.lineHeight || 1.3}`,
@@ -151,18 +177,18 @@ function renderTextField(field) {
     const badgeStyle = [
       fieldStyle(field),
       `font-family:${field.font}`,
-      `font-size:${field.fontSize}px`,
+      `font-size:${tamanho}px`,
       `font-weight:${field.fontWeight}`,
       `color:${field.color}`,
       `letter-spacing:${field.letterSpacing || 0}px`,
     ].join(";");
     return `<div style="${badgeStyle}"><span style="background:${field.background};border-radius:999px;padding:0.35em 1em;display:inline-block;">${escapeHtml(
-      field.value
+      texto
     )}</span></div>`;
   }
 
   if (field.kind === "static") {
-    return `<div style="${style}">${escapeHtml(field.value)}</div>`;
+    return `<div style="${style}">${escapeHtml(texto)}</div>`;
   }
 
   return null; // dynamic/qaBlock handled by caller with lesson data
@@ -170,28 +196,50 @@ function renderTextField(field) {
 
 function renderList(field, items) {
   const style = fieldStyle(field);
+  const caixa = caixaEmPx(field);
+
+  if (field.grid) {
+    // Vocabulário: palavra em cima, tradução embaixo em cinza, duas colunas.
+    // O tamanho sai do conteúdo (ver fonteDoVocabulario) para a coluna nunca
+    // transbordar, como acontecia quando o tamanho era fixo em 80px.
+    const tamanho = fonteDoVocabulario(field, items, caixa.largura, caixa.altura);
+    const tamanhoTraducao = Math.round(tamanho * (field.translationScale || 0.62));
+    const espaco = (field.itemSpacing || 0.42) * tamanho;
+    const gridStyle = [
+      `font-family:${field.font}`,
+      `color:${field.color}`,
+      `line-height:${field.lineHeight || 1.15}`,
+      `width:100%`,
+      `display:grid`,
+      `grid-template-columns:1fr 1fr`,
+      `column-gap:${VOCAB_GAP * 100}%`,
+    ].join(";");
+    const cells = items
+      .map(
+        (w) =>
+          `<div style="padding:0 0 ${espaco}px;">
+            <div style="font-size:${tamanho}px;font-weight:${field.fontWeight};">${escapeHtml(w.word)}</div>${
+            w.translation
+              ? `<div style="font-size:${tamanhoTraducao}px;font-weight:400;color:${field.translationColor || "#6F6A6A"};">${escapeHtml(
+                  w.translation
+                )}</div>`
+              : ""
+          }
+          </div>`
+      )
+      .join("");
+    return `<div style="${style}"><div style="${gridStyle}">${cells}</div></div>`;
+  }
+
+  const tamanho = fonteDaLista(field, items, caixa.largura, caixa.altura);
   const innerStyle = [
     `font-family:${field.font}`,
-    `font-size:${field.fontSize}px`,
+    `font-size:${tamanho}px`,
     `font-weight:${field.fontWeight}`,
     `color:${field.color}`,
     `line-height:${field.lineHeight || 1.3}`,
     `width:100%`,
   ].join(";");
-
-  if (field.grid) {
-    // Vocabulary: two-column grid of word/translation pairs.
-    const cells = items
-      .map(
-        (w) =>
-          `<div style="padding:0.5em 0;"><strong>${escapeHtml(w.word)}</strong>${
-            w.translation ? ` &mdash; ${escapeHtml(w.translation)}` : ""
-          }</div>`
-      )
-      .join("");
-    return `<div style="${style}"><div style="${innerStyle};display:grid;grid-template-columns:1fr 1fr;column-gap:2em;">${cells}</div></div>`;
-  }
-
   const spacing = field.itemSpacing || "0.3em";
   const rows = items
     .map((text, i) => {
@@ -206,18 +254,23 @@ function renderList(field, items) {
 
 function renderQaBlock(field, items) {
   const style = fieldStyle(field);
+  const caixa = caixaEmPx(field);
+  // Pergunta comprida encolhia para fora do slide; agora o bloco inteiro
+  // (pergunta + respostas) é medido antes e o tamanho sai daí.
+  const tamanhoQ = fonteDoBlocoQa(field, items, caixa.largura, caixa.altura);
+  const tamanhoA = Math.round(tamanhoQ * (field.answerFontSize / field.questionFontSize));
   const blocks = items
     .map((item, i) => {
       const qStyle = [
         `font-family:${field.questionFont}`,
-        `font-size:${field.questionFontSize}px`,
+        `font-size:${tamanhoQ}px`,
         `font-weight:${field.questionWeight}`,
         `color:${field.color}`,
         `line-height:${field.lineHeight || 1.3}`,
       ].join(";");
       const aStyle = [
         `font-family:${field.answerFont}`,
-        `font-size:${field.answerFontSize}px`,
+        `font-size:${tamanhoA}px`,
         `font-weight:${field.answerWeight}`,
         `color:${field.answerColor}`,
         `line-height:${field.lineHeight || 1.3}`,
@@ -247,12 +300,15 @@ const CORRECT_OPTION_COLOR = "#1F9D55";
 
 function renderMultipleChoiceBlock(field, items) {
   const style = fieldStyle(field);
+  const caixa = caixaEmPx(field);
+  const tamanhoQ = fonteDoBlocoQa(field, items, caixa.largura, caixa.altura);
+  const tamanhoA = Math.round(tamanhoQ * (field.answerFontSize / field.questionFontSize));
   const letters = ["A", "B", "C"];
   const blocks = items
     .map((item, i) => {
       const qStyle = [
         `font-family:${field.questionFont}`,
-        `font-size:${field.questionFontSize}px`,
+        `font-size:${tamanhoQ}px`,
         `font-weight:${field.questionWeight}`,
         `color:${field.color}`,
         `line-height:${field.lineHeight || 1.3}`,
@@ -262,7 +318,7 @@ function renderMultipleChoiceBlock(field, items) {
           const isCorrect = field.revealAnswer && oi === item.correctIndex;
           const aStyle = [
             `font-family:${field.answerFont}`,
-            `font-size:${field.answerFontSize}px`,
+            `font-size:${tamanhoA}px`,
             `font-weight:${isCorrect ? 700 : field.answerWeight}`,
             `color:${isCorrect ? CORRECT_OPTION_COLOR : field.answerColor}`,
             `line-height:${field.lineHeight || 1.3}`,
@@ -304,7 +360,7 @@ function renderLanguageGameSources(field, items) {
 
 function renderField(field, lesson) {
   if (field.kind === "static" || field.kind === "badge") {
-    return renderTextField(field);
+    return renderTextField(field, lesson);
   }
   if (field.kind === "qaBlock") {
     const items = getQaItems(lesson, field.group, field.startIndex, field.count);
@@ -328,9 +384,11 @@ function renderField(field, lesson) {
       .map((p) => `<p style="margin:0 0 0.7em;">${escapeHtml(p)}</p>`)
       .join("");
     const style = fieldStyle(field);
+    const caixaIntro = caixaEmPx(field);
+    const tamanhoIntro = fonteDoCampo(field, value, caixaIntro.largura, caixaIntro.altura);
     const innerStyle = [
       `font-family:${field.font}`,
-      `font-size:${field.fontSize}px`,
+      `font-size:${tamanhoIntro}px`,
       `font-weight:${field.fontWeight}`,
       `color:${field.color}`,
       `line-height:${field.lineHeight || 1.3}`,
@@ -339,9 +397,11 @@ function renderField(field, lesson) {
     return `<div style="${style}"><div style="${innerStyle}">${paragraphs}</div></div>`;
   }
   const style = fieldStyle(field);
+  const caixaSimples = caixaEmPx(field);
+  const tamanhoSimples = fonteDoCampo(field, value, caixaSimples.largura, caixaSimples.altura);
   const textStyle = [
     `font-family:${field.font}`,
-    `font-size:${field.fontSize}px`,
+    `font-size:${tamanhoSimples}px`,
     `font-weight:${field.fontWeight}`,
     `color:${field.color}`,
     `line-height:${field.lineHeight || 1.3}`,
@@ -349,8 +409,17 @@ function renderField(field, lesson) {
   return `<div style="${style}"><div style="${textStyle}">${escapeHtml(value)}</div></div>`;
 }
 
+/* Modo "leve": em vez de embutir os PNGs em base64 (o arquivo passa de 24 MB
+   e trava a captura de tela), aponta para os arquivos servidos pelo próprio
+   servidor local. Serve só para conferência visual rápida — o modo padrão
+   continua sendo o autocontido, que abre sem servidor nenhum. */
+let modoLeve = false;
+function usarFundosPorUrl(valor) {
+  modoLeve = Boolean(valor);
+}
+
 function renderSlide(layout, lesson) {
-  const bg = bgDataUri(layout.bg);
+  const bg = modoLeve ? layout.bg : bgDataUri(layout.bg);
   const fieldsHtml = layout.fields.map((f) => renderField(f, lesson)).join("\n");
   return `<section class="slide" style="background-image:url('${bg}');">
     ${fieldsHtml}
@@ -364,7 +433,7 @@ function buildSlidesHtml(lesson) {
 <head>
 <meta charset="utf-8" />
 <style>
-  ${buildFontFaceCss()}
+  ${modoLeve ? "" : buildFontFaceCss()}
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   .slide {
@@ -385,4 +454,4 @@ ${slidesHtml}
 </html>`;
 }
 
-module.exports = { buildSlidesHtml, escapeHtml };
+module.exports = { buildSlidesHtml, escapeHtml, usarFundosPorUrl };
