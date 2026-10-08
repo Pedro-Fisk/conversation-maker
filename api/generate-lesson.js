@@ -37,6 +37,7 @@ const { waitUntil } = require("@vercel/functions");
 const { recordTeacherActivity } = require("../canva-lib");
 const { appendActivityLog } = require("../activity-log");
 const { verifyProfToken, logCmEvent, consumirCreditosCM, estornarCreditosCM } = require("../fisk-auth");
+const { aplicarCors } = require("../cors");
 const {
   LEVEL_GUIDANCE,
   AGE_GUIDANCE,
@@ -136,6 +137,7 @@ async function fetchYouTubeTranscript(videoId, language) {
 }
 
 module.exports = async function handler(req, res) {
+  if (aplicarCors(req, res)) return;   // o Buddy do Hub chama daqui do navegador (ver cors.js)
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;

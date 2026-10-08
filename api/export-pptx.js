@@ -20,8 +20,10 @@ const { buildPptxBuffer } = require("../pptx-builder");
 const { uploadPptxToCanva } = require("../canva-lib");
 const { appendActivityLog } = require("../activity-log");
 const { backupPptxToDrive } = require("../drive-backup");
+const { aplicarCors } = require("../cors");
 
 module.exports = async function handler(req, res) {
+  if (aplicarCors(req, res)) return;   // o Buddy do Hub chama daqui do navegador (ver cors.js)
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
