@@ -109,7 +109,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <div class="hero-menu-panel" id="profMenuPanel" role="menu" hidden>
 <p class="hero-menu-title">Histórico do professor</p>
 <p class="hero-menu-saldo" id="menuCreditos"><svg class="moeda" viewBox="0 0 8 8" aria-hidden="true"><use href="#moedaPix"/></svg> <strong id="menuCreditosNum">-</strong> créditos restantes no Conversation Maker</p>
-<a class="hero-menu-item" role="menuitem" href="historico.html">🗂 Minhas aulas</a>
+<a class="hero-menu-item" role="menuitem" href="historico.html">🗂 Minhas Conversações Criadas</a>
 <button type="button" class="hero-menu-item" role="menuitem" id="logoutBtn">🚪 Sair neste computador</button>
 <p class="hero-menu-note">Logado pelo Fisk Hub. Seu nome vai para o registro de atividades. Não aparece na atividade, no arquivo nem no nome do arquivo.</p>
 </div>
@@ -123,6 +123,8 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <main class="wrap">
 
 <div class="row-inline" style="justify-content:flex-end;margin-bottom:14px">
+<!-- o histórico ficava só dentro do menu do nome do professor, e ninguém achava (Pedro, 08/10/2026) -->
+<a class="btn btn-ghost btn-sm" href="historico.html">🗂 Minhas Conversações Criadas</a>
 <button type="button" class="btn btn-ghost btn-sm" id="clearBtn">🧹 Limpar formulário</button>
 </div>
 
