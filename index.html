@@ -188,6 +188,15 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <h2>✨ Incrementos</h2>
 <p class="hint hint-lead" style="margin-top:0">Recursos opcionais para enriquecer a atividade. Ative os que quiser usar.</p>
 
+<!-- QUANTAS PERGUNTAS NO JOGO (Pedro, 27/11/2026): padrão 6, de 1 a 20. O .pptx ganha um par de slides a cada 3. -->
+<div class="increment-section">
+<label class="checkbox-row" for="jogoQtd" style="cursor:default">
+<span class="increment-title">🎲 Perguntas no Language Game</span>
+<input type="number" id="jogoQtd" min="1" max="20" step="1" value="6" inputmode="numeric" style="width:4.5rem;margin-left:auto;font:inherit;font-weight:700;text-align:center;padding:.3rem;border-radius:8px;border:1.5px solid #cbd5e1">
+</label>
+<p class="hint">Padrão: 6. Escolha de 1 a 20. No PowerPoint, cada 3 perguntas viram um slide de pergunta e outro de resposta.</p>
+</div>
+
 <div class="increment-section">
 <label class="checkbox-row" for="webSearch">
 <input type="checkbox" id="webSearch">

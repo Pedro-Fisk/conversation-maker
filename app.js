@@ -767,6 +767,8 @@ ageGroup: lesson._genAgeGroup,
 useWebSearch: lesson._genUseWebSearch,
 teacherName: profSession ? profSession.name : "",
 section: sectionKey,
+/* regenerar o jogo mantém quantas perguntas ele tem */
+nJogo: (lesson.languageGame && lesson.languageGame.length) || lesson.nJogo || 6,
 }),
 });
 const data = await response.json().catch(() => ({}));
@@ -1254,6 +1256,7 @@ extraActivity: p.extraActivity,
 modelo: p.modelo,
 visual: p.visual,
 design: p.design,
+nJogo: p.nJogo,
 };
 if (extras) Object.assign(payload, extras);
 const { lessons, resolvedVideoId } = await fetchLessons(payload);
@@ -1733,6 +1736,14 @@ fiskInitThemeToggle("themeToggle", { storageKey: "cm-theme" });
    No modelo clássico: a capa do template de sempre, com o tema. O título final é o que a IA escrever. */
 /* var, não const: o ajustaModelo() roda no carregamento ANTES desta linha e chama previaAtualiza */
 var gameCheckEl = document.getElementById("gameCheck");
+/* QUANTAS PERGUNTAS NO JOGO (Pedro, 27/11/2026): padrão 6, de 1 a 20 (o servidor confere de novo: lesson-generation.js, jogoN) */
+var jogoQtdEl = document.getElementById("jogoQtd");
+function jogoQtd() { const n = parseInt(jogoQtdEl && jogoQtdEl.value, 10); return n >= 1 ? Math.min(20, n) : 6; }
+if (jogoQtdEl) jogoQtdEl.addEventListener("change", () => { jogoQtdEl.value = jogoQtd(); });
+if (gameCheckEl && document.getElementById("jogoQtdLinha")) {
+  const mostraQtd = () => (document.getElementById("jogoQtdLinha").style.display = gameCheckEl.checked ? "" : "none");
+  gameCheckEl.addEventListener("change", mostraQtd); mostraQtd();
+}
 var previa = { design: null, chave: "", vez: 0, t: null };
 function previaEls() { return { box: document.getElementById("previaSlide"), nome: document.getElementById("previaNome"), sub: document.getElementById("previaSub"), pal: document.getElementById("previaPaleta"), outro: document.getElementById("previaOutro") }; }
 function tituloDaPrevia(t) { t = String(t || "").trim().split(/[.:;\n]|, (?=[a-zà-ú])/)[0].trim(); if (t.length > 60) t = t.slice(0, 57).replace(/\s+\S*$/, "") + "…"; return t ? t.charAt(0).toUpperCase() + t.slice(1) : "Sua atividade"; }
@@ -1899,7 +1910,7 @@ language,
 videoId: null,
 params: { topic, useWebSearch, teacherName: profSession.name, extraActivity, modelo: modeloAtual(), visual: (visualPedidoEl && visualPedidoEl.value.trim()) || null,
   /* o jogo é opcional (27/11/2026) e o visual que o professor viu na prévia vai junto: a aula sai com a mesma cara */
-  semJogo: !(gameCheckEl ? gameCheckEl.checked : true), design: modeloAtual() === "tema" && previa && previa.design ? previa.design : null },
+  semJogo: !(gameCheckEl ? gameCheckEl.checked : true), nJogo: jogoQtd(), design: modeloAtual() === "tema" && previa && previa.design ? previa.design : null },
 slots: combos.map((combo) => ({ combo, versions: [], active: 0, recreations: 0, busy: null, error: null, slideEl: null })),
 generatingRest: false,
 barEl: null,
@@ -1920,6 +1931,7 @@ extraActivity,
 modelo: batch.params.modelo,
 visual: batch.params.visual,
 design: batch.params.design,
+nJogo: batch.params.nJogo,
 };
 const { lessons, resolvedVideoId, creditos: saldo } = await fetchLessons(payload);
 if (typeof saldo === "number") { creditos = saldo; mostrarCreditos(); }

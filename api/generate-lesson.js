@@ -147,7 +147,7 @@ module.exports = async function handler(req, res) {
   // as demais combinações nível×faixa são geradas a partir dela.
   // previousLesson + feedback: recriação de UMA aula que o professor
   // rejeitou, com o texto do modal descrevendo o que mudar.
-  const { accessCode, profToken, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, videoId, videoSearch, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity, modelo, visual, design } = req.body || {};
+  const { accessCode, profToken, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, videoId, videoSearch, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity, modelo, visual, design, nJogo } = req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
 
@@ -246,6 +246,8 @@ module.exports = async function handler(req, res) {
           visual: modelo === "tema" && visual ? String(visual).slice(0, 300) : null,
           // o visual da prévia (api/design-preview): a aula sai com a mesma cara que o professor viu
           design: modelo === "tema" && design && typeof design === "object" ? design : null,
+          // quantas perguntas no Language Game (padrão 6, de 1 a 20; lesson-generation.js, jogoN)
+          nJogo,
         })
       )
     );

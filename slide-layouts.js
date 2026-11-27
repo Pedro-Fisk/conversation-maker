@@ -528,7 +528,26 @@ function languageGameSourceField(startIndex, count) {
 /* O JOGO É OPCIONAL (Pedro, 27/11/2026: "o Language Game no final, ativado como padrão, e ele escolhe desclicar").
  * Sem jogo (lesson.semJogo), saem o divisor "LANGUAGE GAME" e as 4 páginas do jogo, e a agenda passa de
  * "Game & Evaluation" para "Evaluation". O .pptx e a prévia em HTML usam esta lista, nunca o LAYOUTS cru. */
+/* QUANTAS PERGUNTAS NO JOGO (Pedro, 27/11/2026: padrão 6, o professor escolhe de 1 a 20). As 4 páginas fixas do jogo
+ * (2 grupos de 3, cada um sem e com a resposta) viram um PAR de páginas a cada 3 perguntas, alternando os dois fundos
+ * do template. Com 6 perguntas a saída é exatamente a de antes. */
+const PAGS_JOGO = LAYOUTS.filter((l) => l.role === "languageGame");
+function paginasDoJogo(n) {
+  const out = [];
+  for (let ini = 0, g = 0; ini < n; ini += 3, g++) {
+    const qtd = Math.min(3, n - ini), bg = PAGS_JOGO[(g % 2) * 2].bg;
+    [false, true].forEach((revela) => out.push({ page: PAGS_JOGO[0].page, role: "languageGame", bg,
+      fields: [qaBlockField("languageGame", ini, qtd, revela), languageGameSourceField(ini, qtd)] }));
+  }
+  return out;
+}
 function layoutsDaAula(lesson) {
+  const nJogo = lesson && !lesson.semJogo && Array.isArray(lesson.languageGame) ? lesson.languageGame.length : 6;
+  if (lesson && !lesson.semJogo && nJogo && nJogo !== 6) {
+    const out = []; let feito = false;
+    LAYOUTS.forEach((l) => { if (l.role !== "languageGame") { out.push(l); return; } if (!feito) { feito = true; out.push.apply(out, paginasDoJogo(nJogo)); } });
+    return out;
+  }
   if (!lesson || !lesson.semJogo) return LAYOUTS;
   const out = [];
   LAYOUTS.forEach((l, i) => {
