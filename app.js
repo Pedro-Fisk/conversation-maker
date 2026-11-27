@@ -119,6 +119,7 @@ if (session) localStorage.setItem("cm-prof-session", JSON.stringify(session));
 else localStorage.removeItem("cm-prof-session");
 } catch (e) {}
 updateAuthUI();
+try { ajustaModelo(); } catch (e) {}   /* na primeira chamada o painel ainda não existe: o ajustaModelo() do fim corrige */
 }
 
 function updateAuthUI() {
@@ -254,7 +255,7 @@ const token = decodeURIComponent(m[1]);
 hubPost({ action: "profCheck", token })
 .then((res) => {
 if (res && res.ok && res.prof) {
-setSession({ token, name: res.prof.fullName || res.prof.name });
+setSession({ token, name: res.prof.fullName || res.prof.name, direcao: res.direcao === true });
 } else if (!profSession) {
 sessionExpired();
 }
@@ -267,7 +268,7 @@ return;
 updateAuthUI();
 if (profSession) {
 hubPost({ action: "profCheck", token: profSession.token })
-.then((res) => { if (res && !res.ok) sessionExpired(); })
+.then((res) => { if (res && !res.ok) sessionExpired(); else if (res && res.ok && !!res.direcao !== !!profSession.direcao) setSession(Object.assign({}, profSession, { direcao: res.direcao === true })); })
 .catch(() => {}); // rede fora do ar: mantém a sessão, o servidor revalida a cada geração
 }
 })();
@@ -285,7 +286,15 @@ statusEl.classList.toggle("is-error", Boolean(isError));
 const modeloChoices = document.getElementById("modeloChoices");
 const visualPedidoEl = document.getElementById("visualPedido");
 const visualWrapEl = document.getElementById("visualWrap");
-function modeloAtual() { const b = modeloChoices && modeloChoices.querySelector(".choice.is-active"); return b ? b.getAttribute("data-value") : "tema"; }
+/* SÓ A DIREÇÃO VÊ O MODELO NOVO (Pedro, 27/11/2026): até fevereiro os professores seguem no clássico de sempre; o
+   painel "Visual" aparece e vale só para sessão de direção (profCheck devolve direcao). */
+function ehDirecao() { return !!(profSession && profSession.direcao); }
+function ajustaModelo() {
+  const painel = modeloChoices && modeloChoices.closest(".panel");
+  if (painel) painel.classList.toggle("is-hidden", !ehDirecao());
+}
+function modeloAtual() {
+  if (!ehDirecao()) return "classico"; const b = modeloChoices && modeloChoices.querySelector(".choice.is-active"); return b ? b.getAttribute("data-value") : "tema"; }
 if (modeloChoices) {
   modeloChoices.addEventListener("click", (e) => {
     const b = e.target.closest(".choice"); if (!b) return;
@@ -293,6 +302,7 @@ if (modeloChoices) {
     if (visualWrapEl) visualWrapEl.classList.toggle("is-hidden", modeloAtual() !== "tema");
   });
 }
+ajustaModelo();
 /* a prévia do modelo tema: os slides de verdade, com os cliques e o jogo, numa janela por cima */
 const HUB_BASE = "https://pedro-fisk.github.io/fisk-hub/";
 function abrirPreviaTema(lesson) {
