@@ -638,7 +638,7 @@ async function callAnthropicRaw(body) {
 const TEMA_CONVERSA = { real_beginners: 6, teens: 6, basic: 8, intermediate: 9, advanced: 12, spanish_basic: 8, spanish_intermediate: 9, spanish_advanced: 12 };
 const TEMA_FONTES = ["Fredoka", "Poppins", "Montserrat", "Nunito", "Rubik", "Barlow Condensed", "Barlow", "Playfair Display", "Lato", "Exo 2", "Baloo 2", "Quicksand", "Raleway", "Oswald", "Merriweather", "Source Sans 3", "Work Sans", "Josefin Sans", "Lora", "Comfortaa"];
 const TEMA_FUNDOS = ["bolhas", "pontos", "faixas", "gradiente", "estrelas"];
-const TEMA_JOGOS = ["multiple_choice", "fill_gap", "true_false", "odd_one_out", "translation", "pronunciation"];
+const TEMA_JOGOS = ["multiple_choice", "fill_gap", "true_false", "odd_one_out", "translation", "pronunciation", "order", "match", "type_in"];
 
 function temaInstrucoes({ level, visual, nJogo }) {
   nJogo = jogoN(nJogo);
@@ -650,7 +650,11 @@ The slides are not the Canva template: the school portal draws them from your JS
 - "conversation": exactly ${n} items (pair work questions; the teacher shows them ${n % 4 === 0 && n >= 8 ? 4 : 3} per slide), in a natural order of subtopics.
 - "languageGame": exactly ${nJogo} items and VARY the game type across them (use ${nJogo >= 3 ? "at least 3 different types" : "different types"}). Every item is still answered by tapping one option. Each item gets a "type":
   "multiple_choice" (3 options) · "fill_gap" (a sentence with ______, 3 options) · "true_false" (a statement about the topic or the vocabulary, options exactly ["True","False"]) · "odd_one_out" (which word does not belong, 3 options) · "translation" (a Portuguese word or short phrase from the vocabulary, 3 English options) · "pronunciation" (which word has the sound shown in the question, e.g. 'Which word has the same vowel sound as "ship"?', 3 options).
-  For true_false, "options" has exactly 2 strings and correctIndex is 0 or 1; for every other type, exactly 3 options and correctIndex 0, 1 or 2.
+  For true_false, "options" has exactly 2 strings and correctIndex is 0 or 1; for the choice types above, exactly 3 options and correctIndex 0, 1 or 2.
+  Three more types are answered on the student's phone in other ways (use them too, about one in three items, ${nJogo >= 3 ? "at least one of each when there are 6 or more items" : "when they fit"}):
+  "order" (build the sentence): "question" is a short instruction (e.g. "Put the words in order."); "options" = the words of ONE correct sentence IN THE CORRECT ORDER, one word per string (4 to 8 words, punctuation glued to the last word). The sentence must have only ONE natural correct order. correctIndex 0.
+  "match" (match the pairs): "question" is a short instruction (e.g. "Match the words to their meanings."); "options" = 3 to 5 strings, each "left = right" (a word and its translation, a word and its opposite, a question and its answer...). Every right side must match only its own left side. correctIndex 0.
+  "type_in" (type the answer): "question" has a gap ______ and, in brackets, what to use, e.g. "She ______ (not / like) coffee."; "options" = 1 to 4 ACCEPTED answers, the most natural first, including the common contracted / full variants (e.g. ["doesn't like", "does not like"]). Only the gap text, never the whole sentence. correctIndex 0.
 
 VISUAL IDENTITY ("design" key). Invent a look that a teacher would recognize as THIS topic at first sight, as a professional designer would for a classroom TV (55 inches, about 4 meters away):
 - "palette": six hex colors { "fundo" (background), "fundo2" (soft background shape), "prim" (titles), "sec" (card borders, chips), "dest" (accent: numbers, highlights), "txt" (body text) }. Text colors MUST have strong contrast with "fundo" (WCAG 4.5:1 or better). Prefer light backgrounds unless the topic is clearly dark (space, night, horror, gaming), then set "escuro": true.
@@ -679,15 +683,35 @@ function sanearDesign(d) {
     icones: (Array.isArray(d.icones) ? d.icones : []).map(nome).filter(Boolean).slice(0, 10),
   };
 }
+function sanearJogoNovo(g, type) {
+  const ops = (Array.isArray(g && g.options) ? g.options : []).map((x) => String(x == null ? "" : x).trim()).filter(Boolean);
+  const question = String((g && g.question) || "");
+  if (type === "order") {
+    /* uma frase inteira numa string só também vale: vira palavras */
+    const palavras = ops.length === 1 ? ops[0].split(/\s+/) : ops;
+    return palavras.length >= 2 && palavras.length <= 12 ? { type, question, options: palavras.slice(0, 12), correctIndex: 0 } : null;
+  }
+  if (type === "match") {
+    const pares = ops.filter((x) => { const k = x.indexOf("="); return k > 0 && x.slice(k + 1).trim(); }).slice(0, 6);
+    return pares.length >= 2 ? { type, question, options: pares, correctIndex: 0 } : null;
+  }
+  if (type === "type_in") return ops.length ? { type, question, options: ops.slice(0, 6), correctIndex: 0 } : null;
+  return null;
+}
 function sanearJogoTema(lista, n) {
   return (Array.isArray(lista) ? lista : []).slice(0, jogoN(n)).map((g) => {
-    const type = TEMA_JOGOS.includes(g && g.type) ? g.type : "multiple_choice";
+    const tipo = g && g.type;
+    if (tipo === "order" || tipo === "match" || tipo === "type_in") {
+      const novo = sanearJogoNovo(g, tipo);
+      return novo;   /* torto (pares sem "=", frase de uma palavra): sai da aula; um slide vazio seria pior que um item a menos */
+    }
+    const type = TEMA_JOGOS.includes(tipo) && !["order", "match", "type_in"].includes(tipo) ? tipo : "multiple_choice";
     const n = type === "true_false" ? 2 : 3;
     const options = (Array.isArray(g && g.options) ? g.options : []).slice(0, n).map(String);
     while (options.length < n) options.push(type === "true_false" ? (options.length ? "False" : "True") : "");
     const ci = Number(g && g.correctIndex);
     return { type, question: String((g && g.question) || ""), options, correctIndex: ci >= 0 && ci < n ? ci : 0 };
-  });
+  }).filter(Boolean);
 }
 
 /* ══ SÓ O VISUAL, PARA A PRÉVIA (Pedro, 27/11/2026) ══════════════════════════════════════════════════════════════
@@ -806,6 +830,7 @@ async function generateSection({ section, language, topic, level, ageGroup, useW
 }
 
 module.exports = {
+  sanearJogoNovo,
   jogoN,
   JOGO_MAX,
   generateDesign,

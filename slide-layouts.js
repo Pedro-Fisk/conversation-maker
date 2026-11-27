@@ -563,4 +563,34 @@ function layoutsDaAula(lesson) {
   return out;
 }
 
-module.exports = { LAYOUTS, layoutsDaAula, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY, RED, BLACK, GRAY };
+/* OS TIPOS NOVOS DO JOGO NO PAPEL (item 7, Pedro 27/11/2026). O modelo tema gera também "order" (montar a frase),
+ * "match" (ligar pares) e "type_in" (completar digitando), que a TV e o celular desenham do jeito deles. No .pptx e na
+ * prévia clássica eles viram texto: o enunciado leva o que o aluno precisa (as palavras embaralhadas, as duas colunas)
+ * e a RESPOSTA só aparece no slide de revelação, nunca como alternativa no slide da pergunta. correctIndex -1 = nenhuma
+ * linha marcada (nos pares, todas as linhas da revelação são a resposta). */
+function embaralhaFixo(arr, semente) {
+  let h = 2166136261; for (let i = 0; i < semente.length; i++) { h ^= semente.charCodeAt(i); h = Math.imul(h, 16777619); }
+  const rnd = () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const a = arr.slice();
+  for (let k = a.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [a[k], a[j]] = [a[j], a[k]]; }
+  if (a.length > 1 && a.every((x, i) => x === arr[i])) a.push(a.shift());
+  return a;
+}
+function jogoClassico(items, revela) {
+  return (items || []).map((it) => {
+    const t = it && it.type, ops = ((it && it.options) || []).map((x) => String(x == null ? "" : x).trim()).filter(Boolean), q = String((it && it.question) || "");
+    if (t === "order") {
+      const emb = embaralhaFixo(ops.map((x, i) => i), q + "|" + ops.join(" ")).map((i) => ops[i]);
+      return { ...it, question: `${q}  [ ${emb.join(" / ")} ]`, options: revela ? [ops.join(" ")] : [], correctIndex: 0 };
+    }
+    if (t === "match") {
+      const pares = ops.map((x) => { const k = x.indexOf("="); return k > 0 ? [x.slice(0, k).trim(), x.slice(k + 1).trim()] : null; }).filter((x) => x && x[0] && x[1]);
+      const dir = embaralhaFixo(pares.map((x, i) => i), q + "|" + ops.join("|")).map((i) => pares[i][1]);
+      return { ...it, question: `${q}  [ ${pares.map((x) => x[0]).join(", ")}  →  ${dir.join(", ")} ]`, options: revela ? pares.map((x) => `${x[0]} = ${x[1]}`) : [], correctIndex: -1 };
+    }
+    if (t === "type_in") return { ...it, options: revela ? [ops[0] || ""] : [], correctIndex: 0 };
+    return it;
+  });
+}
+
+module.exports = { jogoClassico, LAYOUTS, layoutsDaAula, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY, RED, BLACK, GRAY };

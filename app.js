@@ -1108,19 +1108,44 @@ card.appendChild(
 editField(q.question, (v) => { list[i].question = v; }, { multiline: true, rows: 1 })
 );
 
+/* OS TIPOS NOVOS (item 7, Pedro 27/11/2026): cada um com o seu jeito de editar, guardado em "options" como os outros */
+const NOMES_JOGO = { order: "Montar a frase", match: "Ligar pares", type_in: "Completar digitando" };
+if (NOMES_JOGO[q.type]) {
+  num.textContent += " · " + NOMES_JOGO[q.type];
+  const lab = document.createElement("span");
+  lab.className = "edit-label";
+  if (q.type === "order") {
+    lab.textContent = "A frase certa (na TV e no celular as palavras aparecem embaralhadas)";
+    card.appendChild(lab);
+    card.appendChild(editField((q.options || []).join(" "), (v) => { list[i].options = String(v).trim().split(/\s+/).filter(Boolean); }, { multiline: true, rows: 1 }));
+  } else if (q.type === "match") {
+    lab.textContent = "Um par por linha, no formato  palavra = par  (de 2 a 6 pares)";
+    card.appendChild(lab);
+    card.appendChild(editField((q.options || []).join("\n"), (v) => { list[i].options = String(v).split(/\n/).map((x) => x.trim()).filter((x) => x.indexOf("=") > 0); }, { multiline: true, rows: Math.max(3, (q.options || []).length) }));
+  } else {
+    lab.textContent = "Respostas aceitas, separadas por /  (a primeira é a que aparece na revelação)";
+    card.appendChild(lab);
+    card.appendChild(editField((q.options || []).join(" / "), (v) => { list[i].options = String(v).split("/").map((x) => x.trim()).filter(Boolean); }, { multiline: true, rows: 1 }));
+  }
+  body.appendChild(card);
+  return;
+}
+
 const optLabel = document.createElement("span");
 optLabel.className = "edit-label";
 optLabel.textContent = "Opções (marque a correta)";
 card.appendChild(optLabel);
 
-const options = Array.isArray(q.options) ? q.options : (q.options = ["", "", ""]);
-while (options.length < 3) options.push("");
+/* verdadeiro ou falso tem DUAS opções: completar até 3 criava uma terceira vazia na TV */
+const nOps = q.type === "true_false" ? 2 : 3;
+const options = Array.isArray(q.options) ? q.options : (q.options = nOps === 2 ? ["True", "False"] : ["", "", ""]);
+while (options.length < nOps) options.push("");
 if (list[i].correctIndex == null) list[i].correctIndex = 0;
 const radioName = "lg-correct-" + i + "-" + Math.random().toString(36).slice(2, 8);
 
 const optionsContainer = document.createElement("div");
 optionsContainer.className = "edit-mc-list";
-options.slice(0, 3).forEach((opt, oi) => {
+options.slice(0, nOps).forEach((opt, oi) => {
 const row = document.createElement("label");
 row.className = "edit-mc-row";
 

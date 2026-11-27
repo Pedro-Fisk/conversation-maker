@@ -18,7 +18,7 @@
 
 const path = require("path");
 const pptxgen = require("pptxgenjs");
-const { layoutsDaAula, FONT_MARKER } = require("./slide-layouts");
+const { layoutsDaAula, jogoClassico, FONT_MARKER } = require("./slide-layouts");
 const {
   getQaItems,
   buildDynamicValue,
@@ -284,7 +284,8 @@ const CORRECT_OPTION_COLOR = "1F9D55";
 const OPTION_LETTERS = ["A", "B", "C"];
 
 function addMultipleChoiceBlock(slide, field, lesson) {
-  const items = getQaItems(lesson, field.group, field.startIndex, field.count);
+  /* os tipos novos (montar a frase, pares, digitar) viram texto: slide-layouts.js, jogoClassico */
+  const items = jogoClassico(getQaItems(lesson, field.group, field.startIndex, field.count), field.revealAnswer);
   const caixa = caixaEmPx(field);
   const tamanhoQ = fonteDoBlocoQa(field, items, caixa.largura, caixa.altura);
   const tamanhoA = tamanhoQ * (field.answerFontSize / field.questionFontSize);

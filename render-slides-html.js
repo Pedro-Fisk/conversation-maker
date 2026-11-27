@@ -41,7 +41,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { layoutsDaAula, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY } = require("./slide-layouts");
+const { layoutsDaAula, jogoClassico, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY } = require("./slide-layouts");
 const {
   getQaItems,
   buildDynamicValue,
@@ -365,7 +365,7 @@ function renderField(field, lesson) {
   if (field.kind === "qaBlock") {
     const items = getQaItems(lesson, field.group, field.startIndex, field.count);
     if (field.group === "languageGame") {
-      return renderMultipleChoiceBlock(field, items);
+      return renderMultipleChoiceBlock(field, jogoClassico(items, field.revealAnswer));   /* tipos novos viram texto */
     }
     return renderQaBlock(field, items);
   }
