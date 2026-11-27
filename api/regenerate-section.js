@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { accessCode, profToken, language, topic, level, ageGroup, useWebSearch, section, teacherName } =
+  const { accessCode, profToken, language, topic, level, ageGroup, useWebSearch, section, teacherName, nJogo, jogoTipos } =
     req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
@@ -88,6 +88,8 @@ module.exports = async function handler(req, res) {
       level,
       ageGroup: resolvedAgeGroup,
       useWebSearch: searchEnabled,
+      nJogo,   /* regenerar o jogo mantém a quantidade que o professor escolheu ao gerar */
+      jogoTipos,   /* e os tipos de pergunta */
     });
 
     res.status(200).json(result);

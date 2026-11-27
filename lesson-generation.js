@@ -210,7 +210,7 @@ The template has a FIXED structure that never changes, so your output must alway
 - 8 vocabulary words (each with a Portuguese translation, since the students are Brazilian)
 - 1 introductory paragraph (a single flowing paragraph, not a list, not multiple paragraphs)
 - 9 conversation questions, organized as 3 natural subtopics of 3 questions each (do not label the subtopics in the output, just order the 9 questions so subtopics of 3 flow naturally back to back)
-- 6 language game items (short language-focused challenges: fill-in-the-blank, choose the correct word/tense, etc. — testing the vocabulary/grammar just covered)
+- N language game items, where N is given in the user message (default 6) (short language-focused challenges: fill-in-the-blank, choose the correct word/tense, etc. — testing the vocabulary/grammar just covered)
 - 2 evaluation/reflection questions
 
 Each conversation and evaluation question has a "modelAnswers"array of 0 to 2 short strings. This is NOT always 2. How many (if any), and whether they're open sentence starters or complete answers, is dictated by the MODEL ANSWERS guidance in the user message. Follow it precisely: real FISK classroom material is deliberately sparing with model answers, leaning on open sentence starters (ending in"...") rather than fully-written answers, so students have to produce their own language instead of just reading a ready-made sentence.
@@ -341,7 +341,9 @@ ${sourceActivity.texto}
 `;
 }
 
-function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity }) {
+function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity, nJogo }) {
+  nJogo = jogoN(nJogo);
+  const nVideo = Math.min(2, nJogo);
   const guidance = LEVEL_GUIDANCE[level];
   const age = AGE_GUIDANCE[ageGroup] || AGE_GUIDANCE[DEFAULT_AGE_GROUP];
   const answerGuidance = ANSWER_GUIDANCE[ANSWER_STYLE_TIER[level]] || ANSWER_GUIDANCE.intermediate;
@@ -352,7 +354,7 @@ function buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sourc
     : "";
 
   const transcriptNote = transcript
-    ? `\nYOUTUBE VIDEO TRANSCRIPT. The teacher attached a YouTube video related to this lesson's topic. Use it SPARINGLY: exactly 2 of the 9 conversation questions and exactly 2 of the 6 language game items should draw directly from specific content in the video (a detail, example, or idea from the transcript). The remaining 7 conversation questions and 4 language game items must be written normally based on the teacher's topic alone, as if no video existed. Do NOT let the video dominate or replace the topic, it is a supplementary reference only. IMPORTANT: do NOT include the video URL or any link in any text field, the URL is displayed separately on its own slide.\n\nTranscript:\n${transcript.slice(0, 8000)}\n`
+    ? `\nYOUTUBE VIDEO TRANSCRIPT. The teacher attached a YouTube video related to this lesson's topic. Use it SPARINGLY: exactly 2 of the 9 conversation questions and exactly ${nVideo} of the ${nJogo} language game items should draw directly from specific content in the video (a detail, example, or idea from the transcript). The remaining 7 conversation questions and ${nJogo - nVideo} language game items must be written normally based on the teacher's topic alone, as if no video existed. Do NOT let the video dominate or replace the topic, it is a supplementary reference only. IMPORTANT: do NOT include the video URL or any link in any text field, the URL is displayed separately on its own slide.\n\nTranscript:\n${transcript.slice(0, 8000)}\n`
     : "";
 
   const extraActivityNote = extraActivity
@@ -425,14 +427,15 @@ Return a single JSON object with exactly these keys:
   "introText": string,         // exactly one paragraph, no line breaks, maximum 100 words — NEVER include URLs, links, or references to external content
   "conversation": [ { "question": string, "modelAnswers": string[] } ]  // exactly 9 items; modelAnswers has 0-2 items per the MODEL ANSWERS guidance above
   ,
-  "languageGame": [ { "question": string, "options": [string, string, string], "correctIndex": number } ]  // exactly 6 items; options is always exactly 3, correctIndex is 0, 1 or 2 — see LANGUAGE GAME guidance above
+  "languageGame": [ { "question": string, "options": [string, string, string], "correctIndex": number } ]  // exactly ${nJogo} items (N = ${nJogo}); options is always exactly 3, correctIndex is 0, 1 or 2 — see LANGUAGE GAME guidance above
   ,
   "evaluation": [ { "question": string, "modelAnswers": string[] } ]  // exactly 2 items: item 0 = topic question, item 1 = metacognition question; modelAnswers per MODEL ANSWERS guidance above${extraActivitySchema}
 }`;
 }
 
 // Prompt enxuto de UMA seção só, usado por api/regenerate-section.js.
-function buildSectionUserPrompt({ section, topic, level, ageGroup, useWebSearch, sources }) {
+function buildSectionUserPrompt({ section, topic, level, ageGroup, useWebSearch, sources, nJogo }) {
+  nJogo = jogoN(nJogo);
   const guidance = LEVEL_GUIDANCE[level];
   const age = AGE_GUIDANCE[ageGroup] || AGE_GUIDANCE[DEFAULT_AGE_GROUP];
   const answerGuidance = ANSWER_GUIDANCE[ANSWER_STYLE_TIER[level]] || ANSWER_GUIDANCE.intermediate;
@@ -490,9 +493,9 @@ Return JSON: { "evaluation": [ { "question": string, "modelAnswers": string[] } 
       return `${header}
 ${LANGUAGE_GAME_GUIDANCE}
 ${sourceBlock}
-Write exactly 6 language game items.
+Write exactly ${nJogo} language game items.
 
-Return JSON: { "languageGame": [ { "question": string, "options": [string, string, string], "correctIndex": number } ] } // exactly 6 items; options is always exactly 3, correctIndex is 0, 1 or 2`;
+Return JSON: { "languageGame": [ { "question": string, "options": [string, string, string], "correctIndex": number } ] } // exactly ${nJogo} items; options is always exactly 3, correctIndex is 0, 1 or 2`;
     }
 
     default:
@@ -553,6 +556,12 @@ function sanearEmojisDeSecao(bruto) {
   });
   return saida;
 }
+
+/* QUANTAS PERGUNTAS NO JOGO (Pedro, 27/11/2026): o professor escolhe ao gerar, padrão 6, de 1 a 20. Tudo o que era
+   "6" fixo passa por aqui: o pedido à IA, as fontes gramaticais (uma por pergunta), o corte da resposta e as páginas
+   do .pptx (slide-layouts.js, um par de slides a cada 3 perguntas). */
+const JOGO_PADRAO = 6, JOGO_MAX = 20;
+function jogoN(v) { const n = parseInt(v, 10); return n >= 1 ? Math.min(JOGO_MAX, n) : JOGO_PADRAO; }
 
 function clampArray(arr, n) {
   const a = Array.isArray(arr) ? arr.slice(0, n) : [];
@@ -629,18 +638,52 @@ async function callAnthropicRaw(body) {
 const TEMA_CONVERSA = { real_beginners: 6, teens: 6, basic: 8, intermediate: 9, advanced: 12, spanish_basic: 8, spanish_intermediate: 9, spanish_advanced: 12 };
 const TEMA_FONTES = ["Fredoka", "Poppins", "Montserrat", "Nunito", "Rubik", "Barlow Condensed", "Barlow", "Playfair Display", "Lato", "Exo 2", "Baloo 2", "Quicksand", "Raleway", "Oswald", "Merriweather", "Source Sans 3", "Work Sans", "Josefin Sans", "Lora", "Comfortaa"];
 const TEMA_FUNDOS = ["bolhas", "pontos", "faixas", "gradiente", "estrelas"];
-const TEMA_JOGOS = ["multiple_choice", "fill_gap", "true_false", "odd_one_out", "translation", "pronunciation"];
+const TEMA_JOGOS = ["multiple_choice", "fill_gap", "true_false", "odd_one_out", "translation", "pronunciation", "order", "match", "type_in", "listen"];
+/* O TIPO DAS PERGUNTAS DO JOGO (Pedro, 27/11/2026: "padronizar que seja sempre o modelo mais simples de múltipla
+   escolha, como padrão; se ele quiser, escolhe os modelos específicos ou aleatório"). Vale para os dois modelos.
+     "mc" (ou nada)  → só multiple_choice, 3 opções                       (o padrão)
+     "aleatorio"     → todos os tipos, misturados
+     [chaves]        → só os marcados; "variacoes" = fill_gap, odd_one_out, translation e pronunciation */
+const VARIACOES_MC = ["fill_gap", "odd_one_out", "translation", "pronunciation"];
+function jogoTipos(v) {
+  if (v === "aleatorio") return TEMA_JOGOS.slice();
+  if (Array.isArray(v)) {
+    const out = [];
+    v.forEach((k) => (k === "variacoes" ? VARIACOES_MC : [k]).forEach((x) => { if (TEMA_JOGOS.includes(x) && !out.includes(x)) out.push(x); }));
+    if (out.length) return out;
+  }
+  return ["multiple_choice"];
+}
+function soMultiplaEscolha(tipos) { return tipos.length === 1 && tipos[0] === "multiple_choice"; }
+const DESCR_JOGO = {
+  multiple_choice: `"multiple_choice": a question and exactly 3 options, correctIndex 0, 1 or 2`,
+  fill_gap: `"fill_gap": a sentence with ______ and exactly 3 options, correctIndex 0, 1 or 2`,
+  true_false: `"true_false": a statement about the topic or the vocabulary, options exactly ["True","False"], correctIndex 0 or 1`,
+  odd_one_out: `"odd_one_out": which word does not belong, exactly 3 options, correctIndex 0, 1 or 2`,
+  translation: `"translation": a Portuguese word or short phrase from the vocabulary, exactly 3 options in the lesson language, correctIndex 0, 1 or 2`,
+  pronunciation: `"pronunciation": which word has the sound shown in the question (e.g. 'Which word has the same vowel sound as "ship"?'), exactly 3 options, correctIndex 0, 1 or 2`,
+  order: `"order" (build the sentence): "question" is a short instruction (e.g. "Put the words in order."); "options" = the words of ONE correct sentence IN THE CORRECT ORDER, one word per string (4 to 8 words, punctuation glued to the last word). The sentence must have only ONE natural correct order. correctIndex 0`,
+  match: `"match" (match the pairs): "question" is a short instruction (e.g. "Match the words to their meanings."); "options" = 3 to 5 strings, each "left = right" (a word and its translation, a word and its opposite, a question and its answer...). Every right side must match only its own left side. correctIndex 0`,
+  listen: `"listen" (listen and choose): the students HEAR a sentence read by a neural voice and choose. "audio" = the sentence they hear (natural, about the topic, max 20 words, no names they could not spell); "question" = a short instruction that says what to choose (e.g. "Listen. What does she want?" or "Listen and choose the sentence you heard."); exactly 3 options, correctIndex 0, 1 or 2. The options must NOT repeat the audio word for word unless the task is "choose what you heard", and then the distractors differ by ONE sound or word (e.g. "She lives here" / "She leaves here" / "She lived here")`,
+  type_in: `"type_in" (type the answer): "question" has a gap ______ and, in brackets, what to use, e.g. "She ______ (not / like) coffee."; "options" = 1 to 4 ACCEPTED answers, the most natural first, including the common contracted / full variants (e.g. ["doesn't like", "does not like"]). Only the gap text, never the whole sentence. correctIndex 0`,
+};
+function guiaJogo(tipos, nJogo) {
+  if (soMultiplaEscolha(tipos)) return `- "languageGame": exactly ${nJogo} items, ALL of type "multiple_choice" (the simple format): each with "type": "multiple_choice", a question, exactly 3 options and correctIndex 0, 1 or 2.`;
+  const todos = tipos.length > 1 && nJogo >= tipos.length;
+  return `- "languageGame": exactly ${nJogo} items. Use ONLY these game types${tipos.length > 1 ? ", spread as evenly as possible across the items" + (todos ? " (each type at least once)" : "") : ""}. Each item gets a "type":
+` + tipos.map((k) => "  · " + DESCR_JOGO[k]).join("\n");
+}
 
-function temaInstrucoes({ level, visual }) {
+function temaInstrucoes({ level, visual, nJogo, jogoTipos: escolha }) {
+  nJogo = jogoN(nJogo);
+  const tipos = jogoTipos(escolha);
   const n = TEMA_CONVERSA[level] || 9;
   return `
 
 ══ THIS LESSON USES THE "THEMED" MODEL (overrides the fixed counts above) ══
 The slides are not the Canva template: the school portal draws them from your JSON, with a visual identity made for THIS topic. So:
 - "conversation": exactly ${n} items (pair work questions; the teacher shows them ${n % 4 === 0 && n >= 8 ? 4 : 3} per slide), in a natural order of subtopics.
-- "languageGame": exactly 6 items and VARY the game type across them (use at least 3 different types). Every item is still answered by tapping one option. Each item gets a "type":
-  "multiple_choice" (3 options) · "fill_gap" (a sentence with ______, 3 options) · "true_false" (a statement about the topic or the vocabulary, options exactly ["True","False"]) · "odd_one_out" (which word does not belong, 3 options) · "translation" (a Portuguese word or short phrase from the vocabulary, 3 English options) · "pronunciation" (which word has the sound shown in the question, e.g. 'Which word has the same vowel sound as "ship"?', 3 options).
-  For true_false, "options" has exactly 2 strings and correctIndex is 0 or 1; for every other type, exactly 3 options and correctIndex 0, 1 or 2.
+${guiaJogo(tipos, nJogo)}
 
 VISUAL IDENTITY ("design" key). Invent a look that a teacher would recognize as THIS topic at first sight, as a professional designer would for a classroom TV (55 inches, about 4 meters away):
 - "palette": six hex colors { "fundo" (background), "fundo2" (soft background shape), "prim" (titles), "sec" (card borders, chips), "dest" (accent: numbers, highlights), "txt" (body text) }. Text colors MUST have strong contrast with "fundo" (WCAG 4.5:1 or better). Prefer light backgrounds unless the topic is clearly dark (space, night, horror, gaming), then set "escuro": true.
@@ -669,15 +712,39 @@ function sanearDesign(d) {
     icones: (Array.isArray(d.icones) ? d.icones : []).map(nome).filter(Boolean).slice(0, 10),
   };
 }
-function sanearJogoTema(lista) {
-  return (Array.isArray(lista) ? lista : []).slice(0, 6).map((g) => {
-    const type = TEMA_JOGOS.includes(g && g.type) ? g.type : "multiple_choice";
+function sanearJogoNovo(g, type) {
+  const ops = (Array.isArray(g && g.options) ? g.options : []).map((x) => String(x == null ? "" : x).trim()).filter(Boolean);
+  const question = String((g && g.question) || "");
+  if (type === "order") {
+    /* uma frase inteira numa string só também vale: vira palavras */
+    const palavras = ops.length === 1 ? ops[0].split(/\s+/) : ops;
+    return palavras.length >= 2 && palavras.length <= 12 ? { type, question, options: palavras.slice(0, 12), correctIndex: 0 } : null;
+  }
+  if (type === "match") {
+    const pares = ops.filter((x) => { const k = x.indexOf("="); return k > 0 && x.slice(k + 1).trim(); }).slice(0, 6);
+    return pares.length >= 2 ? { type, question, options: pares, correctIndex: 0 } : null;
+  }
+  if (type === "type_in") return ops.length ? { type, question, options: ops.slice(0, 6), correctIndex: 0 } : null;
+  return null;
+}
+function sanearJogoTema(lista, n, permitidos) {
+  return (Array.isArray(lista) ? lista : []).slice(0, jogoN(n)).map((g) => {
+    const tipo = g && g.type;
+    if ((tipo === "order" || tipo === "match" || tipo === "type_in") && (!permitidos || permitidos.includes(tipo))) {
+      const novo = sanearJogoNovo(g, tipo);
+      return novo;   /* torto (pares sem "=", frase de uma palavra): sai da aula; um slide vazio seria pior que um item a menos */
+    }
+    /* tipo fora do que o professor escolheu vira múltipla escolha com o que der para aproveitar */
+    const type = TEMA_JOGOS.includes(tipo) && !["order", "match", "type_in"].includes(tipo) && (!permitidos || permitidos.includes(tipo)) ? tipo : "multiple_choice";
     const n = type === "true_false" ? 2 : 3;
     const options = (Array.isArray(g && g.options) ? g.options : []).slice(0, n).map(String);
     while (options.length < n) options.push(type === "true_false" ? (options.length ? "False" : "True") : "");
     const ci = Number(g && g.correctIndex);
-    return { type, question: String((g && g.question) || ""), options, correctIndex: ci >= 0 && ci < n ? ci : 0 };
-  });
+    const item = { type, question: String((g && g.question) || ""), options, correctIndex: ci >= 0 && ci < n ? ci : 0 };
+    /* ouça e escolha sem a frase para ouvir não tem como ser jogado: vira múltipla escolha comum */
+    if (type === "listen") { const audio = String((g && g.audio) || "").trim().slice(0, 300); if (audio) item.audio = audio; else item.type = "multiple_choice"; }
+    return item;
+  }).filter(Boolean);
 }
 
 /* ══ SÓ O VISUAL, PARA A PRÉVIA (Pedro, 27/11/2026) ══════════════════════════════════════════════════════════════
@@ -701,8 +768,12 @@ async function generateDesign({ topic, language, level, visual }) {
   return Object.assign(sanearDesign(parsed), { nome: String(parsed.nome || "").slice(0, 60) });
 }
 
-async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity, modelo, visual, design }) {
-  const sources = language === "english" ? pickGrammarSources(level, 6) : null;
+async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity, modelo, visual, design, nJogo, jogoTipos: escolhaTipos }) {
+  nJogo = jogoN(nJogo);
+  const tipos = jogoTipos(escolhaTipos), soMC = soMultiplaEscolha(tipos);
+  /* no modelo clássico o esquema pede múltipla escolha; com outros tipos escolhidos, este adendo manda mais */
+  const tiposClassico = modelo !== "tema" && !soMC ? `\n\n══ LANGUAGE GAME TYPES (this overrides the languageGame schema above) ══\n${guiaJogo(tipos, nJogo)}\nEvery languageGame item must include its "type".` : "";
+  const sources = language === "english" ? pickGrammarSources(level, nJogo) : null;
 
   const body = {
     model: MODEL,
@@ -710,8 +781,8 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
     system: SYSTEM_PROMPT,
     messages: [
       { role: "user", content: modelo === "tema"
-          ? buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity }).replace(/\n}\s*$/, temaSchema() + "\n}") + temaInstrucoes({ level, visual })
-          : buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity }) },
+          ? buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity, nJogo }).replace(/\n}\s*$/, temaSchema() + "\n}") + temaInstrucoes({ level, visual, nJogo, jogoTipos: tipos })
+          : buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity, nJogo }) + tiposClassico },
     ],
   };
   if (useWebSearch) {
@@ -741,7 +812,9 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
     vocabulary: clampArray(parsed.vocabulary, 8),
     introText: parsed.introText || "",
     conversation: clampArray(parsed.conversation, modelo === "tema" ? (TEMA_CONVERSA[level] || 9) : 9),
-    languageGame: modelo === "tema" ? attachLanguageGameSources(sanearJogoTema(parsed.languageGame), sources) : attachLanguageGameSources(clampLanguageGame(parsed.languageGame, 6), sources),
+    languageGame: modelo === "tema" || !soMC ? attachLanguageGameSources(sanearJogoTema(parsed.languageGame, nJogo, tipos), sources) : attachLanguageGameSources(clampLanguageGame(parsed.languageGame, nJogo), sources),
+    nJogo,
+    jogoTipos: tipos,   /* para "regenerar só o jogo" manter os tipos escolhidos */
     modelo: modelo === "tema" ? "tema" : "classico",
     /* o visual que o professor já viu na prévia vale mais que o que a IA inventar agora: a prévia é o resultado */
     design: modelo === "tema" ? sanearDesign(design && typeof design === "object" ? design : parsed.design) : null,
@@ -753,19 +826,21 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
 
 // Regenera SÓ uma seção (usado por api/regenerate-section.js), sem tocar
 // no resto da aula. Retorna só a chave pedida, ex.: { languageGame: [...] }.
-async function generateSection({ section, language, topic, level, ageGroup, useWebSearch }) {
+async function generateSection({ section, language, topic, level, ageGroup, useWebSearch, nJogo, jogoTipos: escolhaTipos }) {
+  nJogo = jogoN(nJogo);
+  const tipos = jogoTipos(escolhaTipos), soMC = soMultiplaEscolha(tipos);
   if (!SECTION_LABELS[section]) {
     throw new Error(`Seção inválida: ${section}`);
   }
 
-  const sources = section === "languageGame" && language === "english" ? pickGrammarSources(level, 6) : null;
+  const sources = section === "languageGame" && language === "english" ? pickGrammarSources(level, nJogo) : null;
 
   const body = {
     model: MODEL,
     max_tokens: 4000,
     system: SECTION_SYSTEM_PROMPT,
     messages: [
-      { role: "user", content: buildSectionUserPrompt({ section, topic, level, ageGroup, useWebSearch, sources }) },
+      { role: "user", content: buildSectionUserPrompt({ section, topic, level, ageGroup, useWebSearch, sources, nJogo }) + (section === "languageGame" && !soMC ? `\n\n══ LANGUAGE GAME TYPES (this overrides the schema above) ══\n${guiaJogo(tipos, nJogo)}\nEvery item must include its "type".` : "") },
     ],
   };
   if (useWebSearch) {
@@ -786,13 +861,18 @@ async function generateSection({ section, language, topic, level, ageGroup, useW
     case "evaluation":
       return { evaluation: clampArray(parsed.evaluation, 2) };
     case "languageGame":
-      return { languageGame: attachLanguageGameSources(clampLanguageGame(parsed.languageGame, 6), sources) };
+      return { languageGame: attachLanguageGameSources(soMC ? clampLanguageGame(parsed.languageGame, nJogo) : sanearJogoTema(parsed.languageGame, nJogo, tipos), sources) };
     default:
       throw new Error(`Seção inválida: ${section}`);
   }
 }
 
 module.exports = {
+  jogoTipos,
+  guiaJogo,
+  sanearJogoNovo,
+  jogoN,
+  JOGO_MAX,
   generateDesign,
   sanearDesign,
   sanearJogoTema,

@@ -528,7 +528,26 @@ function languageGameSourceField(startIndex, count) {
 /* O JOGO É OPCIONAL (Pedro, 27/11/2026: "o Language Game no final, ativado como padrão, e ele escolhe desclicar").
  * Sem jogo (lesson.semJogo), saem o divisor "LANGUAGE GAME" e as 4 páginas do jogo, e a agenda passa de
  * "Game & Evaluation" para "Evaluation". O .pptx e a prévia em HTML usam esta lista, nunca o LAYOUTS cru. */
+/* QUANTAS PERGUNTAS NO JOGO (Pedro, 27/11/2026: padrão 6, o professor escolhe de 1 a 20). As 4 páginas fixas do jogo
+ * (2 grupos de 3, cada um sem e com a resposta) viram um PAR de páginas a cada 3 perguntas, alternando os dois fundos
+ * do template. Com 6 perguntas a saída é exatamente a de antes. */
+const PAGS_JOGO = LAYOUTS.filter((l) => l.role === "languageGame");
+function paginasDoJogo(n) {
+  const out = [];
+  for (let ini = 0, g = 0; ini < n; ini += 3, g++) {
+    const qtd = Math.min(3, n - ini), bg = PAGS_JOGO[(g % 2) * 2].bg;
+    [false, true].forEach((revela) => out.push({ page: PAGS_JOGO[0].page, role: "languageGame", bg,
+      fields: [qaBlockField("languageGame", ini, qtd, revela), languageGameSourceField(ini, qtd)] }));
+  }
+  return out;
+}
 function layoutsDaAula(lesson) {
+  const nJogo = lesson && !lesson.semJogo && Array.isArray(lesson.languageGame) ? lesson.languageGame.length : 6;
+  if (lesson && !lesson.semJogo && nJogo && nJogo !== 6) {
+    const out = []; let feito = false;
+    LAYOUTS.forEach((l) => { if (l.role !== "languageGame") { out.push(l); return; } if (!feito) { feito = true; out.push.apply(out, paginasDoJogo(nJogo)); } });
+    return out;
+  }
   if (!lesson || !lesson.semJogo) return LAYOUTS;
   const out = [];
   LAYOUTS.forEach((l, i) => {
@@ -544,4 +563,46 @@ function layoutsDaAula(lesson) {
   return out;
 }
 
-module.exports = { LAYOUTS, layoutsDaAula, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY, RED, BLACK, GRAY };
+/* OS TIPOS NOVOS DO JOGO NO PAPEL (item 7, Pedro 27/11/2026). O modelo tema gera também "order" (montar a frase),
+ * "match" (ligar pares) e "type_in" (completar digitando), que a TV e o celular desenham do jeito deles. No .pptx e na
+ * prévia clássica eles viram texto: o enunciado leva o que o aluno precisa (as palavras embaralhadas, as duas colunas)
+ * e a RESPOSTA só aparece no slide de revelação, nunca como alternativa no slide da pergunta. correctIndex -1 = nenhuma
+ * linha marcada (nos pares, todas as linhas da revelação são a resposta). */
+function embaralhaFixo(arr, semente) {
+  let h = 2166136261; for (let i = 0; i < semente.length; i++) { h ^= semente.charCodeAt(i); h = Math.imul(h, 16777619); }
+  const rnd = () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const a = arr.slice();
+  for (let k = a.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [a[k], a[j]] = [a[j], a[k]]; }
+  if (a.length > 1 && a.every((x, i) => x === arr[i])) a.push(a.shift());
+  return a;
+}
+function jogoClassico(items, revela) {
+  return (items || []).map((it) => {
+    const t = it && it.type, ops = ((it && it.options) || []).map((x) => String(x == null ? "" : x).trim()).filter(Boolean), q = String((it && it.question) || "");
+    if (t === "order") {
+      const emb = embaralhaFixo(ops.map((x, i) => i), q + "|" + ops.join(" ")).map((i) => ops[i]);
+      return { ...it, question: `${q}  [ ${emb.join(" / ")} ]`, options: revela ? [ops.join(" ")] : [], correctIndex: 0 };
+    }
+    if (t === "match") {
+      const pares = ops.map((x) => { const k = x.indexOf("="); return k > 0 ? [x.slice(0, k).trim(), x.slice(k + 1).trim()] : null; }).filter((x) => x && x[0] && x[1]);
+      const dir = embaralhaFixo(pares.map((x, i) => i), q + "|" + ops.join("|")).map((i) => pares[i][1]);
+      return { ...it, question: `${q}  [ ${pares.map((x) => x[0]).join(", ")}  →  ${dir.join(", ")} ]`, options: revela ? pares.map((x) => `${x[0]} = ${x[1]}`) : [], correctIndex: -1 };
+    }
+    if (t === "type_in") return { ...it, options: revela ? [ops[0] || ""] : [], correctIndex: 0 };
+    /* ouça e escolha: no papel não há voz. A frase vai nas ANOTAÇÕES do apresentador (pptx-builder.js) para o
+       professor ler em voz alta, e só aparece no slide da resposta: em "o que você ouviu?" ela É a resposta */
+    if (t === "listen") return { ...it, question: `🔊 ${q}` + (revela && it.audio ? `  “${it.audio}”` : "") };
+    return it;
+  });
+}
+
+/* as frases do "ouça e escolha" de um slide, para as anotações do apresentador */
+function frasesParaLer(lesson, layout) {
+  if (layout.role !== "languageGame") return [];
+  const f = layout.fields.find((x) => x.kind === "qaBlock");
+  if (!f || f.revealAnswer) return [];
+  return (lesson.languageGame || []).slice(f.startIndex, f.startIndex + f.count)
+    .map((it, i) => (it && it.type === "listen" && it.audio ? `${f.startIndex + i + 1}. ${it.audio}` : null)).filter(Boolean);
+}
+
+module.exports = { frasesParaLer, jogoClassico, LAYOUTS, layoutsDaAula, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY, RED, BLACK, GRAY };

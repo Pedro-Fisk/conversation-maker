@@ -188,6 +188,32 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <h2>✨ Incrementos</h2>
 <p class="hint hint-lead" style="margin-top:0">Recursos opcionais para enriquecer a atividade. Ative os que quiser usar.</p>
 
+<!-- QUANTAS PERGUNTAS NO JOGO (Pedro, 27/11/2026): padrão 6, de 1 a 20. O .pptx ganha um par de slides a cada 3. -->
+<div class="increment-section">
+<label class="checkbox-row" for="jogoQtd" style="cursor:default">
+<span class="increment-title">🎲 Perguntas no Language Game</span>
+<input type="number" id="jogoQtd" min="1" max="20" step="1" value="6" inputmode="numeric" style="width:4.5rem;margin-left:auto;font:inherit;font-weight:700;text-align:center;padding:.3rem;border-radius:8px;border:1.5px solid #cbd5e1">
+</label>
+<p class="hint">Padrão: 6. Escolha de 1 a 20. No PowerPoint, cada 3 perguntas viram um slide de pergunta e outro de resposta.</p>
+<label class="checkbox-row" for="jogoTipo" style="cursor:default;margin-top:.6rem"><span class="increment-title">🧩 Tipo das perguntas</span></label>
+<!-- O TIPO DAS PERGUNTAS DO JOGO (Pedro, 27/11/2026): múltipla escolha simples por padrão; ou aleatório; ou os tipos marcados -->
+<select id="jogoTipo" style="width:100%;font:inherit;padding:.45rem;border-radius:8px;border:1.5px solid #cbd5e1">
+<option value="mc" selected>Múltipla escolha (padrão)</option>
+<option value="aleatorio">Aleatório: a IA mistura todos os tipos</option>
+<option value="escolher">Escolher os tipos…</option>
+</select>
+<div id="jogoTiposWrap" style="display:none;margin-top:.5rem;line-height:1.9;color:inherit">
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="multiple_choice" checked> Múltipla escolha (3 alternativas)</label>
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="variacoes"> Variações de múltipla escolha (lacuna, intruso, tradução, pronúncia)</label>
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="true_false"> Verdadeiro ou falso</label>
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="order"> Montar a frase</label>
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="match"> Ligar pares</label>
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="type_in"> Completar digitando</label>
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="listen"> Ouça e escolha (voz na TV)</label>
+</div>
+<p class="hint">Na TV e no celular dos alunos cada tipo tem o seu jeito de responder; no PowerPoint, os tipos que não são de alternativa viram texto, com a resposta só no slide de resposta.</p>
+</div>
+
 <div class="increment-section">
 <label class="checkbox-row" for="webSearch">
 <input type="checkbox" id="webSearch">

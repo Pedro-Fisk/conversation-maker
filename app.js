@@ -767,6 +767,9 @@ ageGroup: lesson._genAgeGroup,
 useWebSearch: lesson._genUseWebSearch,
 teacherName: profSession ? profSession.name : "",
 section: sectionKey,
+/* regenerar o jogo mantém quantas perguntas ele tem */
+nJogo: (lesson.languageGame && lesson.languageGame.length) || lesson.nJogo || 6,
+jogoTipos: lesson.jogoTipos || "mc",
 }),
 });
 const data = await response.json().catch(() => ({}));
@@ -1106,19 +1109,54 @@ card.appendChild(
 editField(q.question, (v) => { list[i].question = v; }, { multiline: true, rows: 1 })
 );
 
+/* OS TIPOS NOVOS (item 7, Pedro 27/11/2026): cada um com o seu jeito de editar, guardado em "options" como os outros */
+const NOMES_JOGO = { order: "Montar a frase", match: "Ligar pares", type_in: "Completar digitando" };
+if (NOMES_JOGO[q.type]) {
+  num.textContent += " · " + NOMES_JOGO[q.type];
+  const lab = document.createElement("span");
+  lab.className = "edit-label";
+  if (q.type === "order") {
+    lab.textContent = "A frase certa (na TV e no celular as palavras aparecem embaralhadas)";
+    card.appendChild(lab);
+    card.appendChild(editField((q.options || []).join(" "), (v) => { list[i].options = String(v).trim().split(/\s+/).filter(Boolean); }, { multiline: true, rows: 1 }));
+  } else if (q.type === "match") {
+    lab.textContent = "Um par por linha, no formato  palavra = par  (de 2 a 6 pares)";
+    card.appendChild(lab);
+    card.appendChild(editField((q.options || []).join("\n"), (v) => { list[i].options = String(v).split(/\n/).map((x) => x.trim()).filter((x) => x.indexOf("=") > 0); }, { multiline: true, rows: Math.max(3, (q.options || []).length) }));
+  } else {
+    lab.textContent = "Respostas aceitas, separadas por /  (a primeira é a que aparece na revelação)";
+    card.appendChild(lab);
+    card.appendChild(editField((q.options || []).join(" / "), (v) => { list[i].options = String(v).split("/").map((x) => x.trim()).filter(Boolean); }, { multiline: true, rows: 1 }));
+  }
+  body.appendChild(card);
+  return;
+}
+
+/* ouça e escolha: a frase que a turma OUVE (voz neural na TV; no PowerPoint, nas anotações para o professor ler) */
+if (q.type === "listen") {
+  num.textContent += " · Ouça e escolha";
+  const lab = document.createElement("span");
+  lab.className = "edit-label";
+  lab.textContent = "🔊 O que a turma ouve";
+  card.appendChild(lab);
+  card.appendChild(editField(q.audio || "", (v) => { list[i].audio = String(v).trim(); }, { multiline: true, rows: 1 }));
+}
+
 const optLabel = document.createElement("span");
 optLabel.className = "edit-label";
 optLabel.textContent = "Opções (marque a correta)";
 card.appendChild(optLabel);
 
-const options = Array.isArray(q.options) ? q.options : (q.options = ["", "", ""]);
-while (options.length < 3) options.push("");
+/* verdadeiro ou falso tem DUAS opções: completar até 3 criava uma terceira vazia na TV */
+const nOps = q.type === "true_false" ? 2 : 3;
+const options = Array.isArray(q.options) ? q.options : (q.options = nOps === 2 ? ["True", "False"] : ["", "", ""]);
+while (options.length < nOps) options.push("");
 if (list[i].correctIndex == null) list[i].correctIndex = 0;
 const radioName = "lg-correct-" + i + "-" + Math.random().toString(36).slice(2, 8);
 
 const optionsContainer = document.createElement("div");
 optionsContainer.className = "edit-mc-list";
-options.slice(0, 3).forEach((opt, oi) => {
+options.slice(0, nOps).forEach((opt, oi) => {
 const row = document.createElement("label");
 row.className = "edit-mc-row";
 
@@ -1254,6 +1292,8 @@ extraActivity: p.extraActivity,
 modelo: p.modelo,
 visual: p.visual,
 design: p.design,
+nJogo: p.nJogo,
+jogoTipos: p.jogoTipos,
 };
 if (extras) Object.assign(payload, extras);
 const { lessons, resolvedVideoId } = await fetchLessons(payload);
@@ -1733,6 +1773,23 @@ fiskInitThemeToggle("themeToggle", { storageKey: "cm-theme" });
    No modelo clássico: a capa do template de sempre, com o tema. O título final é o que a IA escrever. */
 /* var, não const: o ajustaModelo() roda no carregamento ANTES desta linha e chama previaAtualiza */
 var gameCheckEl = document.getElementById("gameCheck");
+/* QUANTAS PERGUNTAS NO JOGO (Pedro, 27/11/2026): padrão 6, de 1 a 20 (o servidor confere de novo: lesson-generation.js, jogoN) */
+var jogoQtdEl = document.getElementById("jogoQtd");
+function jogoQtd() { const n = parseInt(jogoQtdEl && jogoQtdEl.value, 10); return n >= 1 ? Math.min(20, n) : 6; }
+if (jogoQtdEl) jogoQtdEl.addEventListener("change", () => { jogoQtdEl.value = jogoQtd(); });
+/* O TIPO DAS PERGUNTAS (Pedro, 27/11/2026): "mc" = múltipla escolha simples (padrão), "aleatorio", ou a lista marcada */
+var jogoTipoEl = document.getElementById("jogoTipo");
+function jogoTiposEscolha() {
+  const v = jogoTipoEl ? jogoTipoEl.value : "mc";
+  if (v !== "escolher") return v === "aleatorio" ? "aleatorio" : "mc";
+  const marcados = Array.from(document.querySelectorAll('input[name="jogoTipoX"]:checked')).map((x) => x.value);
+  return marcados.length ? marcados : "mc";
+}
+if (jogoTipoEl) jogoTipoEl.addEventListener("change", () => { document.getElementById("jogoTiposWrap").style.display = jogoTipoEl.value === "escolher" ? "block" : "none"; });
+if (gameCheckEl && document.getElementById("jogoQtdLinha")) {
+  const mostraQtd = () => { const on = gameCheckEl.checked ? "" : "none"; document.getElementById("jogoQtdLinha").style.display = on; const tl = document.getElementById("jogoTipoLinha"); if (tl) tl.style.display = gameCheckEl.checked ? "block" : "none"; };
+  gameCheckEl.addEventListener("change", mostraQtd); mostraQtd();
+}
 var previa = { design: null, chave: "", vez: 0, t: null };
 function previaEls() { return { box: document.getElementById("previaSlide"), nome: document.getElementById("previaNome"), sub: document.getElementById("previaSub"), pal: document.getElementById("previaPaleta"), outro: document.getElementById("previaOutro") }; }
 function tituloDaPrevia(t) { t = String(t || "").trim().split(/[.:;\n]|, (?=[a-zà-ú])/)[0].trim(); if (t.length > 60) t = t.slice(0, 57).replace(/\s+\S*$/, "") + "…"; return t ? t.charAt(0).toUpperCase() + t.slice(1) : "Sua atividade"; }
@@ -1899,7 +1956,7 @@ language,
 videoId: null,
 params: { topic, useWebSearch, teacherName: profSession.name, extraActivity, modelo: modeloAtual(), visual: (visualPedidoEl && visualPedidoEl.value.trim()) || null,
   /* o jogo é opcional (27/11/2026) e o visual que o professor viu na prévia vai junto: a aula sai com a mesma cara */
-  semJogo: !(gameCheckEl ? gameCheckEl.checked : true), design: modeloAtual() === "tema" && previa && previa.design ? previa.design : null },
+  semJogo: !(gameCheckEl ? gameCheckEl.checked : true), nJogo: jogoQtd(), jogoTipos: jogoTiposEscolha(), design: modeloAtual() === "tema" && previa && previa.design ? previa.design : null },
 slots: combos.map((combo) => ({ combo, versions: [], active: 0, recreations: 0, busy: null, error: null, slideEl: null })),
 generatingRest: false,
 barEl: null,
@@ -1920,6 +1977,8 @@ extraActivity,
 modelo: batch.params.modelo,
 visual: batch.params.visual,
 design: batch.params.design,
+nJogo: batch.params.nJogo,
+jogoTipos: batch.params.jogoTipos,
 };
 const { lessons, resolvedVideoId, creditos: saldo } = await fetchLessons(payload);
 if (typeof saldo === "number") { creditos = saldo; mostrarCreditos(); }

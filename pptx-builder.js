@@ -18,7 +18,7 @@
 
 const path = require("path");
 const pptxgen = require("pptxgenjs");
-const { layoutsDaAula, FONT_MARKER } = require("./slide-layouts");
+const { layoutsDaAula, jogoClassico, frasesParaLer, FONT_MARKER } = require("./slide-layouts");
 const {
   getQaItems,
   buildDynamicValue,
@@ -284,7 +284,8 @@ const CORRECT_OPTION_COLOR = "1F9D55";
 const OPTION_LETTERS = ["A", "B", "C"];
 
 function addMultipleChoiceBlock(slide, field, lesson) {
-  const items = getQaItems(lesson, field.group, field.startIndex, field.count);
+  /* os tipos novos (montar a frase, pares, digitar) viram texto: slide-layouts.js, jogoClassico */
+  const items = jogoClassico(getQaItems(lesson, field.group, field.startIndex, field.count), field.revealAnswer);
   const caixa = caixaEmPx(field);
   const tamanhoQ = fonteDoBlocoQa(field, items, caixa.largura, caixa.altura);
   const tamanhoA = tamanhoQ * (field.answerFontSize / field.questionFontSize);
@@ -497,6 +498,8 @@ function buildPptx(lesson, thumbnailData) {
     const bgPath = path.join(__dirname, layout.bg);
     slide.addImage({ path: bgPath, x: 0, y: 0, w: SLIDE_W_IN, h: SLIDE_H_IN });
     layout.fields.forEach((field) => renderField(slide, field, lesson, pptx));
+    const ler = frasesParaLer(lesson, layout);
+    if (ler.length) slide.addNotes("🔊 Leia em voz alta (ouça e escolha):\n" + ler.join("\n"));
 
     if (layout.role === "intro" && videoId) {
       addVideoSlide(pptx, videoId, thumbnailData || null, lesson.language);

@@ -221,6 +221,29 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <span class="ext-tx"><b>Jogo no final <span class="ext-pad">PADRÃO</span></b><small>O Language Game, na gramática do nível (Basic: Essentials · Intermediate: Transitions · Advanced: Fluency e In Focus).</small></span>
 <input type="checkbox" id="gameCheck" class="tg" checked>
 </label>
+<!-- quantas perguntas (Pedro, 27/11/2026): padrão 6, de 1 a 20; some quando o jogo está desligado -->
+<div class="ext-linha" id="jogoQtdLinha" style="cursor:default;padding-top:0">
+<span class="ext-tx"><small>Quantas perguntas? Padrão 6, de 1 a 20.</small></span>
+<input type="number" id="jogoQtd" min="1" max="20" step="1" value="6" inputmode="numeric" style="width:4.5rem;font:inherit;font-weight:800;text-align:center;padding:.35rem;border-radius:10px;border:0">
+</div>
+<div class="ext-linha" id="jogoTipoLinha" style="cursor:default;padding-top:0;display:block">
+<small style="display:block;margin-bottom:.3rem">Tipo das perguntas</small>
+<!-- O TIPO DAS PERGUNTAS DO JOGO (Pedro, 27/11/2026): múltipla escolha simples por padrão; ou aleatório; ou os tipos marcados -->
+<select id="jogoTipo" style="width:100%;font:inherit;font-weight:700;padding:.45rem;border-radius:10px;border:0">
+<option value="mc" selected>Múltipla escolha (padrão)</option>
+<option value="aleatorio">Aleatório: a IA mistura todos os tipos</option>
+<option value="escolher">Escolher os tipos…</option>
+</select>
+<div id="jogoTiposWrap" style="display:none;margin-top:.5rem;line-height:1.9;color:inherit">
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="multiple_choice" checked> Múltipla escolha (3 alternativas)</label>
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="variacoes"> Variações de múltipla escolha (lacuna, intruso, tradução, pronúncia)</label>
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="true_false"> Verdadeiro ou falso</label>
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="order"> Montar a frase</label>
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="match"> Ligar pares</label>
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="type_in"> Completar digitando</label>
+<label style="display:block"><input type="checkbox" name="jogoTipoX" value="listen"> Ouça e escolha (voz na TV)</label>
+</div>
+</div>
 </div>
 
 <div class="ext">
