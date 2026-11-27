@@ -18,7 +18,7 @@
 
 const path = require("path");
 const pptxgen = require("pptxgenjs");
-const { LAYOUTS, FONT_MARKER } = require("./slide-layouts");
+const { layoutsDaAula, FONT_MARKER } = require("./slide-layouts");
 const {
   getQaItems,
   buildDynamicValue,
@@ -492,7 +492,7 @@ function buildPptx(lesson, thumbnailData) {
 
   const videoId = lesson._videoId || null;
 
-  LAYOUTS.forEach((layout) => {
+  layoutsDaAula(lesson).forEach((layout) => {
     const slide = pptx.addSlide();
     const bgPath = path.join(__dirname, layout.bg);
     slide.addImage({ path: bgPath, x: 0, y: 0, w: SLIDE_W_IN, h: SLIDE_H_IN });

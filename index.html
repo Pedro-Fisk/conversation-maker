@@ -16,6 +16,7 @@
      preço certo para uma biblioteca que muda pouco e não pode ficar velha. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/pedro-fisk/fisk-hub@main/assets/fisk-shared.css">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="cara-nova.css">
 </head>
 <body>
 <script>/* tema herdado do Hub via ?theme= (domínio diferente não compartilha localStorage) e aplicado antes da primeira pintura */
@@ -96,10 +97,10 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </div>
 </div>
 
-<header class="hero">
-<a class="back-link" href="https://pedro-fisk.github.io/fisk-hub/">&larr; Voltar aos recursos</a>
-<button type="button" class="theme-toggle" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar modo escuro">🌙</button>
-
+<header class="hero hero-nova">
+<a class="back-link" href="https://pedro-fisk.github.io/fisk-hub/">&larr; Hub</a>
+<div class="hero-acoes">
+<a class="hero-pill" href="historico.html">🧩 Minhas atividades</a>
 <!-- Identidade do professor fora do fluxo do formulário: a primeira coisa que
      ele vê tem de ser o tópico da aula, não quem está logado. -->
 <div class="hero-menu is-hidden" id="profMenu">
@@ -114,37 +115,32 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <p class="hero-menu-note">Logado pelo Fisk Hub. Seu nome vai para o registro de atividades. Não aparece na atividade, no arquivo nem no nome do arquivo.</p>
 </div>
 </div>
-
-<img class="hero-logo" src="assets/fisk-logo.png" alt="FISK Taubaté · Caçapava">
-<h1>Conversation Maker</h1>
-<p>Crie Atividades Comunicativas completas em slides para praticar com os alunos</p>
+<button type="button" class="theme-toggle" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar modo escuro">🌙</button>
+</div>
+<!-- A CARA NOVA (Pedro, 27/11/2026: "mais alegre, mais divertida e mais fácil de entender"): a junção dos mockups A e B,
+     seis cartões coloridos um embaixo do outro, numerados, e a prévia da capa no fim. -->
+<div class="hero-cab">
+<img class="hero-logo" src="https://pedro-fisk.github.io/fisk-hub/assets/fisk-logo-balao-360.png" alt="FISK">
+<div class="hero-tx"><h1>Conversation Maker</h1><p>Em poucos passos, a conversação da sua turma pronta 🎉</p></div>
+<div class="hero-moeda is-hidden" id="creditosCard" title="cada atividade gerada custa 1 crédito"><strong id="cardCreditosNum">-</strong><small>créditos</small></div>
+</div>
 </header>
 
-<main class="wrap">
+<main class="wrap wrap-nova">
 
-<div class="row-inline" style="justify-content:flex-end;margin-bottom:14px">
-<!-- o histórico ficava só dentro do menu do nome do professor, e ninguém achava (Pedro, 08/10/2026) -->
-<a class="btn btn-ghost btn-sm" href="historico.html">🗂 Minhas Conversações Criadas</a>
+<div class="topo-acoes">
 <button type="button" class="btn btn-ghost btn-sm" id="clearBtn">🧹 Limpar formulário</button>
 </div>
 
-<form id="form">
+<form id="form" class="passos">
 
-<!-- Primeiro card: saldo de créditos numa linha só. Fica antes do tópico a
-     pedido do Pedro; é fino de propósito para não empurrar o tópico da aula
-     (que é o que o professor veio fazer) para fora da primeira tela. -->
-<div class="panel panel-creditos is-hidden" id="creditosCard">
-<svg class="moeda" viewBox="0 0 8 8" aria-hidden="true"><use href="#moedaPix"/></svg>
-<span>Você tem <strong id="cardCreditosNum">-</strong> créditos no Conversation Maker</span>
-<span class="panel-creditos-nota">cada atividade gerada custa 1</span>
-</div>
-
-<div class="panel panel-featured">
-<h2>💬 Tópico da aula</h2>
-<label class="fld" for="topic">Sobre o que vai ser a conversação? <span class="req">* obrigatório</span></label>
-<p class="hint hint-lead">Escreva livremente o tema da aula. Não precisa ser uma palavra só. Você pode descrever o contexto, o objetivo, situações que quer explorar ou o que os alunos precisam praticar. Quanto mais detalhe, melhor a IA adapta a atividade.</p>
+<section class="passo">
+<div class="cartao c-tema">
+<img class="cartao-ic" src="https://pedro-fisk.github.io/fisk-hub/assets/icones/fluent/speech-balloon.svg" alt="" aria-hidden="true">
+<h2><label for="topic">Sobre o que vai ser a conversa?</label></h2>
+<p class="dica">Escreva do seu jeito: o tema, a situação, o que os alunos precisam praticar. Quanto mais detalhe, melhor a IA adapta a atividade.</p>
 <div class="topic-wrap">
-<textarea id="topic" rows="3" placeholder="ex.: going shopping / uma conversa sobre planejar uma viagem ao Japão, incluindo pedir informações e reservar hotel..." required></textarea>
+<textarea id="topic" rows="3" placeholder="ex.: Thanksgiving e Black Friday: tradições, compras e o que eles fariam com um grande desconto..." required></textarea>
 <button type="button" class="mic-btn" id="micBtn" aria-label="Ditar por voz" title="Clique para ditar por voz">
 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -155,98 +151,144 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </button>
 </div>
 <p class="hint" id="micHint"></p>
+<div class="ideias" aria-label="Sugestões de tema">
+<button type="button" data-ideia="Thanksgiving and Black Friday: traditions, shopping and deals">🦃 Thanksgiving</button>
+<button type="button" data-ideia="Christmas traditions around the world">🎄 Natal</button>
+<button type="button" data-ideia="Planning a trip abroad: booking, asking for directions and trying local food">✈️ Viagem</button>
+<button type="button" data-ideia="Video games: favorite games, gaming habits and the hype around new releases">🎮 Games</button>
+<button type="button" data-ideia="Music and concerts: favorite artists, live shows and streaming">🎤 Música</button>
+<button type="button" data-ideia="Job interviews and first jobs">💼 Entrevista de emprego</button>
 </div>
+</div>
+</section>
 
-<!-- O VISUAL DA ATIVIDADE (27/11/2026): no modelo "tema" a IA desenha o visual pelo assunto (cores, fontes, ícones) e a
-     aula toca no portal; o clássico é o template do Canva de sempre, em .pptx. -->
-<div class="panel">
-<h2>🎨 Visual</h2>
-<div class="choice-row" id="modeloChoices" data-field="modelo">
-<button type="button" class="choice is-active" data-value="tema">Visual criado para o tema</button>
-<button type="button" class="choice" data-value="classico">Modelo clássico</button>
-</div>
-<div id="visualWrap">
-<p class="hint">Cores, fontes e ícones escolhidos para o assunto da aula. Se quiser, diga como imagina:</p>
-<input type="text" id="visualPedido" maxlength="300" placeholder="opcional, ex.: cores de Halloween, roxo e preto, com abóboras">
-</div>
-</div>
-
-<div class="panel">
-<h2>🌎 Idioma</h2>
-<div class="choice-row" id="languageChoices" data-field="language">
-<button type="button" class="choice is-active" data-value="english">Inglês</button>
-<button type="button" class="choice" data-value="spanish">Espanhol</button>
+<section class="passo">
+<div class="cartao c-idi">
+<img class="cartao-ic" src="https://pedro-fisk.github.io/fisk-hub/assets/icones/fluent/globe-showing-americas.svg" alt="" aria-hidden="true">
+<h2>Qual idioma?</h2>
+<p class="dica">De qual curso é a turma.</p>
+<div class="choice-row seg" id="languageChoices" data-field="language">
+<button type="button" class="choice is-active" data-value="english">🇺🇸 English</button>
+<button type="button" class="choice" data-value="spanish">🇪🇸 Español</button>
 </div>
 <p class="hint" id="languageHint">Os níveis do espanhol (Básico, Intermediário e Avançado) correspondem aos estágios Inmediato 1, 2 e 3 do curso.</p>
 </div>
+</section>
 
-
-<div class="panel">
-<h2>✨ Incrementos</h2>
-<p class="hint hint-lead" style="margin-top:0">Recursos opcionais para enriquecer a atividade. Ative os que quiser usar.</p>
-
-<div class="increment-section">
-<label class="checkbox-row" for="webSearch">
-<input type="checkbox" id="webSearch">
-<span class="increment-title">🔍 Pesquisar na internet</span>
-</label>
-<p class="hint">Útil para temas atuais (jogos, eventos, notícias). A IA faz até 3 buscas antes de criar a atividade, o que deixa a geração um pouco mais lenta.</p>
-</div>
-
-<div class="increment-section">
-<label class="checkbox-row" for="youtubeCheck">
-<input type="checkbox" id="youtubeCheck">
-<span class="increment-title">📺 Vídeo do YouTube</span>
-</label>
-<div id="youtubeWrap" class="is-hidden">
-<p class="hint hint-lead">A transcrição vai alimentar a IA ao gerar perguntas, e o vídeo aparecerá em um slide extra logo após a introdução no .pptx.</p>
-<input type="text" id="youtubeUrl" placeholder="ex.: https://www.youtube.com/watch?v=...">
-<label class="checkbox-row" for="youtubeLucky" style="margin-top:0.6rem">
-<input type="checkbox" id="youtubeLucky">
-<span>Estou com sorte, deixar a IA escolher um vídeo relevante automaticamente</span>
-</label>
-<p class="hint">A busca é feita no idioma da aula (o que você escolheu acima), mas o YouTube não garante o resultado. Pode vir um vídeo em português. Depois de gerar, dá para<strong>remover o bloco do vídeo</strong> na prévia da aula, e ele sai também do .pptx.</p>
-</div>
-</div>
-
-<div class="increment-section">
-<label class="checkbox-row" for="extraActivityCheck">
-<input type="checkbox" id="extraActivityCheck">
-<span class="increment-title">🎯 Atividade extra / dinâmica</span>
-</label>
-<div id="extraActivityWrap" class="is-hidden">
-<p class="hint hint-lead">Pode ser um debate, entrevista entre alunos, jogo, corrida pela sala, rodada de perguntas, etc. A IA vai gerar um slide extra com instruções claras logo após a introdução.</p>
-<textarea id="extraActivity" rows="3" placeholder="ex.: Quero que os alunos se entrevistem em duplas por 3 minutos sobre o tema, depois trocam de parceiro e repetem..."></textarea>
-<label class="checkbox-row" for="extraLucky" style="margin-top:0.6rem">
-<input type="checkbox" id="extraLucky">
-<span>Estou com sorte. Deixar a IA propor a dinâmica a partir do tema</span>
-</label>
-<p class="hint">A proposta vem junto com a aula e você confere <strong>antes de baixar o .pptx</strong>: o título e as instruções da dinâmica ficam editáveis na prévia, como o resto.</p>
-</div>
-</div>
-</div>
-
-<div class="panel" id="matrixField">
-<h2>📊 Nível × Faixa etária</h2>
-<p class="hint hint-lead">Marque na tabela quais combinações de nível e faixa etária você quer gerar. Uma só combinação gera uma aula única, como sempre. Marcando várias, você gera a <strong>primeira</strong>combinação, revisa e edita à vontade, e depois manda gerar as demais. Elas seguem a estrutura da primeira aula já revisada.</p>
+<section class="passo" id="matrixField">
+<div class="cartao c-niv">
+<img class="cartao-ic" src="https://pedro-fisk.github.io/fisk-hub/assets/icones/fluent/bar-chart.svg" alt="" aria-hidden="true">
+<h2>Para qual turma?</h2>
+<p class="dica">Toque nos quadradinhos. Uma combinação vira uma aula; várias viram uma série: a 1ª sai primeiro, você revisa, e as outras seguem ela.</p>
 <div class="matrix-scroll">
 <table class="matrix" id="matrixTable" aria-label="Seleção de combinações de nível e faixa etária"></table>
 </div>
-<p class="hint" id="levelHintEnglish">A faixa etária é contexto para a IA: o tema continua sendo exatamente o que você escreveu no tópico. O nível <strong>Teens</strong> é exclusivo da faixa Pré-adolescentes.<br>O <strong>Language Game</strong> já sai na gramática do nível, sem você precisar configurar nada: <strong>Basic</strong> usa Essentials 1 e 2, <strong>Intermediate</strong> usa Transitions 1 e 2, <strong>Advanced</strong>usa Fluency 1, 2 e In Focus, e cada pergunta mostra no rodapé do slide a qual livro e lição se refere.<strong>Real Beginners</strong> e <strong>Teens</strong> seguem o nível pré-A1/A1 do Quadro Europeu, sem citar livro.</p>
-<p class="hint is-hidden" id="levelHintSpanish">Os níveis Básico, Intermediário e Avançado correspondem aos estágios do curso: Inmediato 1, 2 e 3.</p>
+<p class="hint" id="levelHintEnglish">A faixa etária é contexto para a IA: o tema continua sendo o que você escreveu. O nível <strong>Teens</strong> é só para Pré-adolescentes.</p>
+<p class="hint is-hidden" id="levelHintSpanish">Básico, Intermediário e Avançado correspondem aos estágios Inmediato 1, 2 e 3.</p>
+</div>
+</section>
+
+<!-- O VISUAL DA ATIVIDADE: no modelo "tema" a IA desenha o visual pelo assunto (cores, fontes, ícones) e a aula toca no
+     portal; o clássico é o template do Canva de sempre, em .pptx. Só a direção vê este passo (ajustaModelo). -->
+<section class="passo">
+<div class="cartao c-vis">
+<img class="cartao-ic" src="https://pedro-fisk.github.io/fisk-hub/assets/icones/fluent/artist-palette.svg" alt="" aria-hidden="true">
+<h2>Como vai ficar a cara?</h2>
+<p class="dica">A IA escolhe cores, fontes e ícones pelo tema. Ou fique no modelo de sempre.</p>
+<div class="choice-row seg" id="modeloChoices" data-field="modelo">
+<button type="button" class="choice is-active" data-value="tema">✨ Visual do tema</button>
+<button type="button" class="choice" data-value="classico">📘 Modelo clássico</button>
+</div>
+<div id="visualWrap">
+<input type="text" id="visualPedido" maxlength="300" placeholder="Quer sugerir? (opcional) ex.: marrom e laranja, outono, perus">
+</div>
+</div>
+</section>
+
+<section class="passo">
+<div class="cartao c-ext">
+<img class="cartao-ic" src="https://pedro-fisk.github.io/fisk-hub/assets/icones/fluent/sparkles.svg" alt="" aria-hidden="true">
+<h2>Quer turbinar?</h2>
+<p class="dica">Ligue ou desligue o que quiser.</p>
+<div class="exts">
+
+<div class="ext">
+<label class="ext-linha" for="gameCheck">
+<img src="https://pedro-fisk.github.io/fisk-hub/assets/icones/fluent/joystick.svg" alt="" aria-hidden="true">
+<span class="ext-tx"><b>Jogo no final <span class="ext-pad">PADRÃO</span></b><small>O Language Game, na gramática do nível (Basic: Essentials · Intermediate: Transitions · Advanced: Fluency e In Focus).</small></span>
+<input type="checkbox" id="gameCheck" class="tg" checked>
+</label>
 </div>
 
+<div class="ext">
+<label class="ext-linha" for="webSearch">
+<img src="https://pedro-fisk.github.io/fisk-hub/assets/icones/fluent/globe-showing-americas.svg" alt="" aria-hidden="true">
+<span class="ext-tx"><b>Notícias atuais</b><small>A IA pesquisa na internet antes de criar: bom para temas da semana (jogos, eventos, notícias). Deixa a geração um pouco mais lenta.</small></span>
+<input type="checkbox" id="webSearch" class="tg">
+</label>
+</div>
 
-<!-- Aviso de sessão: era o PRIMEIRO card da página e roubava a cena de quem
-     já estava logado. Virou faixa fina, e só aparece quando falta sessão —
-     aqui embaixo, que é onde ela faz falta (na hora de gerar). -->
+<div class="ext">
+<label class="ext-linha" for="youtubeCheck">
+<img src="https://pedro-fisk.github.io/fisk-hub/assets/icones/fluent/clapper-board.svg" alt="" aria-hidden="true">
+<span class="ext-tx"><b>Vídeo do YouTube</b><small>Um slide com o vídeo, e as perguntas usam o que ele fala.</small></span>
+<input type="checkbox" id="youtubeCheck" class="tg">
+</label>
+<div id="youtubeWrap" class="ext-mais is-hidden">
+<input type="text" id="youtubeUrl" placeholder="Cole o link, ex.: https://www.youtube.com/watch?v=...">
+<label class="checkbox-row" for="youtubeLucky">
+<input type="checkbox" id="youtubeLucky">
+<span>Estou com sorte: a IA escolhe um vídeo relevante</span>
+</label>
+<p class="hint">O YouTube não garante o resultado (pode vir um vídeo em português). Depois de gerar, dá para <strong>remover o bloco do vídeo</strong> na prévia da aula.</p>
+</div>
+</div>
+
+<div class="ext">
+<label class="ext-linha" for="extraActivityCheck">
+<img src="https://pedro-fisk.github.io/fisk-hub/assets/icones/fluent/busts-in-silhouette.svg" alt="" aria-hidden="true">
+<span class="ext-tx"><b>Dinâmica</b><small>Debate, entrevista em duplas, corrida pela sala, rodada de perguntas… num slide com as instruções.</small></span>
+<input type="checkbox" id="extraActivityCheck" class="tg">
+</label>
+<div id="extraActivityWrap" class="ext-mais is-hidden">
+<textarea id="extraActivity" rows="3" placeholder="ex.: Quero que os alunos se entrevistem em duplas por 3 minutos sobre o tema, depois trocam de parceiro e repetem..."></textarea>
+<label class="checkbox-row" for="extraLucky">
+<input type="checkbox" id="extraLucky">
+<span>Estou com sorte: a IA propõe a dinâmica a partir do tema</span>
+</label>
+<p class="hint">Título e instruções da dinâmica ficam editáveis na prévia da aula, antes de baixar.</p>
+</div>
+</div>
+
+</div>
+</div>
+</section>
+
+<section class="passo" id="previaCard">
+<div class="cartao c-prev">
+<img class="cartao-ic" src="https://pedro-fisk.github.io/fisk-hub/assets/icones/fluent/magic-wand.svg" alt="" aria-hidden="true">
+<h2>Veja como vai ficar</h2>
+<p class="dica">A capa com o visual escolhido. A prévia não gasta crédito; o título final é o que a IA escrever.</p>
+<div class="prevw">
+<div class="pv-slide" id="previaSlide"></div>
+<div class="pv-info">
+<b id="previaNome">Visual do tema</b>
+<p id="previaSub"></p>
+<div class="pv-paleta" id="previaPaleta"></div>
+<p class="pv-bts"><button type="button" class="pv-bt" id="previaOutro">↻ Outro visual</button><button type="button" class="pv-bt" id="previaAjustar">✏️ Ajustar</button></p>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Aviso de sessão: faixa fina, só quando falta sessão, aqui embaixo (na hora de gerar). -->
 <div class="auth-faixa is-hidden" id="authGate">
 <span id="authGateMsg">Esta ferramenta usa o seu login do Fisk Hub. Abra o Hub e clique em "Conversation Maker" por lá. Não há outra senha.</span>
 <a class="btn btn-gold btn-sm" href="https://pedro-fisk.github.io/fisk-hub/">Ir para o Fisk Hub →</a>
 </div>
 
-<div class="actions">
-<button type="submit" class="btn btn-generate" id="generateBtn">Gerar roteiro →</button>
+<div class="actions actions-nova">
+<button type="submit" class="btn btn-generate" id="generateBtn">✨ Gerar minha atividade</button>
 <span class="creditos-pill is-hidden" id="creditosPill" title="Cada atividade gerada custa 1 crédito. Recriar não custa."><svg class="moeda" viewBox="0 0 8 8" aria-hidden="true"><use href="#moedaPix"/></svg> <strong id="creditosNum">-</strong></span>
 <span id="spinner" class="spinner is-hidden" aria-hidden="true"></span>
 <span id="status" class="status-text"></span>
