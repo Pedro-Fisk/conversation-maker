@@ -106,6 +106,7 @@ const profMenuPanel = document.getElementById("profMenuPanel");
 const loggedNameEl = document.getElementById("loggedName");
 const logoutBtn = document.getElementById("logoutBtn");
 
+const CARA_NOVA = !!document.getElementById("previaSlide");   /* novo.html (direção) x index.html (professores) */
 let profSession = null; // { token, name }
 try {
 const saved = JSON.parse(localStorage.getItem("cm-prof-session") || "null");
@@ -119,6 +120,8 @@ if (session) localStorage.setItem("cm-prof-session", JSON.stringify(session));
 else localStorage.removeItem("cm-prof-session");
 } catch (e) {}
 updateAuthUI();
+/* a cara nova é só da direção: a sessão decide a página (o login e a conferência do profCheck passam por aqui) */
+if (session && session.token && !!session.direcao !== CARA_NOVA) { location.replace((session.direcao ? "novo.html" : "./") + location.search + location.hash); return; }
 try { ajustaModelo(); } catch (e) {}   /* na primeira chamada o painel ainda não existe: o ajustaModelo() do fim corrige */
 }
 
@@ -472,9 +475,9 @@ updateGenerateButton();
 function updateGenerateButton() {
 const n = selectedCombos.length;
 if (n > 1) {
-generateBtn.textContent = `✨ Gerar a 1ª aula (1 de ${n})`;
+generateBtn.textContent = CARA_NOVA ? `✨ Gerar a 1ª aula (1 de ${n})` : `Gerar primeira aula (1 de ${n}) →`;
 } else {
-generateBtn.textContent = "✨ Gerar minha atividade";
+generateBtn.textContent = CARA_NOVA ? "✨ Gerar minha atividade" : "Gerar roteiro →";
 }
 }
 
@@ -492,7 +495,7 @@ const EMOJI_FAIXA = { preteens: "🧒 ", teens: "🧑 ", adults: "👔 " };
 const EMOJI_NIVEL = { real_beginners: "🐣 ", teens: "⭐ ", basic: "🌱 ", intermediate: "🚀 ", advanced: "🏆 ", spanish_basic: "🌱 ", spanish_intermediate: "🚀 ", spanish_advanced: "🏆 " };
 AGE_COLS.forEach((age) => {
 const th = document.createElement("th");
-th.textContent = (EMOJI_FAIXA[age.key] || "") + age.label;
+th.textContent = (CARA_NOVA ? EMOJI_FAIXA[age.key] || "" : "") + age.label;
 headRow.appendChild(th);
 });
 thead.appendChild(headRow);
@@ -503,7 +506,7 @@ const tbody = document.createElement("tbody");
 const tr = document.createElement("tr");
 const th = document.createElement("th");
 th.scope = "row";
-th.textContent = (EMOJI_NIVEL[level.key] || "") + level.label;
+th.textContent = (CARA_NOVA ? EMOJI_NIVEL[level.key] || "" : "") + level.label;
 tr.appendChild(th);
 
 AGE_COLS.forEach((age) => {
