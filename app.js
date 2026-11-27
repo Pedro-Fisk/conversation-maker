@@ -336,7 +336,7 @@ function abrirPreviaTema(lesson) {
    aula de novo) e o PDF de backup (cada item do jogo em duas páginas). Quem guarda é o backend do Hub (CmPortal.js). */
 async function mostrarNoPortal(lesson, btn) {
   if (!window.FiskTema || typeof FISK_HUB_EP === "undefined") { alert("Não consegui falar com o portal. Confira a internet e tente de novo."); return; }
-  if (!profSession || !profSession.token) { alert("Entre pelo Fisk Hub antes de mostrar no portal."); return; }
+  if (!profSession || !profSession.token) { alert("Entre pelo Fisk Hub antes de salvar no portal."); return; }
   const rotulo = btn.textContent; btn.disabled = true;
   try {
     const dados = Object.assign({}, lesson, { perfil: lesson.ageLabel || "" });
@@ -350,10 +350,10 @@ async function mostrarNoPortal(lesson, btn) {
       body: JSON.stringify({ action: "cmPublicar", token: profSession.token, titulo: lesson.coverTitle, nivel: lesson.coverLevel, perfil: lesson.ageLabel || "",
         idioma: lesson.language, dados: JSON.stringify({ versao: 1, lesson: lesson, design: lesson.design || null }), pdf: btoa(b64) }) }).then((x) => x.json());
     if (!r || !r.ok) throw new Error((r && (r.error || r.erro)) || "o portal não respondeu");
-    btn.textContent = "✓ No portal: Hub › Conversação › Minhas conversações";
+    btn.textContent = "✓ Salvo no portal: Hub › Conversação › Minhas conversações";
   } catch (err) {
     window.FiskTema.som = true;
-    btn.textContent = rotulo; alert("Não consegui mostrar no portal: " + (err.message || err));
+    btn.textContent = rotulo; alert("Não consegui salvar no portal: " + (err.message || err));
   } finally { btn.disabled = false; }
 }
 
@@ -1497,7 +1497,7 @@ if (lesson.modelo === "tema") {
   const portalBtn = document.createElement("button");
   portalBtn.type = "button";
   portalBtn.className = "btn btn-download btn-generate";
-  portalBtn.textContent = "📺 Mostrar no portal";
+  portalBtn.textContent = "💾 Salvar no portal";
   portalBtn.addEventListener("click", () => mostrarNoPortal(activeLesson(slot), portalBtn));
   foot.appendChild(portalBtn);
 } else {
