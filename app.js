@@ -119,6 +119,7 @@ if (session) localStorage.setItem("cm-prof-session", JSON.stringify(session));
 else localStorage.removeItem("cm-prof-session");
 } catch (e) {}
 updateAuthUI();
+try { ajustaModelo(); } catch (e) {}   /* na primeira chamada o painel ainda não existe: o ajustaModelo() do fim corrige */
 }
 
 function updateAuthUI() {
@@ -254,7 +255,7 @@ const token = decodeURIComponent(m[1]);
 hubPost({ action: "profCheck", token })
 .then((res) => {
 if (res && res.ok && res.prof) {
-setSession({ token, name: res.prof.fullName || res.prof.name });
+setSession({ token, name: res.prof.fullName || res.prof.name, direcao: res.direcao === true });
 } else if (!profSession) {
 sessionExpired();
 }
@@ -267,7 +268,7 @@ return;
 updateAuthUI();
 if (profSession) {
 hubPost({ action: "profCheck", token: profSession.token })
-.then((res) => { if (res && !res.ok) sessionExpired(); })
+.then((res) => { if (res && !res.ok) sessionExpired(); else if (res && res.ok && !!res.direcao !== !!profSession.direcao) setSession(Object.assign({}, profSession, { direcao: res.direcao === true })); })
 .catch(() => {}); // rede fora do ar: mantém a sessão, o servidor revalida a cada geração
 }
 })();
@@ -281,6 +282,80 @@ statusEl.classList.toggle("is-error", Boolean(isError));
 
 // generateOptions: campos extras opcionais — referenceLesson (aula-guia do
 // lote), previousLesson + feedback (recriação de uma aula rejeitada).
+/* ═══ O VISUAL DA ATIVIDADE (27/11/2026) ═══ */
+const modeloChoices = document.getElementById("modeloChoices");
+const visualPedidoEl = document.getElementById("visualPedido");
+const visualWrapEl = document.getElementById("visualWrap");
+/* SÓ A DIREÇÃO VÊ O MODELO NOVO (Pedro, 27/11/2026): até fevereiro os professores seguem no clássico de sempre; o
+   painel "Visual" aparece e vale só para sessão de direção (profCheck devolve direcao). */
+function ehDirecao() { return !!(profSession && profSession.direcao); }
+function ajustaModelo() {
+  const painel = modeloChoices && modeloChoices.closest(".panel");
+  if (painel) painel.classList.toggle("is-hidden", !ehDirecao());
+}
+function modeloAtual() {
+  if (!ehDirecao()) return "classico"; const b = modeloChoices && modeloChoices.querySelector(".choice.is-active"); return b ? b.getAttribute("data-value") : "tema"; }
+if (modeloChoices) {
+  modeloChoices.addEventListener("click", (e) => {
+    const b = e.target.closest(".choice"); if (!b) return;
+    modeloChoices.querySelectorAll(".choice").forEach((x) => x.classList.toggle("is-active", x === b));
+    if (visualWrapEl) visualWrapEl.classList.toggle("is-hidden", modeloAtual() !== "tema");
+  });
+}
+ajustaModelo();
+/* a prévia do modelo tema: os slides de verdade, com os cliques e o jogo, numa janela por cima */
+const HUB_BASE = "https://pedro-fisk.github.io/fisk-hub/";
+function abrirPreviaTema(lesson) {
+  if (!window.FiskTema) { alert("O desenhista de slides não carregou. Confira a internet e tente de novo."); return; }
+  const fundo = document.createElement("div");
+  fundo.style.cssText = "position:fixed;inset:0;z-index:9999;background:#0b0e14;display:flex;flex-direction:column";
+  fundo.innerHTML = '<div style="flex:1;position:relative" class="pv-palco"></div><div style="height:60px;display:flex;align-items:center;gap:10px;padding:0 16px;background:#111827;color:#fff;font:700 15px system-ui"><button type="button" class="pv-ant">◀</button><button type="button" class="pv-prox">▶</button><span class="pv-n" style="margin-left:8px;opacity:.8"></span><button type="button" class="pv-fecha" style="margin-left:auto">✕ Fechar a prévia</button></div>';
+  fundo.querySelectorAll("button").forEach((b) => { b.style.cssText = "font:700 15px system-ui;color:#fff;background:#1f2937;border:1px solid #374151;border-radius:10px;padding:8px 14px;cursor:pointer;" + (b.classList.contains("pv-fecha") ? "margin-left:auto" : ""); });
+  document.body.appendChild(fundo);
+  const palco = fundo.querySelector(".pv-palco");
+  const dados = Object.assign({}, lesson, { coverLevel: lesson.coverLevel, perfil: lesson.ageLabel || "" });
+  const deck = window.FiskTema.montar(dados, lesson.design || {}, { base: HUB_BASE });
+  let i = 0, etapa = 0;
+  const mostra = () => { const s = deck.slides[i]; palco.innerHTML = ""; palco.appendChild(s.el); window.FiskTema.encaixar(s.el, palco); window.FiskTema.mostrar(deck, i, etapa); fundo.querySelector(".pv-n").textContent = "slide " + (i + 1) + " de " + deck.slides.length; };
+  const prox = () => { const s = deck.slides[i]; if (etapa < s.etapas) etapa++; else if (i < deck.slides.length - 1) { i++; etapa = 0; } mostra(); };
+  const ant = () => { if (etapa > 0) etapa--; else if (i > 0) { i--; etapa = deck.slides[i].etapas; } mostra(); };
+  const tecla = (e) => { if (/ArrowRight|ArrowDown|PageDown| /.test(e.key)) { e.preventDefault(); prox(); } else if (/ArrowLeft|ArrowUp|PageUp/.test(e.key)) { e.preventDefault(); ant(); } else if (e.key === "Escape") fecha(); };
+  const fecha = () => { document.removeEventListener("keydown", tecla); window.removeEventListener("resize", mostra); fundo.remove(); };
+  palco.addEventListener("click", (e) => { if (e.target.closest("[data-carta],.ft-op")) return; prox(); });
+  fundo.querySelector(".pv-prox").onclick = prox; fundo.querySelector(".pv-ant").onclick = ant; fundo.querySelector(".pv-fecha").onclick = fecha;
+  document.addEventListener("keydown", tecla); window.addEventListener("resize", mostra);
+  mostra();
+}
+/* MOSTRAR NO PORTAL (27/11/2026): no modelo tema a aula não vira .pptx. Ela vai para o Drive, na pasta do professor
+   dentro de "Conversation Maker (portal)", em dois arquivos: o .cmjson (conteúdo + visual, é com ele que o Hub toca a
+   aula de novo) e o PDF de backup (cada item do jogo em duas páginas). Quem guarda é o backend do Hub (CmPortal.js). */
+async function mostrarNoPortal(lesson, btn) {
+  if (!window.FiskTema || typeof FISK_HUB_EP === "undefined") { alert("Não consegui falar com o portal. Confira a internet e tente de novo."); return; }
+  if (!profSession || !profSession.token) { alert("Entre pelo Fisk Hub antes de mostrar no portal."); return; }
+  const rotulo = btn.textContent; btn.disabled = true;
+  try {
+    const dados = Object.assign({}, lesson, { perfil: lesson.ageLabel || "" });
+    const deck = window.FiskTema.montar(dados, lesson.design || {}, { base: HUB_BASE });
+    window.FiskTema.som = false;   /* o PDF passa pelos acertos do jogo: sem sino */
+    const pdf = await window.FiskTema.gerarPdf(deck, (n, t) => { btn.textContent = "Montando o PDF de backup… " + n + "/" + t; });
+    window.FiskTema.som = true;
+    let b64 = ""; for (let i = 0; i < pdf.length; i += 32768) b64 += String.fromCharCode.apply(null, pdf.subarray(i, i + 32768));
+    btn.textContent = "Guardando no portal…";
+    const r = await fetch(FISK_HUB_EP, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "cmPublicar", token: profSession.token, titulo: lesson.coverTitle, nivel: lesson.coverLevel, perfil: lesson.ageLabel || "",
+        idioma: lesson.language, dados: JSON.stringify({ versao: 1, lesson: lesson, design: lesson.design || null }), pdf: btoa(b64) }) }).then((x) => x.json());
+    if (!r || !r.ok) throw new Error((r && (r.error || r.erro)) || "o portal não respondeu");
+    btn.textContent = "✓ No portal: Hub › Conversação › Minhas conversações";
+  } catch (err) {
+    window.FiskTema.som = true;
+    btn.textContent = rotulo; alert("Não consegui mostrar no portal: " + (err.message || err));
+  } finally { btn.disabled = false; }
+}
+
+/* para os testes de bancada abrirem a prévia sem gerar uma aula (não muda nada na tela) */
+window.__cmPrevia = abrirPreviaTema;
+window.__cmModelo = modeloAtual;
+
 async function fetchLessons(payload) {
 const response = await fetch("/api/generate-lesson", {
 method: "POST",
@@ -1164,6 +1239,8 @@ teacherName: p.teacherName,
 videoId: batch.videoId,
 videoSearch: false,
 extraActivity: p.extraActivity,
+modelo: p.modelo,
+visual: p.visual,
 };
 if (extras) Object.assign(payload, extras);
 const { lessons, resolvedVideoId } = await fetchLessons(payload);
@@ -1397,7 +1474,22 @@ busyLabel: "Gerando .pptx...",
 meta: downloadMeta(slot),
 }).catch(() => {})
 );
-foot.appendChild(pptxBtn);
+if (lesson.modelo === "tema") {
+  const verBtn = document.createElement("button");
+  verBtn.type = "button";
+  verBtn.className = "btn btn-download";
+  verBtn.textContent = "👁 Ver os slides";
+  verBtn.addEventListener("click", () => abrirPreviaTema(activeLesson(slot)));
+  foot.appendChild(verBtn);
+  const portalBtn = document.createElement("button");
+  portalBtn.type = "button";
+  portalBtn.className = "btn btn-download btn-generate";
+  portalBtn.textContent = "📺 Mostrar no portal";
+  portalBtn.addEventListener("click", () => mostrarNoPortal(activeLesson(slot), portalBtn));
+  foot.appendChild(portalBtn);
+} else {
+  foot.appendChild(pptxBtn);
+}
 
 deck.appendChild(head);
 deck.appendChild(renderLessonPreview(lesson));
@@ -1728,7 +1820,7 @@ try {
 batch = {
 language,
 videoId: null,
-params: { topic, useWebSearch, teacherName: profSession.name, extraActivity },
+params: { topic, useWebSearch, teacherName: profSession.name, extraActivity, modelo: modeloAtual(), visual: (visualPedidoEl && visualPedidoEl.value.trim()) || null },
 slots: combos.map((combo) => ({ combo, versions: [], active: 0, recreations: 0, busy: null, error: null, slideEl: null })),
 generatingRest: false,
 barEl: null,
@@ -1746,6 +1838,8 @@ teacherName: profSession.name,
 videoId,
 videoSearch,
 extraActivity,
+modelo: batch.params.modelo,
+visual: batch.params.visual,
 };
 const { lessons, resolvedVideoId, creditos: saldo } = await fetchLessons(payload);
 if (typeof saldo === "number") { creditos = saldo; mostrarCreditos(); }

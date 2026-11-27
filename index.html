@@ -157,6 +157,20 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <p class="hint" id="micHint"></p>
 </div>
 
+<!-- O VISUAL DA ATIVIDADE (27/11/2026): no modelo "tema" a IA desenha o visual pelo assunto (cores, fontes, ícones) e a
+     aula toca no portal; o clássico é o template do Canva de sempre, em .pptx. -->
+<div class="panel">
+<h2>🎨 Visual</h2>
+<div class="choice-row" id="modeloChoices" data-field="modelo">
+<button type="button" class="choice is-active" data-value="tema">Visual criado para o tema</button>
+<button type="button" class="choice" data-value="classico">Modelo clássico</button>
+</div>
+<div id="visualWrap">
+<p class="hint">Cores, fontes e ícones escolhidos para o assunto da aula. Se quiser, diga como imagina:</p>
+<input type="text" id="visualPedido" maxlength="300" placeholder="opcional, ex.: cores de Halloween, roxo e preto, com abóboras">
+</div>
+</div>
+
 <div class="panel">
 <h2>🌎 Idioma</h2>
 <div class="choice-row" id="languageChoices" data-field="language">
@@ -249,6 +263,7 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </footer>
 
 <script src="https://cdn.jsdelivr.net/gh/pedro-fisk/fisk-hub@main/assets/fisk-shared.js"></script>
+<script src="https://pedro-fisk.github.io/fisk-hub/assets/tema-slides.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
