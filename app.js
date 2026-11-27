@@ -316,6 +316,32 @@ function abrirPreviaTema(lesson) {
   document.addEventListener("keydown", tecla); window.addEventListener("resize", mostra);
   mostra();
 }
+/* MOSTRAR NO PORTAL (27/11/2026): no modelo tema a aula não vira .pptx. Ela vai para o Drive, na pasta do professor
+   dentro de "Conversation Maker (portal)", em dois arquivos: o .cmjson (conteúdo + visual, é com ele que o Hub toca a
+   aula de novo) e o PDF de backup (cada item do jogo em duas páginas). Quem guarda é o backend do Hub (CmPortal.js). */
+async function mostrarNoPortal(lesson, btn) {
+  if (!window.FiskTema || typeof FISK_HUB_EP === "undefined") { alert("Não consegui falar com o portal. Confira a internet e tente de novo."); return; }
+  if (!profSession || !profSession.token) { alert("Entre pelo Fisk Hub antes de mostrar no portal."); return; }
+  const rotulo = btn.textContent; btn.disabled = true;
+  try {
+    const dados = Object.assign({}, lesson, { perfil: lesson.ageLabel || "" });
+    const deck = window.FiskTema.montar(dados, lesson.design || {}, { base: HUB_BASE });
+    window.FiskTema.som = false;   /* o PDF passa pelos acertos do jogo: sem sino */
+    const pdf = await window.FiskTema.gerarPdf(deck, (n, t) => { btn.textContent = "Montando o PDF de backup… " + n + "/" + t; });
+    window.FiskTema.som = true;
+    let b64 = ""; for (let i = 0; i < pdf.length; i += 32768) b64 += String.fromCharCode.apply(null, pdf.subarray(i, i + 32768));
+    btn.textContent = "Guardando no portal…";
+    const r = await fetch(FISK_HUB_EP, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "cmPublicar", token: profSession.token, titulo: lesson.coverTitle, nivel: lesson.coverLevel, perfil: lesson.ageLabel || "",
+        idioma: lesson.language, dados: JSON.stringify({ versao: 1, lesson: lesson, design: lesson.design || null }), pdf: btoa(b64) }) }).then((x) => x.json());
+    if (!r || !r.ok) throw new Error((r && (r.error || r.erro)) || "o portal não respondeu");
+    btn.textContent = "✓ No portal: Hub › Conversação › Minhas conversações";
+  } catch (err) {
+    window.FiskTema.som = true;
+    btn.textContent = rotulo; alert("Não consegui mostrar no portal: " + (err.message || err));
+  } finally { btn.disabled = false; }
+}
+
 /* para os testes de bancada abrirem a prévia sem gerar uma aula (não muda nada na tela) */
 window.__cmPrevia = abrirPreviaTema;
 window.__cmModelo = modeloAtual;
@@ -1445,6 +1471,12 @@ if (lesson.modelo === "tema") {
   verBtn.textContent = "👁 Ver os slides";
   verBtn.addEventListener("click", () => abrirPreviaTema(activeLesson(slot)));
   foot.appendChild(verBtn);
+  const portalBtn = document.createElement("button");
+  portalBtn.type = "button";
+  portalBtn.className = "btn btn-download btn-generate";
+  portalBtn.textContent = "📺 Mostrar no portal";
+  portalBtn.addEventListener("click", () => mostrarNoPortal(activeLesson(slot), portalBtn));
+  foot.appendChild(portalBtn);
 } else {
   foot.appendChild(pptxBtn);
 }
