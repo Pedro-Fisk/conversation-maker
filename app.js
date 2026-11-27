@@ -769,6 +769,7 @@ teacherName: profSession ? profSession.name : "",
 section: sectionKey,
 /* regenerar o jogo mantém quantas perguntas ele tem */
 nJogo: (lesson.languageGame && lesson.languageGame.length) || lesson.nJogo || 6,
+jogoTipos: lesson.jogoTipos || "mc",
 }),
 });
 const data = await response.json().catch(() => ({}));
@@ -1282,6 +1283,7 @@ modelo: p.modelo,
 visual: p.visual,
 design: p.design,
 nJogo: p.nJogo,
+jogoTipos: p.jogoTipos,
 };
 if (extras) Object.assign(payload, extras);
 const { lessons, resolvedVideoId } = await fetchLessons(payload);
@@ -1765,8 +1767,17 @@ var gameCheckEl = document.getElementById("gameCheck");
 var jogoQtdEl = document.getElementById("jogoQtd");
 function jogoQtd() { const n = parseInt(jogoQtdEl && jogoQtdEl.value, 10); return n >= 1 ? Math.min(20, n) : 6; }
 if (jogoQtdEl) jogoQtdEl.addEventListener("change", () => { jogoQtdEl.value = jogoQtd(); });
+/* O TIPO DAS PERGUNTAS (Pedro, 27/11/2026): "mc" = múltipla escolha simples (padrão), "aleatorio", ou a lista marcada */
+var jogoTipoEl = document.getElementById("jogoTipo");
+function jogoTiposEscolha() {
+  const v = jogoTipoEl ? jogoTipoEl.value : "mc";
+  if (v !== "escolher") return v === "aleatorio" ? "aleatorio" : "mc";
+  const marcados = Array.from(document.querySelectorAll('input[name="jogoTipoX"]:checked')).map((x) => x.value);
+  return marcados.length ? marcados : "mc";
+}
+if (jogoTipoEl) jogoTipoEl.addEventListener("change", () => { document.getElementById("jogoTiposWrap").style.display = jogoTipoEl.value === "escolher" ? "block" : "none"; });
 if (gameCheckEl && document.getElementById("jogoQtdLinha")) {
-  const mostraQtd = () => (document.getElementById("jogoQtdLinha").style.display = gameCheckEl.checked ? "" : "none");
+  const mostraQtd = () => { const on = gameCheckEl.checked ? "" : "none"; document.getElementById("jogoQtdLinha").style.display = on; const tl = document.getElementById("jogoTipoLinha"); if (tl) tl.style.display = gameCheckEl.checked ? "block" : "none"; };
   gameCheckEl.addEventListener("change", mostraQtd); mostraQtd();
 }
 var previa = { design: null, chave: "", vez: 0, t: null };
@@ -1935,7 +1946,7 @@ language,
 videoId: null,
 params: { topic, useWebSearch, teacherName: profSession.name, extraActivity, modelo: modeloAtual(), visual: (visualPedidoEl && visualPedidoEl.value.trim()) || null,
   /* o jogo é opcional (27/11/2026) e o visual que o professor viu na prévia vai junto: a aula sai com a mesma cara */
-  semJogo: !(gameCheckEl ? gameCheckEl.checked : true), nJogo: jogoQtd(), design: modeloAtual() === "tema" && previa && previa.design ? previa.design : null },
+  semJogo: !(gameCheckEl ? gameCheckEl.checked : true), nJogo: jogoQtd(), jogoTipos: jogoTiposEscolha(), design: modeloAtual() === "tema" && previa && previa.design ? previa.design : null },
 slots: combos.map((combo) => ({ combo, versions: [], active: 0, recreations: 0, busy: null, error: null, slideEl: null })),
 generatingRest: false,
 barEl: null,
@@ -1957,6 +1968,7 @@ modelo: batch.params.modelo,
 visual: batch.params.visual,
 design: batch.params.design,
 nJogo: batch.params.nJogo,
+jogoTipos: batch.params.jogoTipos,
 };
 const { lessons, resolvedVideoId, creditos: saldo } = await fetchLessons(payload);
 if (typeof saldo === "number") { creditos = saldo; mostrarCreditos(); }

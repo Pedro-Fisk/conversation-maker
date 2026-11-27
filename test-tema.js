@@ -9,7 +9,16 @@ t("e agrupa de 4 em 4", /4 per slide/.test(ad));
 t("Basic pede 8", /exactly 8 items/.test(G.temaInstrucoes({ level: "basic" })));
 t("o pedido de visual do professor vai junto e manda mais", /roxo e preto/.test(ad) && /follow it over your own idea/.test(ad));
 t("lista as fontes permitidas", /Fredoka/.test(ad) && /Playfair Display/.test(ad));
-t("pede jogos variados", /at least 3 different types/.test(ad) && /true_false/.test(ad));
+/* o tipo das perguntas (Pedro, 27/11/2026): múltipla escolha simples por padrão; variado só se o professor pedir */
+t("por padrão, só múltipla escolha", /ALL of type "multiple_choice"/.test(ad) && !/true_false/.test(ad));
+const al = G.temaInstrucoes({ level: "advanced", jogoTipos: "aleatorio" });
+t("aleatório mistura todos os tipos", /true_false/.test(al) && /"order"/.test(al) && /"type_in"/.test(al) && /spread as evenly/.test(al));
+const es = G.temaInstrucoes({ level: "advanced", jogoTipos: ["order", "match"] });
+t("escolher pede só os marcados", /"order"/.test(es) && /"match"/.test(es) && !/"type_in"/.test(es) && !/true_false/.test(es));
+t("variações viram os quatro formatos de 3 opções", G.jogoTipos(["variacoes"]).join() === "fill_gap,odd_one_out,translation,pronunciation");
+t("escolha vazia volta ao padrão", G.jogoTipos([]).join() === "multiple_choice" && G.jogoTipos(undefined).join() === "multiple_choice");
+const sj = G.sanearJogoTema([{ type: "order", question: "q", options: ["a", "b", "c"] }, { type: "true_false", question: "t", options: ["True", "False"], correctIndex: 1 }], 6, ["multiple_choice"]);
+t("tipo fora do escolhido vira múltipla escolha", sj.every((x) => x.type === "multiple_choice"), JSON.stringify(sj.map((x) => x.type)));
 const d = G.sanearDesign({ escuro: true, palette: { fundo: "#1a1033", prim: "rosa", txt: "#fdf2ff" }, fontes: { titulo: "Comic Sans", corpo: "Rubik" }, fundo: "chuva", heroi: "Video Game", icones: ["Joystick!", "", "palm tree", 3] });
 t("cor inválida vira a reserva", d.paleta.prim === "#1e3a5f" && d.paleta.fundo === "#1a1033");
 t("fonte fora da lista vira Poppins; a da lista fica", d.fontes.titulo === "Poppins" && d.fontes.corpo === "Rubik");
