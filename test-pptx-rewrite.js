@@ -226,55 +226,6 @@ fluxo.close()
     fs.unlinkSync(tmp);
   }
 
-  /* ── 5. o prompt e o saneamento da resposta ──────────────────────
-     A reescrita escreve dentro do desenho de outra pessoa, então duas
-     regras do prompt não são estilo, são requisito: o texto novo tem de
-     caber na caixa que já existe, e o que não deve mudar não pode voltar
-     alterado. Se alguém "enxugar" o prompt e derrubar uma delas, o
-     professor recebe slide estourado ou o "FISK" do rodapé reescrito. */
-  const G = require("./rewrite-generation.js");
-  const amostra = R.paraPrompt(estrutura).slice(0, 2);
-  const prompt = G.buildRewritePrompt({
-    estrutura: amostra,
-    instrucao: "deixa as perguntas mais fáceis",
-    language: "english",
-    level: "basic",
-    ageGroup: "teens",
-  });
-
-  t("o prompt manda a instrução do professor", /deixa as perguntas mais fáceis/.test(prompt));
-  t("o prompt diz que a caixa não cresce", /THE BOX CANNOT GROW/.test(prompt));
-  t("o prompt dá o tamanho de cada texto", /\(\d+ chars\)/.test(prompt));
-  t("o prompt manda devolver só o que muda", /ONLY for the texts you are actually rewriting/.test(prompt));
-  t("o prompt protege numeração e linhas de preencher", /Name: ______|Unit 4/.test(prompt));
-  t("o prompt carrega o nível e a faixa etária pedidos",
-    /Basic level/.test(prompt) && /around 13-16/.test(prompt));
-  t("o prompt manda manter exercício encaixado (gap-fill e gabarito)",
-    /KEEP THE EXERCISE WORKING/.test(prompt));
-
-  const ids = amostra[0].caixas[0].textos[0].id;
-  const saneado = G.sanearTextos(
-    { [ids]: "texto novo", "s99-f9-p9": "id inventado", ["z" + ids]: 42 },
-    amostra
-  );
-  t("saneamento aceita id que existe", saneado.textos[ids] === "texto novo");
-  t("saneamento descarta id inventado", !("s99-f9-p9" in saneado.textos));
-  t("saneamento conta o que descartou", saneado.ignorados === 2);
-  t("saneamento tira quebra de linha (que vira lixo dentro do slide)",
-    G.sanearTextos({ [ids]: "uma\nlinha só" }, amostra).textos[ids] === "uma linha só");
-
-  /* ── 6. o leitor do OUTRO modo (texto puro) segue funcionando ─────
-     O pptx-reader.js tinha o próprio decodificador de ZIP e o próprio
-     varredor de XML; agora usa os deste arquivo. O modo "atividade como
-     matéria-prima" é anterior a tudo isto e não pode ter regredido. */
-  const { pptxLerArquivo } = require("./pptx-reader.js");
-  const lido = await pptxLerArquivo(new Blob([fs.readFileSync(ARQUIVO)]));
-  t("o leitor de texto puro continua achando os 20 slides", lido.slides.length === 20);
-  t("o leitor de texto puro traz o conteúdo dos slides", lido.palavras > 300);
-  t("o leitor marca cada slide no texto que sobe para a IA", /\[Slide 1\]/.test(lido.texto));
-  t("o leitor corta no limite combinado",
-    (await pptxLerArquivo(new Blob([fs.readFileSync(ARQUIVO)]), { limiteChars: 200 })).truncado === true);
-
   /* ── 7. áudio embutido no slide ─────────────────────────────────
      O PowerPoint exige quatro coisas juntas para aceitar um áudio, e
      faltando uma ele recusa o arquivo ou o "repara" perdendo o som. Como

@@ -166,31 +166,6 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 <p class="hint" id="languageHint">Os níveis do espanhol (Básico, Intermediário e Avançado) correspondem aos estágios Inmediato 1, 2 e 3 do curso.</p>
 </div>
 
-<!-- Recolhido por padrão: a maioria das aulas nasce do zero, e este bloco
-     ocupava uma tela inteira de quem nunca sobe arquivo. -->
-<details class="panel panel-recolhe" id="sourceField">
-<summary><h2>📎 Já tem uma atividade pronta?</h2><span class="recolhe-dica">opcional, abrir</span></summary>
-<p class="hint hint-lead">Suba um <strong>.pptx</strong> que você já usa e crie outras atividades a partir dele. Escreva abaixo o que quer que a IA faça com ele, <em>"adapta esta atividade para uma turma de adultos avançados"</em>, <em>"usa o formato desta, mas sobre viagens"</em>, <em>"deixa as perguntas mais fáceis"</em>.</p>
-<input type="file" id="sourceFile" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation">
-<p class="hint" id="sourceStatus"></p>
-<textarea id="sourceInstruction" rows="3" placeholder="ex.: adapta esta atividade para Basic, mantendo o tema mas com perguntas mais curtas..."></textarea>
-
-<!-- O que muda entre os dois modos é o ARQUIVO QUE SAI, então a escolha é
-     apresentada como duas saídas possíveis, não como dois conceitos. -->
-<div class="modo-saida">
-<label class="checkbox-row" for="keepDesign">
-<input type="checkbox" id="keepDesign">
-<span class="increment-title">🎨 Manter o design do meu arquivo</span>
-</label>
-<p class="hint">Desmarcado, a atividade sai no <strong>template FISK</strong>, com a estrutura de sempre (vocabulário, conversação, Language Game, avaliação). Marcado, você recebe o <strong>seu próprio arquivo de volta</strong>, com as mesmas imagens, cores e slides, e só os textos trocados.</p>
-<div class="is-hidden" id="keepDesignWrap">
-<p class="hint hint-lead">Como o seu arquivo já tem o desenho pronto, a IA só troca o que está escrito nas caixas de texto que já existem. Não importa quantos slides ele tem nem em que ordem: nada é encaixado num molde nosso.</p>
-<p class="hint">Vale saber antes: <strong>as caixas não crescem</strong>, então o texto novo sai com tamanho parecido com o antigo; <strong>texto dentro de imagem não muda</strong>, porque é figura e não texto; e cabeçalhos como "Unit 4" ou linhas de preencher ficam como estão. Você <strong>confere e edita tudo antes de baixar</strong>. Marque <strong>uma</strong> combinação de nível e faixa etária na tabela abaixo.</p>
-</div>
-</div>
-
-<p class="hint">O arquivo é lido <strong>no seu navegador</strong> e só o texto dos slides vai para a IA. O arquivo em si não é enviado nem guardado, nos dois modos.</p>
-</details>
 
 <div class="panel">
 <h2>✨ Incrementos</h2>
@@ -274,8 +249,6 @@ if(localStorage.getItem('cm-theme')==='dark') document.body.classList.add('theme
 </footer>
 
 <script src="https://cdn.jsdelivr.net/gh/pedro-fisk/fisk-hub@main/assets/fisk-shared.js"></script>
-<script src="pptx-rewriter.js"></script>
-<script src="pptx-reader.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
