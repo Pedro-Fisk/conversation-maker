@@ -6,9 +6,6 @@
     },
     "api/generate-lesson.js": {
       "maxDuration": 300
-    },
-    "api/rewrite-pptx.js": {
-      "maxDuration": 300
     }
   }
 }

@@ -109,13 +109,11 @@ still spill.
   stays visually consistent with the HTML preview.
 - `api/export-pptx.js` — Vercel serverless function wrapping
   `pptx-builder.js`.
-- `pptx-rewriter.js` — the other end of "upload an activity you already
-  use": instead of harvesting its text and building a FISK deck, it hands
-  the teacher **their own file back**, design untouched, with the text
-  rewritten. See the block below.
-- `api/rewrite-pptx.js` + `rewrite-generation.js` — the server half of that
-  mode: it receives only the extracted text, asks the model to rewrite it,
-  and returns a map of `id -> new text`. It never sees the file.
+- `pptx-rewriter.js` — rewrites the text of an existing `.pptx` keeping its
+  design. **The teacher-facing "Já tem uma atividade pronta?" upload was
+  removed on 27/11/2026** (Pedro: the Conversation Maker now always builds a
+  new activity from scratch); this file stays only because the Buddy Talks
+  production scripts (`scripts/buddy-talks/montar.js`) use it.
 - `logic.js` — deprecated, no longer loaded.
 
 ### Keeping the teacher's own design (21/08/2026)
@@ -203,9 +201,9 @@ exporter stay the same.
   English text left in a Spanish deck, and text overflowing its box.
 - `node test-nivel-x-idade.js` — 18 checks keeping linguistic level and
   cognitive demand as two separate axes in the prompt.
-- `node test-pptx-rewrite.js` — 47 checks on rewriting a teacher's own
-  .pptx: the XML scan, the ZIP round trip, the file staying valid, and the
-  rules of the rewrite prompt. Needs `test-output.pptx` (run `node
+- `node test-pptx-rewrite.js` — checks on `pptx-rewriter.js` (used by the
+  Buddy Talks scripts): the XML scan, the ZIP round trip, the file staying
+  valid, embedded audio. Needs `test-output.pptx` (run `node
   test-pptx.js` first).
 - `node qa-dump.js && python3 qa_render.py` — rough Pillow-based
   approximate render used to sanity-check font sizes/overflow before a
