@@ -638,7 +638,7 @@ async function callAnthropicRaw(body) {
 const TEMA_CONVERSA = { real_beginners: 6, teens: 6, basic: 8, intermediate: 9, advanced: 12, spanish_basic: 8, spanish_intermediate: 9, spanish_advanced: 12 };
 const TEMA_FONTES = ["Fredoka", "Poppins", "Montserrat", "Nunito", "Rubik", "Barlow Condensed", "Barlow", "Playfair Display", "Lato", "Exo 2", "Baloo 2", "Quicksand", "Raleway", "Oswald", "Merriweather", "Source Sans 3", "Work Sans", "Josefin Sans", "Lora", "Comfortaa"];
 const TEMA_FUNDOS = ["bolhas", "pontos", "faixas", "gradiente", "estrelas"];
-const TEMA_JOGOS = ["multiple_choice", "fill_gap", "true_false", "odd_one_out", "translation", "pronunciation", "order", "match", "type_in"];
+const TEMA_JOGOS = ["multiple_choice", "fill_gap", "true_false", "odd_one_out", "translation", "pronunciation", "order", "match", "type_in", "listen"];
 /* O TIPO DAS PERGUNTAS DO JOGO (Pedro, 27/11/2026: "padronizar que seja sempre o modelo mais simples de múltipla
    escolha, como padrão; se ele quiser, escolhe os modelos específicos ou aleatório"). Vale para os dois modelos.
      "mc" (ou nada)  → só multiple_choice, 3 opções                       (o padrão)
@@ -664,6 +664,7 @@ const DESCR_JOGO = {
   pronunciation: `"pronunciation": which word has the sound shown in the question (e.g. 'Which word has the same vowel sound as "ship"?'), exactly 3 options, correctIndex 0, 1 or 2`,
   order: `"order" (build the sentence): "question" is a short instruction (e.g. "Put the words in order."); "options" = the words of ONE correct sentence IN THE CORRECT ORDER, one word per string (4 to 8 words, punctuation glued to the last word). The sentence must have only ONE natural correct order. correctIndex 0`,
   match: `"match" (match the pairs): "question" is a short instruction (e.g. "Match the words to their meanings."); "options" = 3 to 5 strings, each "left = right" (a word and its translation, a word and its opposite, a question and its answer...). Every right side must match only its own left side. correctIndex 0`,
+  listen: `"listen" (listen and choose): the students HEAR a sentence read by a neural voice and choose. "audio" = the sentence they hear (natural, about the topic, max 20 words, no names they could not spell); "question" = a short instruction that says what to choose (e.g. "Listen. What does she want?" or "Listen and choose the sentence you heard."); exactly 3 options, correctIndex 0, 1 or 2. The options must NOT repeat the audio word for word unless the task is "choose what you heard", and then the distractors differ by ONE sound or word (e.g. "She lives here" / "She leaves here" / "She lived here")`,
   type_in: `"type_in" (type the answer): "question" has a gap ______ and, in brackets, what to use, e.g. "She ______ (not / like) coffee."; "options" = 1 to 4 ACCEPTED answers, the most natural first, including the common contracted / full variants (e.g. ["doesn't like", "does not like"]). Only the gap text, never the whole sentence. correctIndex 0`,
 };
 function guiaJogo(tipos, nJogo) {
@@ -739,7 +740,10 @@ function sanearJogoTema(lista, n, permitidos) {
     const options = (Array.isArray(g && g.options) ? g.options : []).slice(0, n).map(String);
     while (options.length < n) options.push(type === "true_false" ? (options.length ? "False" : "True") : "");
     const ci = Number(g && g.correctIndex);
-    return { type, question: String((g && g.question) || ""), options, correctIndex: ci >= 0 && ci < n ? ci : 0 };
+    const item = { type, question: String((g && g.question) || ""), options, correctIndex: ci >= 0 && ci < n ? ci : 0 };
+    /* ouça e escolha sem a frase para ouvir não tem como ser jogado: vira múltipla escolha comum */
+    if (type === "listen") { const audio = String((g && g.audio) || "").trim().slice(0, 300); if (audio) item.audio = audio; else item.type = "multiple_choice"; }
+    return item;
   }).filter(Boolean);
 }
 

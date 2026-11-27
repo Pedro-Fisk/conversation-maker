@@ -589,8 +589,20 @@ function jogoClassico(items, revela) {
       return { ...it, question: `${q}  [ ${pares.map((x) => x[0]).join(", ")}  →  ${dir.join(", ")} ]`, options: revela ? pares.map((x) => `${x[0]} = ${x[1]}`) : [], correctIndex: -1 };
     }
     if (t === "type_in") return { ...it, options: revela ? [ops[0] || ""] : [], correctIndex: 0 };
+    /* ouça e escolha: no papel não há voz. A frase vai nas ANOTAÇÕES do apresentador (pptx-builder.js) para o
+       professor ler em voz alta, e só aparece no slide da resposta: em "o que você ouviu?" ela É a resposta */
+    if (t === "listen") return { ...it, question: `🔊 ${q}` + (revela && it.audio ? `  “${it.audio}”` : "") };
     return it;
   });
 }
 
-module.exports = { jogoClassico, LAYOUTS, layoutsDaAula, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY, RED, BLACK, GRAY };
+/* as frases do "ouça e escolha" de um slide, para as anotações do apresentador */
+function frasesParaLer(lesson, layout) {
+  if (layout.role !== "languageGame") return [];
+  const f = layout.fields.find((x) => x.kind === "qaBlock");
+  if (!f || f.revealAnswer) return [];
+  return (lesson.languageGame || []).slice(f.startIndex, f.startIndex + f.count)
+    .map((it, i) => (it && it.type === "listen" && it.audio ? `${f.startIndex + i + 1}. ${it.audio}` : null)).filter(Boolean);
+}
+
+module.exports = { frasesParaLer, jogoClassico, LAYOUTS, layoutsDaAula, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY, RED, BLACK, GRAY };

@@ -18,7 +18,7 @@
 
 const path = require("path");
 const pptxgen = require("pptxgenjs");
-const { layoutsDaAula, jogoClassico, FONT_MARKER } = require("./slide-layouts");
+const { layoutsDaAula, jogoClassico, frasesParaLer, FONT_MARKER } = require("./slide-layouts");
 const {
   getQaItems,
   buildDynamicValue,
@@ -498,6 +498,8 @@ function buildPptx(lesson, thumbnailData) {
     const bgPath = path.join(__dirname, layout.bg);
     slide.addImage({ path: bgPath, x: 0, y: 0, w: SLIDE_W_IN, h: SLIDE_H_IN });
     layout.fields.forEach((field) => renderField(slide, field, lesson, pptx));
+    const ler = frasesParaLer(lesson, layout);
+    if (ler.length) slide.addNotes("🔊 Leia em voz alta (ouça e escolha):\n" + ler.join("\n"));
 
     if (layout.role === "intro" && videoId) {
       addVideoSlide(pptx, videoId, thumbnailData || null, lesson.language);

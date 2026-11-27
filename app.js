@@ -1132,6 +1132,16 @@ if (NOMES_JOGO[q.type]) {
   return;
 }
 
+/* ouça e escolha: a frase que a turma OUVE (voz neural na TV; no PowerPoint, nas anotações para o professor ler) */
+if (q.type === "listen") {
+  num.textContent += " · Ouça e escolha";
+  const lab = document.createElement("span");
+  lab.className = "edit-label";
+  lab.textContent = "🔊 O que a turma ouve";
+  card.appendChild(lab);
+  card.appendChild(editField(q.audio || "", (v) => { list[i].audio = String(v).trim(); }, { multiline: true, rows: 1 }));
+}
+
 const optLabel = document.createElement("span");
 optLabel.className = "edit-label";
 optLabel.textContent = "Opções (marque a correta)";
