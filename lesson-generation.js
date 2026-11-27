@@ -618,7 +618,69 @@ async function callAnthropicRaw(body) {
   return extractJson(text, debugInfo);
 }
 
-async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity }) {
+/* ═══ O MODELO "TEMA": VISUAL CRIADO POR ATIVIDADE (Pedro, 27/11/2026) ═══════════════════════════════════════════
+   O modelo clássico continua EXATAMENTE como era (o template do Canva, 18 páginas, contagens fixas): o professor escolhe.
+   No modelo "tema" a aula é desenhada no portal (fisk-hub/assets/tema-slides.js), então a estrutura segue o roteiro
+   de 12 etapas da coordenação e a IA devolve também a RECEITA DO VISUAL (paleta, fontes, fundo, ícones):
+   - perguntas de conversa por nível (6 a 10, 12 a 14 no Advanced), em grupos de 3 ou 4 por slide;
+   - jogos VARIADOS (o Pedro: "variar os tipos de jogos"), todos respondidos por opção, porque a tela é clicável;
+   - a tradução do vocabulário aparece num clique separado (decidido no desenho, nada muda no texto).
+   O visual sai do tema; o campo "Visual (se quiser)" do professor manda mais que o tema. */
+const TEMA_CONVERSA = { real_beginners: 6, teens: 6, basic: 8, intermediate: 9, advanced: 12, spanish_basic: 8, spanish_intermediate: 9, spanish_advanced: 12 };
+const TEMA_FONTES = ["Fredoka", "Poppins", "Montserrat", "Nunito", "Rubik", "Barlow Condensed", "Barlow", "Playfair Display", "Lato", "Exo 2", "Baloo 2", "Quicksand", "Raleway", "Oswald", "Merriweather", "Source Sans 3", "Work Sans", "Josefin Sans", "Lora", "Comfortaa"];
+const TEMA_FUNDOS = ["bolhas", "pontos", "faixas", "gradiente", "estrelas"];
+const TEMA_JOGOS = ["multiple_choice", "fill_gap", "true_false", "odd_one_out", "translation", "pronunciation"];
+
+function temaInstrucoes({ level, visual }) {
+  const n = TEMA_CONVERSA[level] || 9;
+  return `
+
+══ THIS LESSON USES THE "THEMED" MODEL (overrides the fixed counts above) ══
+The slides are not the Canva template: the school portal draws them from your JSON, with a visual identity made for THIS topic. So:
+- "conversation": exactly ${n} items (pair work questions; the teacher shows them ${n % 4 === 0 && n >= 8 ? 4 : 3} per slide), in a natural order of subtopics.
+- "languageGame": exactly 6 items and VARY the game type across them (use at least 3 different types). Every item is still answered by tapping one option. Each item gets a "type":
+  "multiple_choice" (3 options) · "fill_gap" (a sentence with ______, 3 options) · "true_false" (a statement about the topic or the vocabulary, options exactly ["True","False"]) · "odd_one_out" (which word does not belong, 3 options) · "translation" (a Portuguese word or short phrase from the vocabulary, 3 English options) · "pronunciation" (which word has the sound shown in the question, e.g. 'Which word has the same vowel sound as "ship"?', 3 options).
+  For true_false, "options" has exactly 2 strings and correctIndex is 0 or 1; for every other type, exactly 3 options and correctIndex 0, 1 or 2.
+
+VISUAL IDENTITY ("design" key). Invent a look that a teacher would recognize as THIS topic at first sight, as a professional designer would for a classroom TV (55 inches, about 4 meters away):
+- "palette": six hex colors { "fundo" (background), "fundo2" (soft background shape), "prim" (titles), "sec" (card borders, chips), "dest" (accent: numbers, highlights), "txt" (body text) }. Text colors MUST have strong contrast with "fundo" (WCAG 4.5:1 or better). Prefer light backgrounds unless the topic is clearly dark (space, night, horror, gaming), then set "escuro": true.
+- "fontes": { "titulo", "corpo" } chosen ONLY from this list: ${TEMA_FONTES.join(", ")}. Readability first: bold, clean shapes; never a decorative font for the body.
+- "fundo": one of ${TEMA_FUNDOS.join(", ")}.
+- "heroi": ONE icon name for the big cover illustration, and "icones": 8 icon names for the decorations, all from Microsoft's Fluent Emoji set, written as kebab-case Unicode emoji names (examples: "soccer-ball", "video-game", "briefcase", "chart-increasing", "studio-microphone", "t-rex", "hot-beverage", "rocket", "palm-tree", "trophy"). Only common emoji that clearly exist; no flags, no brand logos, no real people.
+${visual ? `- THE TEACHER ASKED FOR THIS LOOK (follow it over your own idea when they conflict): "${String(visual).slice(0, 300)}"` : "- The teacher gave no visual request: decide from the topic."}`;
+}
+function temaSchema() {
+  return `,
+  "design": { "escuro": boolean, "palette": { "fundo": string, "fundo2": string, "prim": string, "sec": string, "dest": string, "txt": string }, "fontes": { "titulo": string, "corpo": string }, "fundo": string, "heroi": string, "icones": [string] }`;
+}
+function sanearDesign(d) {
+  d = d && typeof d === "object" ? d : {};
+  const hex = (v, r) => (/^#[0-9a-f]{6}$/i.test(String(v || "")) ? String(v) : r);
+  const p = d.palette || d.paleta || {};
+  const nome = (v) => String(v || "").toLowerCase().trim().replace(/[^a-z0-9-]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+  const f = d.fontes || {};
+  return {
+    modelo: "tema",
+    escuro: d.escuro === true,
+    paleta: { fundo: hex(p.fundo, "#ffffff"), fundo2: hex(p.fundo2, "#eef2f7"), prim: hex(p.prim, "#1e3a5f"), sec: hex(p.sec, "#94a3b8"), dest: hex(p.dest, "#c8102e"), txt: hex(p.txt, "#111827") },
+    fontes: { titulo: TEMA_FONTES.includes(f.titulo) ? f.titulo : "Poppins", corpo: TEMA_FONTES.includes(f.corpo) ? f.corpo : "Nunito" },
+    fundo: TEMA_FUNDOS.includes(d.fundo) ? d.fundo : "bolhas",
+    heroi: nome(d.heroi) || "speech-balloon",
+    icones: (Array.isArray(d.icones) ? d.icones : []).map(nome).filter(Boolean).slice(0, 10),
+  };
+}
+function sanearJogoTema(lista) {
+  return (Array.isArray(lista) ? lista : []).slice(0, 6).map((g) => {
+    const type = TEMA_JOGOS.includes(g && g.type) ? g.type : "multiple_choice";
+    const n = type === "true_false" ? 2 : 3;
+    const options = (Array.isArray(g && g.options) ? g.options : []).slice(0, n).map(String);
+    while (options.length < n) options.push(type === "true_false" ? (options.length ? "False" : "True") : "");
+    const ci = Number(g && g.correctIndex);
+    return { type, question: String((g && g.question) || ""), options, correctIndex: ci >= 0 && ci < n ? ci : 0 };
+  });
+}
+
+async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity, modelo, visual }) {
   const sources = language === "english" ? pickGrammarSources(level, 6) : null;
 
   const body = {
@@ -626,7 +688,9 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
     max_tokens: 8000,
     system: SYSTEM_PROMPT,
     messages: [
-      { role: "user", content: buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity }) },
+      { role: "user", content: modelo === "tema"
+          ? buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity }).replace(/\n}\s*$/, temaSchema() + "\n}") + temaInstrucoes({ level, visual })
+          : buildUserPrompt({ language, topic, level, ageGroup, useWebSearch, sources, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity }) },
     ],
   };
   if (useWebSearch) {
@@ -655,8 +719,10 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
     objectives: clampArray(parsed.objectives, 3),
     vocabulary: clampArray(parsed.vocabulary, 8),
     introText: parsed.introText || "",
-    conversation: clampArray(parsed.conversation, 9),
-    languageGame: attachLanguageGameSources(clampLanguageGame(parsed.languageGame, 6), sources),
+    conversation: clampArray(parsed.conversation, modelo === "tema" ? (TEMA_CONVERSA[level] || 9) : 9),
+    languageGame: modelo === "tema" ? attachLanguageGameSources(sanearJogoTema(parsed.languageGame), sources) : attachLanguageGameSources(clampLanguageGame(parsed.languageGame, 6), sources),
+    modelo: modelo === "tema" ? "tema" : "classico",
+    design: modelo === "tema" ? sanearDesign(parsed.design) : null,
     evaluation: clampArray(parsed.evaluation, 2),
     extraActivityTitle: extraActivity ? (parsed.extraActivityTitle || null) : null,
     extraActivityInstructions: extraActivity ? (parsed.extraActivityInstructions || null) : null,
@@ -705,6 +771,10 @@ async function generateSection({ section, language, topic, level, ageGroup, useW
 }
 
 module.exports = {
+  sanearDesign,
+  sanearJogoTema,
+  temaInstrucoes,
+  TEMA_CONVERSA,
   BOOKS_BY_LEVEL,
   pickGrammarSources,   // exportado para teste: é o que garante a gramática do nível
   LEVEL_GUIDANCE,

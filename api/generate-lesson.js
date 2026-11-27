@@ -147,7 +147,7 @@ module.exports = async function handler(req, res) {
   // as demais combinações nível×faixa são geradas a partir dela.
   // previousLesson + feedback: recriação de UMA aula que o professor
   // rejeitou, com o texto do modal descrevendo o que mudar.
-  const { accessCode, profToken, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, videoId, videoSearch, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity } = req.body || {};
+  const { accessCode, profToken, language, topic, levelChoice, ageGroup, useWebSearch, teacherName, videoId, videoSearch, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity, modelo, visual } = req.body || {};
   const resolvedAgeGroup = AGE_GUIDANCE[ageGroup] ? ageGroup : DEFAULT_AGE_GROUP;
   const searchEnabled = useWebSearch === true;
 
@@ -241,6 +241,9 @@ module.exports = async function handler(req, res) {
           // atividade pronta subida pelo professor: texto já extraído no
           // navegador (o arquivo em si nunca chega aqui) + o que ele pediu
           sourceActivity: atividadeBase,
+          // o modelo "tema" (visual criado por atividade) e o pedido de visual do professor, se houver
+          modelo: modelo === "tema" ? "tema" : "classico",
+          visual: modelo === "tema" && visual ? String(visual).slice(0, 300) : null,
         })
       )
     );
@@ -255,6 +258,8 @@ module.exports = async function handler(req, res) {
       // de serem atividades distintas
       lessons[i].coverEmoji = lessons[0].coverEmoji;
       lessons[i].sectionEmojis = lessons[0].sectionEmojis;
+      // e o mesmo visual: no lote, os níveis são a MESMA aula
+      if (lessons[0].design) lessons[i].design = lessons[0].design;
     }
 
     res.status(200).json({ lessons, resolvedVideoId: resolvedVideoId || null, creditos: creditosRestantes });
