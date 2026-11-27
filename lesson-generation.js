@@ -689,7 +689,10 @@ async function generateDesign({ topic, language, level, visual }) {
   const instrucoes = temaInstrucoes({ level, visual }).split("VISUAL IDENTITY")[1] || "";
   const body = {
     model: MODEL_VISUAL,
-    max_tokens: 700,
+    /* sem pensar: o Haiku 5.5 pensa por padrão e gastava os 700 tokens antes de escrever o JSON (stop_reason
+       max_tokens, medido no ar em 27/11/2026). A receita é curta; o pensamento não ajuda aqui. */
+    thinking: { type: "disabled" },
+    max_tokens: 1500,
     system: "You design the visual identity of a classroom slide deck for a language school (FISK). Respond with a single JSON object only, no prose, no code fences.",
     messages: [{ role: "user", content:
       `Lesson topic (written by the teacher): "${String(topic || "").slice(0, 600)}"\nLanguage of the lesson: ${language === "spanish" ? "Spanish" : "English"}\n\nVISUAL IDENTITY${instrucoes}\n\nAlso give "nome": a 2 to 5 word name for the look, in Brazilian Portuguese (e.g. "Outono, perus e descontos").\n\nReturn JSON: { "nome": string, "escuro": boolean, "palette": { "fundo": string, "fundo2": string, "prim": string, "sec": string, "dest": string, "txt": string }, "fontes": { "titulo": string, "corpo": string }, "fundo": string, "heroi": string, "icones": [string] }` }],
