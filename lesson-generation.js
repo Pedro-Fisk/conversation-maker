@@ -117,7 +117,7 @@ const ANSWER_GUIDANCE = {
   basic: `MODEL ANSWERS (conversation + evaluation questions only) — Basic students benefit from varied scaffolding:
 - For yes/no or binary questions: give TWO complete model answers, one for each side (e.g. "Yes, I did." / "No, I didn't."). Keep them short and natural.
 - For open questions (opinions, experiences, preferences): give ONE model answer, mixing styles across the activity — roughly half of the open questions get a COMPLETE sentence showing the expected structure and vocabulary (e.g. "My favorite hero is Iron Man because he is very smart."), and the other half get an INCOMPLETE sentence starter ending in "..." (e.g. "My favorite hero is... because..."). Choose whichever best helps that specific question.
-- It is acceptable for a very simple question to have no model answer (empty array) when the expected response is self-evident.`,
+- Give a model answer to EVERY question, no exceptions (school rule, Pedro 27/11/2026: Basic and Teens always get model answers), varying between complete sentences (affirmative or negative) and open starters such as "I think that...".`,
   intermediate: `MODEL ANSWERS (conversation + evaluation questions only) — be sparing, most questions get none:
 - Across the questions, give a model answer to only about 40% of them — leave the rest with an empty modelAnswers array entirely.
 - When you do include one, it must be a single OPEN sentence starter (e.g. "I think that... because...", "In my opinion..."), never a complete, fully-elaborated answer. At most one model answer per question — never two.
