@@ -525,4 +525,23 @@ function languageGameSourceField(startIndex, count) {
   };
 }
 
-module.exports = { LAYOUTS, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY, RED, BLACK, GRAY };
+/* O JOGO É OPCIONAL (Pedro, 27/11/2026: "o Language Game no final, ativado como padrão, e ele escolhe desclicar").
+ * Sem jogo (lesson.semJogo), saem o divisor "LANGUAGE GAME" e as 4 páginas do jogo, e a agenda passa de
+ * "Game & Evaluation" para "Evaluation". O .pptx e a prévia em HTML usam esta lista, nunca o LAYOUTS cru. */
+function layoutsDaAula(lesson) {
+  if (!lesson || !lesson.semJogo) return LAYOUTS;
+  const out = [];
+  LAYOUTS.forEach((l, i) => {
+    if (l.role === "languageGame") return;
+    const prox = LAYOUTS[i + 1];
+    if (l.role === "divider" && prox && prox.role === "languageGame") return;
+    if (l.role === "agenda") {
+      out.push(Object.assign({}, l, { fields: l.fields.map((f) => f.value === "Game & Evaluation" ? Object.assign({}, f, { value: "Evaluation", valueEs: "Evaluación" }) : f) }));
+      return;
+    }
+    out.push(l);
+  });
+  return out;
+}
+
+module.exports = { LAYOUTS, layoutsDaAula, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY, RED, BLACK, GRAY };

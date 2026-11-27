@@ -6,6 +6,9 @@
     },
     "api/generate-lesson.js": {
       "maxDuration": 300
+    },
+    "api/design-preview.js": {
+      "maxDuration": 30
     }
   }
 }

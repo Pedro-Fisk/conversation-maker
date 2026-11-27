@@ -106,6 +106,7 @@ const profMenuPanel = document.getElementById("profMenuPanel");
 const loggedNameEl = document.getElementById("loggedName");
 const logoutBtn = document.getElementById("logoutBtn");
 
+const CARA_NOVA = !!document.getElementById("previaSlide");   /* novo.html (direção) x index.html (professores) */
 let profSession = null; // { token, name }
 try {
 const saved = JSON.parse(localStorage.getItem("cm-prof-session") || "null");
@@ -119,6 +120,8 @@ if (session) localStorage.setItem("cm-prof-session", JSON.stringify(session));
 else localStorage.removeItem("cm-prof-session");
 } catch (e) {}
 updateAuthUI();
+/* a cara nova é só da direção: a sessão decide a página (o login e a conferência do profCheck passam por aqui) */
+if (session && session.token && !!session.direcao !== CARA_NOVA) { location.replace((session.direcao ? "novo.html" : "./") + location.search + location.hash); return; }
 try { ajustaModelo(); } catch (e) {}   /* na primeira chamada o painel ainda não existe: o ajustaModelo() do fim corrige */
 }
 
@@ -290,8 +293,9 @@ const visualWrapEl = document.getElementById("visualWrap");
    painel "Visual" aparece e vale só para sessão de direção (profCheck devolve direcao). */
 function ehDirecao() { return !!(profSession && profSession.direcao); }
 function ajustaModelo() {
-  const painel = modeloChoices && modeloChoices.closest(".panel");
+  const painel = modeloChoices && (modeloChoices.closest(".passo") || modeloChoices.closest(".panel"));
   if (painel) painel.classList.toggle("is-hidden", !ehDirecao());
+  if (typeof previaAtualiza === "function") previaAtualiza();
 }
 function modeloAtual() {
   if (!ehDirecao()) return "classico"; const b = modeloChoices && modeloChoices.querySelector(".choice.is-active"); return b ? b.getAttribute("data-value") : "tema"; }
@@ -300,6 +304,7 @@ if (modeloChoices) {
     const b = e.target.closest(".choice"); if (!b) return;
     modeloChoices.querySelectorAll(".choice").forEach((x) => x.classList.toggle("is-active", x === b));
     if (visualWrapEl) visualWrapEl.classList.toggle("is-hidden", modeloAtual() !== "tema");
+    previaAtualiza();
   });
 }
 ajustaModelo();
@@ -470,9 +475,9 @@ updateGenerateButton();
 function updateGenerateButton() {
 const n = selectedCombos.length;
 if (n > 1) {
-generateBtn.textContent = `Gerar primeira aula (1 de ${n}) →`;
+generateBtn.textContent = CARA_NOVA ? `✨ Gerar a 1ª aula (1 de ${n})` : `Gerar primeira aula (1 de ${n}) →`;
 } else {
-generateBtn.textContent = "Gerar roteiro →";
+generateBtn.textContent = CARA_NOVA ? "✨ Gerar minha atividade" : "Gerar roteiro →";
 }
 }
 
@@ -485,9 +490,12 @@ const headRow = document.createElement("tr");
 const corner = document.createElement("th");
 corner.className = "matrix-corner";
 headRow.appendChild(corner);
+/* os ícones da cara nova (27/11/2026), como no mockup */
+const EMOJI_FAIXA = { preteens: "🧒 ", teens: "🧑 ", adults: "👔 " };
+const EMOJI_NIVEL = { real_beginners: "🐣 ", teens: "⭐ ", basic: "🌱 ", intermediate: "🚀 ", advanced: "🏆 ", spanish_basic: "🌱 ", spanish_intermediate: "🚀 ", spanish_advanced: "🏆 " };
 AGE_COLS.forEach((age) => {
 const th = document.createElement("th");
-th.textContent = age.label;
+th.textContent = (CARA_NOVA ? EMOJI_FAIXA[age.key] || "" : "") + age.label;
 headRow.appendChild(th);
 });
 thead.appendChild(headRow);
@@ -498,7 +506,7 @@ const tbody = document.createElement("tbody");
 const tr = document.createElement("tr");
 const th = document.createElement("th");
 th.scope = "row";
-th.textContent = level.label;
+th.textContent = (CARA_NOVA ? EMOJI_NIVEL[level.key] || "" : "") + level.label;
 tr.appendChild(th);
 
 AGE_COLS.forEach((age) => {
@@ -527,6 +535,7 @@ const idx = findCombo(level.key, age.key);
 if (idx === -1) selectedCombos.push({ level: level.key, age: age.key });
 else selectedCombos.splice(idx, 1);
 refreshMatrixBadges();
+if (typeof previaAtualiza === "function") previaAtualiza();
 });
 td.appendChild(btn);
 }
@@ -1139,7 +1148,7 @@ body.appendChild(card);
 }
 
 addQASection("Conversação", lesson.conversation, "conversation");
-addLanguageGameSection(lesson.languageGame, "languageGame");
+if (!lesson.semJogo) addLanguageGameSection(lesson.languageGame, "languageGame");
 addQASection("Avaliação", lesson.evaluation, "evaluation");
 
 sincronizarAlternarTudo();   // só agora dá para saber quantos blocos a aula tem
@@ -1219,6 +1228,9 @@ lesson._genTopic = params.topic;
 lesson._genAgeGroup = lesson.ageKey || params.ageGroup;
 lesson._genUseWebSearch = params.useWebSearch;
 lesson._videoId = resolvedVideoId || null;
+/* SEM JOGO (o interruptor "Jogo no final" desligado): a aula clássica perde o divisor e as 4 páginas do jogo
+   (slide-layouts.js, layoutsDaAula) e a do tema simplesmente não tem itens de jogo (o desenhista do portal pula) */
+if (batch && batch.params && batch.params.semJogo) { lesson.semJogo = true; lesson.languageGame = []; }
 }
 
 
@@ -1241,6 +1253,7 @@ videoSearch: false,
 extraActivity: p.extraActivity,
 modelo: p.modelo,
 visual: p.visual,
+design: p.design,
 };
 if (extras) Object.assign(payload, extras);
 const { lessons, resolvedVideoId } = await fetchLessons(payload);
@@ -1714,6 +1727,67 @@ bar.appendChild(allBtn);
 // ---- Modo escuro ----
 fiskInitThemeToggle("themeToggle", { storageKey: "cm-theme" });
 
+/* ══ A PRÉVIA DA CAPA (passo 6, Pedro 27/11/2026) ════════════════════════════════════════════════════════════════
+   No visual do tema: assim que o tema está escrito, um pedido pequeno (api/design-preview, não gasta crédito) traz só
+   a receita do visual, e o desenhista do portal (FiskTema) desenha a capa aqui. A geração leva essa MESMA receita.
+   No modelo clássico: a capa do template de sempre, com o tema. O título final é o que a IA escrever. */
+/* var, não const: o ajustaModelo() roda no carregamento ANTES desta linha e chama previaAtualiza */
+var gameCheckEl = document.getElementById("gameCheck");
+var previa = { design: null, chave: "", vez: 0, t: null };
+function previaEls() { return { box: document.getElementById("previaSlide"), nome: document.getElementById("previaNome"), sub: document.getElementById("previaSub"), pal: document.getElementById("previaPaleta"), outro: document.getElementById("previaOutro") }; }
+function tituloDaPrevia(t) { t = String(t || "").trim().split(/[.:;\n]|, (?=[a-zà-ú])/)[0].trim(); if (t.length > 60) t = t.slice(0, 57).replace(/\s+\S*$/, "") + "…"; return t ? t.charAt(0).toUpperCase() + t.slice(1) : "Sua atividade"; }
+function comboDaPrevia() { const c = selectedCombos[0]; const lang = selectedValue(languageChoices) || "english"; return { level: c ? c.level : (lang === "spanish" ? "spanish_basic" : "basic"), age: c ? c.age : "teens", lang }; }
+function previaDesenha() {
+  const e = previaEls(); if (!e.box) return;
+  const c = comboDaPrevia(), titulo = tituloDaPrevia(topicEl.value);
+  const nivel = levelLabelOf(c.lang, c.level), perfil = ageLabelOf(c.age);
+  if (modeloAtual() !== "tema") {
+    e.box.innerHTML = '<div class="pv-classica"><span class="pv-k">' + (c.lang === "spanish" ? "CONVERSACIÓN" : "CONVERSATION") + '</span><b></b><i></i></div>';
+    e.box.querySelector("b").textContent = titulo; e.box.querySelector("i").textContent = nivel;
+    e.nome.textContent = "Modelo clássico"; e.sub.textContent = "O layout de sempre da Fisk, em PowerPoint."; e.pal.innerHTML = ""; if (e.outro) e.outro.hidden = true; return;
+  }
+  if (e.outro) e.outro.hidden = false;
+  if (!previa.design) {
+    e.box.innerHTML = '<div class="pv-espera">' + (topicEl.value.trim() ? '<span class="pv-gira"></span>Preparando a capa…' : '✍️ Escreva o tema no passo 1 e a capa aparece aqui.') + '</div>';
+    e.nome.textContent = "Visual do tema"; e.sub.textContent = "Cores, fontes e ícones escolhidos para o assunto."; e.pal.innerHTML = ""; return;
+  }
+  const d = previa.design;
+  e.nome.textContent = d.nome || "Visual do tema";
+  e.sub.textContent = "Fontes " + d.fontes.titulo + " e " + d.fontes.corpo + " · fundo com " + d.fundo + ".";
+  e.pal.innerHTML = ["fundo", "fundo2", "prim", "sec", "dest"].map((k) => '<i style="background:' + d.paleta[k] + '"></i>').join("");
+  try {
+    const deck = window.FiskTema.montar({ coverTitle: titulo, coverLevel: nivel, perfil, language: c.lang, topic: topicEl.value.trim(), objectives: [], vocabulary: [], introText: "", conversation: [], languageGame: [], evaluation: [] }, d, { base: HUB_BASE });
+    const el = deck.slides[0].el; el.style.pointerEvents = "none";
+    e.box.innerHTML = ""; e.box.appendChild(el); window.FiskTema.encaixar(el, e.box); requestAnimationFrame(() => window.FiskTema.encaixar(el, e.box));
+  } catch (err) { e.box.innerHTML = '<div class="pv-espera">Não consegui desenhar a capa aqui, mas o visual vai junto na geração.</div>'; }
+}
+function previaPede(forcar) {
+  const topic = topicEl.value.trim();
+  if (modeloAtual() !== "tema" || !topic || !profSession || !window.FiskTema) { previaDesenha(); return; }
+  const c = comboDaPrevia(), visual = (visualPedidoEl && visualPedidoEl.value.trim()) || "";
+  const chave = [topic, c.lang, visual].join("|");
+  if (!forcar && chave === previa.chave && previa.design) { previaDesenha(); return; }
+  previa.chave = chave; previa.design = null; previaDesenha();
+  const vez = ++previa.vez;
+  fetch("/api/design-preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ profToken: profSession.token, topic, language: c.lang, level: c.level, visual }) })
+    .then((r) => r.json()).then((j) => {
+      if (vez !== previa.vez) return;
+      if (!j || !j.ok || !j.design) throw new Error((j && j.error) || "sem visual");
+      previa.design = j.design; previaDesenha();
+    }).catch((err) => { if (vez !== previa.vez) return; previa.chave = ""; const e = previaEls(); if (e.box) e.box.innerHTML = '<div class="pv-espera">' + String(err.message || "Não consegui preparar a prévia.") + ' <button type="button" class="pv-tenta" id="previaTenta">Tentar de novo</button></div>'; const b = document.getElementById("previaTenta"); if (b) b.onclick = () => previaPede(true); });
+}
+/* o tema muda: espera a pessoa parar de digitar; o resto (idioma, turma, modelo) só redesenha */
+function previaAtualiza() { if (!previa) return; clearTimeout(previa.t); previa.t = setTimeout(() => previaPede(false), 900); }
+topicEl.addEventListener("input", () => { clearTimeout(previa.t); previa.t = setTimeout(() => previaPede(false), 1600); });
+if (visualPedidoEl) visualPedidoEl.addEventListener("change", () => previaPede(false));
+if (languageChoices) languageChoices.addEventListener("click", () => setTimeout(previaAtualiza, 0));
+document.getElementById("previaOutro") && document.getElementById("previaOutro").addEventListener("click", () => previaPede(true));
+document.getElementById("previaAjustar") && document.getElementById("previaAjustar").addEventListener("click", () => { if (visualPedidoEl) { visualPedidoEl.scrollIntoView({ behavior: "smooth", block: "center" }); visualPedidoEl.focus(); } });
+/* as sugestões de tema do passo 1 */
+document.querySelectorAll("[data-ideia]").forEach((b) => b.addEventListener("click", () => { topicEl.value = b.getAttribute("data-ideia"); crescerTopico && crescerTopico(); topicEl.focus(); previaPede(false); }));
+window.addEventListener("resize", () => { const e = previaEls(); const el = e.box && e.box.firstElementChild; if (el && window.FiskTema && el.classList && !el.classList.contains("pv-espera") && !el.classList.contains("pv-classica")) window.FiskTema.encaixar(el, e.box); });
+previaDesenha();
+
 // ---- Limpar formulário (com confirmação) ----
 function selectChoice(container, value) {
 const btn = container.querySelector(`.choice[data-value="${value}"]`);
@@ -1733,9 +1807,12 @@ if (extraActivityCheckEl) { extraActivityCheckEl.checked = false; }
 if (extraActivityWrapEl) extraActivityWrapEl.classList.add("is-hidden");
 if (extraActivityEl) { extraActivityEl.value = ""; extraActivityEl.disabled = false; extraActivityEl.style.opacity = ""; }
 if (extraLuckyEl) extraLuckyEl.checked = false;
+if (gameCheckEl) gameCheckEl.checked = true;
+previa.design = null; previa.chave = "";
 selectChoice(languageChoices, "english");
 selectedCombos = [];
 refreshMatrixBadges();
+previaAtualiza();
 batch = null;
 results.classList.remove("is-visible");
 results.innerHTML = "";
@@ -1820,7 +1897,9 @@ try {
 batch = {
 language,
 videoId: null,
-params: { topic, useWebSearch, teacherName: profSession.name, extraActivity, modelo: modeloAtual(), visual: (visualPedidoEl && visualPedidoEl.value.trim()) || null },
+params: { topic, useWebSearch, teacherName: profSession.name, extraActivity, modelo: modeloAtual(), visual: (visualPedidoEl && visualPedidoEl.value.trim()) || null,
+  /* o jogo é opcional (27/11/2026) e o visual que o professor viu na prévia vai junto: a aula sai com a mesma cara */
+  semJogo: !(gameCheckEl ? gameCheckEl.checked : true), design: modeloAtual() === "tema" && previa && previa.design ? previa.design : null },
 slots: combos.map((combo) => ({ combo, versions: [], active: 0, recreations: 0, busy: null, error: null, slideEl: null })),
 generatingRest: false,
 barEl: null,
@@ -1840,6 +1919,7 @@ videoSearch,
 extraActivity,
 modelo: batch.params.modelo,
 visual: batch.params.visual,
+design: batch.params.design,
 };
 const { lessons, resolvedVideoId, creditos: saldo } = await fetchLessons(payload);
 if (typeof saldo === "number") { creditos = saldo; mostrarCreditos(); }

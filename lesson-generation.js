@@ -680,7 +680,25 @@ function sanearJogoTema(lista) {
   });
 }
 
-async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity, modelo, visual }) {
+/* ══ SÓ O VISUAL, PARA A PRÉVIA (Pedro, 27/11/2026) ══════════════════════════════════════════════════════════════
+   O Conversation Maker mostra a capa antes de gerar. Este pedido devolve SÓ a receita do visual (paleta, fontes, fundo,
+   ícones), com as mesmas regras do modelo tema, num modelo rápido e barato e com poucas palavras de saída; o portal
+   desenha a capa no navegador. Na geração, a aula reaproveita esta receita (generateFullLesson, "design"). */
+const MODEL_VISUAL = "claude-haiku-5-5";
+async function generateDesign({ topic, language, level, visual }) {
+  const instrucoes = temaInstrucoes({ level, visual }).split("VISUAL IDENTITY")[1] || "";
+  const body = {
+    model: MODEL_VISUAL,
+    max_tokens: 700,
+    system: "You design the visual identity of a classroom slide deck for a language school (FISK). Respond with a single JSON object only, no prose, no code fences.",
+    messages: [{ role: "user", content:
+      `Lesson topic (written by the teacher): "${String(topic || "").slice(0, 600)}"\nLanguage of the lesson: ${language === "spanish" ? "Spanish" : "English"}\n\nVISUAL IDENTITY${instrucoes}\n\nAlso give "nome": a 2 to 5 word name for the look, in Brazilian Portuguese (e.g. "Outono, perus e descontos").\n\nReturn JSON: { "nome": string, "escuro": boolean, "palette": { "fundo": string, "fundo2": string, "prim": string, "sec": string, "dest": string, "txt": string }, "fontes": { "titulo": string, "corpo": string }, "fundo": string, "heroi": string, "icones": [string] }` }],
+  };
+  const parsed = await callAnthropicRaw(body);
+  return Object.assign(sanearDesign(parsed), { nome: String(parsed.nome || "").slice(0, 60) });
+}
+
+async function generateFullLesson({ language, topic, level, ageGroup, useWebSearch, transcript, extraActivity, referenceLesson, previousLesson, feedback, sourceActivity, modelo, visual, design }) {
   const sources = language === "english" ? pickGrammarSources(level, 6) : null;
 
   const body = {
@@ -722,7 +740,8 @@ async function generateFullLesson({ language, topic, level, ageGroup, useWebSear
     conversation: clampArray(parsed.conversation, modelo === "tema" ? (TEMA_CONVERSA[level] || 9) : 9),
     languageGame: modelo === "tema" ? attachLanguageGameSources(sanearJogoTema(parsed.languageGame), sources) : attachLanguageGameSources(clampLanguageGame(parsed.languageGame, 6), sources),
     modelo: modelo === "tema" ? "tema" : "classico",
-    design: modelo === "tema" ? sanearDesign(parsed.design) : null,
+    /* o visual que o professor já viu na prévia vale mais que o que a IA inventar agora: a prévia é o resultado */
+    design: modelo === "tema" ? sanearDesign(design && typeof design === "object" ? design : parsed.design) : null,
     evaluation: clampArray(parsed.evaluation, 2),
     extraActivityTitle: extraActivity ? (parsed.extraActivityTitle || null) : null,
     extraActivityInstructions: extraActivity ? (parsed.extraActivityInstructions || null) : null,
@@ -771,6 +790,7 @@ async function generateSection({ section, language, topic, level, ageGroup, useW
 }
 
 module.exports = {
+  generateDesign,
   sanearDesign,
   sanearJogoTema,
   temaInstrucoes,

@@ -41,7 +41,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { LAYOUTS, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY } = require("./slide-layouts");
+const { layoutsDaAula, CANVAS_W, CANVAS_H, FONT_MARKER, FONT_BODY } = require("./slide-layouts");
 const {
   getQaItems,
   buildDynamicValue,
@@ -427,7 +427,7 @@ function renderSlide(layout, lesson) {
 }
 
 function buildSlidesHtml(lesson) {
-  const slidesHtml = LAYOUTS.map((layout) => renderSlide(layout, lesson)).join("\n");
+  const slidesHtml = layoutsDaAula(lesson).map((layout) => renderSlide(layout, lesson)).join("\n");
   return `<!DOCTYPE html>
 <html>
 <head>
